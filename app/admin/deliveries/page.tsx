@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { STATUS_LABELS, STATUS_COLORS, DELIVERY_STATUSES, DeliveryStatus } from "@/lib/auth/delivery-status";
+import { STATUS_LABELS, STATUS_COLORS, DELIVERY_STATUSES, DeliveryStatus } from "@/lib/constants/delivery-status";
 
 interface Delivery {
   id: number;

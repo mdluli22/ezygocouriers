@@ -108,7 +108,7 @@ export default function SignupPage() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push("/dashboard/deliveries/new");
     } catch {
       setServerError("Something went wrong. Please check your connection.");
     } finally {

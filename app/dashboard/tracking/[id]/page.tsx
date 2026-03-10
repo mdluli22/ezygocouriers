@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -200,6 +200,14 @@ function StatusTimeline({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function TrackingPage() {
+  return (
+    <Suspense>
+      <TrackingContent />
+    </Suspense>
+  );
+}
+
+function TrackingContent() {
   const params       = useParams();
   const searchParams = useSearchParams();
   const justConfirmed = searchParams.get("confirmed") === "1";

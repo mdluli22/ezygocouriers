@@ -128,12 +128,12 @@ export async function GET(req: NextRequest) {
 
     // 7. Redirect to the correct dashboard based on role
     const dashboardMap: Record<string, string> = {
-      customer: "/dashboard",
+      customer: "/dashboard/deliveries/new",
       driver: "/driver",
       admin: "/admin",
     };
 
-    const destination = dashboardMap[dbUser.role] ?? "/dashboard";
+    const destination = dashboardMap[dbUser.role] ?? "/dashboard/deliveries/new";
     return NextResponse.redirect(`${APP_URL}${destination}`);
   } catch (error) {
     console.error("[GET /api/auth/google/callback]", error);

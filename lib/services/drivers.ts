@@ -2,7 +2,7 @@ import { query, getClient } from "@/lib/db/server";
 import {
   DeliveryStatus,
   isValidTransition,
-} from "@/lib/auth/delivery-status";
+} from "@/lib/constants/delivery-status";
 
 /**
  * Get all deliveries assigned to a driver (via their user ID).

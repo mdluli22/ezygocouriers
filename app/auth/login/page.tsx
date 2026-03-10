@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
@@ -20,6 +20,14 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
 };
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -65,11 +73,11 @@ export default function LoginPage() {
       // Redirect to original destination or role-based dashboard
       const redirect = searchParams.get("redirect");
       const roleDashboard: Record<string, string> = {
-        customer: "/dashboard",
+        customer: "/dashboard/deliveries/new",
         driver:   "/driver",
         admin:    "/admin",
       };
-      router.push(redirect || roleDashboard[data.data?.role] || "/dashboard");
+      router.push(redirect || roleDashboard[data.data?.role] || "/dashboard/deliveries/new");
     } catch {
       setServerError("Something went wrong. Please check your connection.");
     } finally {

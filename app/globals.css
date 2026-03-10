@@ -6,6 +6,7 @@
   --color-primary:        #2F4F4F;
   --color-primary-dark:   #000000;
   --color-primary-light:  #2F4F4F;
+  --color-primary-alpha:  rgba(47, 79, 79, 0.18); /* focus ring */
   --color-accent:         #FFFFFF;
   --color-accent-dark:    #E5E5E5;
   --color-accent-light:   #FFFFFF;
@@ -264,6 +265,55 @@ body {
 .focus-ring:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* ─── Google Places Autocomplete Dropdown ───────────────────────────────────── */
+
+/* Legacy pac-container (Autocomplete fallback) */
+.pac-container {
+  background-color: var(--color-bg) !important;
+  border: 1.5px solid var(--color-border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-modal) !important;
+  margin-top: 6px !important;
+  padding: 4px !important;
+  font-family: var(--font-inter), system-ui, sans-serif !important;
+  z-index: 9999 !important;
+}
+
+.pac-container::after {
+  display: none !important;
+}
+
+.pac-item {
+  padding: 10px 12px !important;
+  border-top: none !important;
+  border-radius: var(--radius-md) !important;
+  cursor: pointer !important;
+  font-size: 0.875rem !important;
+  color: var(--color-text-primary) !important;
+  line-height: 1.4 !important;
+}
+
+.pac-item:hover,
+.pac-item-selected {
+  background-color: var(--color-surface) !important;
+}
+
+.pac-item-query {
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text-primary) !important;
+  padding-right: 4px !important;
+}
+
+.pac-matched {
+  color: var(--color-primary) !important;
+  font-weight: 700 !important;
+}
+
+.pac-icon {
+  display: none !important;
 }
 
 /* Scrollbar styling */

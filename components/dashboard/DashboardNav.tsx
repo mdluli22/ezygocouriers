@@ -58,6 +58,30 @@ export default function DashboardNav() {
         + New Delivery
       </Link>
 
+      {/* Standalone logout button — always visible */}
+      <button
+        onClick={handleLogout}
+        disabled={loggingOut}
+        className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+        style={{
+          color: "var(--color-error)",
+          backgroundColor: "rgb(239 68 68 / 0.08)",
+          border: "1px solid rgb(239 68 68 / 0.15)",
+        }}
+      >
+        {loggingOut ? (
+          <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+        ) : (
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+          </svg>
+        )}
+        <span className="hidden sm:inline">{loggingOut ? "Signing out…" : "Logout"}</span>
+      </button>
+
       <div className="relative" ref={ref}>
         <button
           onClick={() => setOpen(!open)}
@@ -114,8 +138,7 @@ export default function DashboardNav() {
 
             <div className="py-1">
               {[
-                { href: "/dashboard", label: "Dashboard" },
-                { href: "/dashboard/deliveries", label: "My Deliveries" },
+                { href: "/dashboard", label: "My Deliveries" },
                 { href: "/dashboard/profile", label: "Profile" },
               ].map((item) => (
                 <Link

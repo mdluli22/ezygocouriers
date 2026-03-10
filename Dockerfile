@@ -1,5 +1,7 @@
 # ─── Stage 1: Dependencies ───────────────────────────────────────────────────
-FROM node:20-alpine AS deps
+# Pin to linux/amd64 so Next.js uses native SWC binaries (not WASM).
+# This is needed when building on Apple Silicon (arm64) hosts.
+FROM --platform=linux/amd64 node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -7,7 +9,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 # ─── Stage 2: Builder ────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM --platform=linux/amd64 node:20-alpine AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -18,7 +20,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ─── Stage 3: Runner (Production) ────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM --platform=linux/amd64 node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

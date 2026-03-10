@@ -14,7 +14,7 @@ import {
 const statusUpdateSchema = z.object({
   delivery_id: z.number().int().positive("Invalid delivery ID."),
   status: z.enum(DELIVERY_STATUSES, {
-    errorMap: () => ({ message: "Invalid delivery status." }),
+    error: () => ({ message: "Invalid delivery status." }),
   }),
   note: z.string().max(500).optional(),
 });

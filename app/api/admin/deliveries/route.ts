@@ -8,7 +8,7 @@ import {
   serverErrorResponse,
 } from "@/lib/api/response";
 import { NextRequest } from "next/server";
-import { DeliveryStatus } from "@/lib/auth/delivery-status";
+import { DeliveryStatus } from "@/lib/constants/delivery-status";
 
 export async function GET(req: NextRequest) {
   try {

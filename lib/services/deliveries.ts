@@ -34,36 +34,60 @@ export async function createDelivery(
   try {
     await client.query("BEGIN");
 
+    // Build a display-friendly street address from geocoded or typed data
+    const pickupStreet =
+      input.pickup_address.street_address ||
+      input.pickup_address.formatted_address;
+    const dropoffStreet =
+      input.dropoff_address.street_address ||
+      input.dropoff_address.formatted_address;
+
+    // Build combined notes: meeting option + user note + building info
+    const buildNotes = (addr: typeof input.pickup_address) => {
+      const parts: string[] = [];
+      if (addr.building_or_business) parts.push(`Building: ${addr.building_or_business}`);
+      if (addr.apt_suite) parts.push(`Apt/Suite: ${addr.apt_suite}`);
+      if (addr.meeting_option) parts.push(`Meeting: ${addr.meeting_option.replace(/_/g, " ")}`);
+      if (addr.notes) parts.push(addr.notes);
+      return parts.join(" | ") || null;
+    };
+
     // 1. Insert pickup address
     const pickupResult = await client.query<{ id: number }>(
-      `INSERT INTO addresses (user_id, street_address, suburb, city, province, postal_code, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO addresses (user_id, street_address, suburb, city, province, postal_code, country, latitude, longitude, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id`,
       [
         customerId,
-        input.pickup_address.street_address,
+        pickupStreet,
         input.pickup_address.suburb || null,
-        input.pickup_address.city,
+        input.pickup_address.city || null,
         input.pickup_address.province || null,
         input.pickup_address.postal_code || null,
-        input.pickup_address.notes || null,
+        input.pickup_address.country || "South Africa",
+        input.pickup_address.latitude ?? null,
+        input.pickup_address.longitude ?? null,
+        buildNotes(input.pickup_address),
       ]
     );
     const pickupAddressId = pickupResult.rows[0].id;
 
     // 2. Insert dropoff address
     const dropoffResult = await client.query<{ id: number }>(
-      `INSERT INTO addresses (user_id, street_address, suburb, city, province, postal_code, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO addresses (user_id, street_address, suburb, city, province, postal_code, country, latitude, longitude, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id`,
       [
         customerId,
-        input.dropoff_address.street_address,
+        dropoffStreet,
         input.dropoff_address.suburb || null,
-        input.dropoff_address.city,
+        input.dropoff_address.city || null,
         input.dropoff_address.province || null,
         input.dropoff_address.postal_code || null,
-        input.dropoff_address.notes || null,
+        input.dropoff_address.country || "South Africa",
+        input.dropoff_address.latitude ?? null,
+        input.dropoff_address.longitude ?? null,
+        buildNotes(input.dropoff_address),
       ]
     );
     const dropoffAddressId = dropoffResult.rows[0].id;
