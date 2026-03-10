@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,9 +33,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} font-sans antialiased bg-white dark:bg-[#1A2F2F] text-slate-900 dark:text-slate-100 transition-colors duration-300`}
+        className={`${inter.variable} font-sans antialiased transition-colors duration-300`}
+        style={{ backgroundColor: "var(--color-bg)", color: "var(--color-text-primary)" }}
       >
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -5,7 +5,7 @@ import Navbar         from "@/components/landing/Navbar";
 import HeroSection    from "@/components/landing/HeroSection";
 import HowItWorks     from "@/components/landing/HowItWorks";
 import PricingSection from "@/components/landing/PricingSection";
-import { StatsSection, Testimonials, CTABanner, Footer } from "@/components/landing/sections";
+import { CTABanner, Footer } from "@/components/landing/sections";
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
@@ -20,10 +20,10 @@ export default function LandingPage() {
     <main>
       <Navbar scrolled={scrolled} />
       <HeroSection />
-      <StatsSection />
+      {/* <StatsSection /> */}
       <HowItWorks />
       <PricingSection />
-      <Testimonials />
+      {/* <Testimonials /> */}
       <CTABanner />
       <Footer />
     </main>

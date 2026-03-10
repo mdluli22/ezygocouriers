@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@vis.gl/react-google-maps": "^1.7.1",
     "bcryptjs": "^3.0.3",
     "jsonwebtoken": "^9.0.3",
     "next": "16.1.6",
@@ -27,7 +28,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "install": "^0.13.0",
-    "npm": "^11.6.0",
+    "npm": "^11.11.0",
     "pg": "^8.20.0",
     "tailwindcss": "^4",
     "typescript": "^5"

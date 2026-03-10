@@ -4,17 +4,17 @@
 :root {
   /* Brand */
   --color-primary:        #2F4F4F;
-  --color-primary-dark:   #1A2F2F;
-  --color-primary-light:  #3D6666;
-  --color-accent:         #F59E0B;
-  --color-accent-dark:    #D97706;
-  --color-accent-light:   #FCD34D;
+  --color-primary-dark:   #000000;
+  --color-primary-light:  #2F4F4F;
+  --color-accent:         #FFFFFF;
+  --color-accent-dark:    #E5E5E5;
+  --color-accent-light:   #FFFFFF;
 
   /* Surfaces – Light mode */
   --color-bg:             #FFFFFF;
-  --color-surface:        #F8FAFC;
-  --color-surface-raised: #F1F5F9;
-  --color-border:         #E2E8F0;
+  --color-surface:        #F5F5F5;
+  --color-surface-raised: #EBEBEB;
+  --color-border:         #D1D1D1;
 
   /* Text – Light mode */
   --color-text-primary:   #0F172A;
@@ -41,10 +41,10 @@
 
 /* ─── Dark Mode Tokens ──────────────────────────────────────────────────────── */
 .dark {
-  --color-bg:             #1A2F2F;
-  --color-surface:        #243B3B;
-  --color-surface-raised: #2F4F4F;
-  --color-border:         #3D6666;
+  --color-bg:             #000000;
+  --color-surface:        #111111;
+  --color-surface-raised: #1A1A1A;
+  --color-border:         #2F4F4F;
 
   --color-text-primary:   #F1F5F9;
   --color-text-secondary: #94A3B8;
