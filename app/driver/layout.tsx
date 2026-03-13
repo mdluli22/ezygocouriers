@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth/session";
 import DriverNav from "@/components/driver/DriverNav";
 
 export const metadata: Metadata = { title: "Driver Portal" };
 
-export default function DriverLayout({ children }: { children: React.ReactNode }) {
+export default async function DriverLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSession();
+  if (!session) redirect("/driver/login");
+  if (session.role !== "driver") redirect("/dashboard");
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--color-surface)" }}>
       <header

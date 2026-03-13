@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useMapsLibrary } from "@vis.gl/react-google-maps";
 
 export interface PlaceResult {
   address: string;
@@ -33,65 +32,67 @@ export default function AddressAutocomplete({
   style,
   inputStyle,
 }: AddressAutocompleteProps) {
-  const placesLib = useMapsLibrary("places");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  // Extract border-width and border-style from the `border` shorthand so we can
-  // rebuild it with a different colour on focus — without ever mixing the
-  // `border` shorthand and the `borderColor` longhand (which causes React to
-  // drop one of them during re-renders).
-  const borderWidthStyle = (() => {
-    const b = inputStyle?.border as string | undefined;
-    if (!b) return { width: "1px", style: "solid" };
+  const borderParts = (() => {
+    const b =
+      (inputStyle?.border as string | undefined) ??
+      "1.5px solid var(--color-border)";
     const parts = b.trim().split(/\s+/);
-    // shorthand order: width style color  (some parts may be absent)
-    return {
-      width: parts[0] ?? "1px",
-      style: parts[1] ?? "solid",
-    };
+    return { width: parts[0] ?? "1.5px", style: parts[1] ?? "solid" };
   })();
 
-  // Initialise the legacy Autocomplete widget once the Places library is loaded.
-  // This uses google.maps.places.Autocomplete (not PlaceAutocompleteElement)
-  // so it works with the standard Places API — no "Places API (New)" needed.
-  useEffect(() => {
-    if (!placesLib || !inputRef.current || autocompleteRef.current) return;
+  const computedBorder = isFocused
+    ? `${borderParts.width} ${borderParts.style} var(--color-primary)`
+    : (inputStyle?.border as string | undefined) ??
+      "1.5px solid var(--color-border)";
 
-    const ac = new placesLib.Autocomplete(inputRef.current, {
+  const computedShadow = isFocused
+    ? "0 0 0 3px var(--color-primary-alpha)"
+    : (inputStyle?.boxShadow as string | undefined) ?? "none";
+
+  useEffect(() => {
+    if (!window.google?.maps?.places || !inputRef.current || autocompleteRef.current) {
+      return;
+    }
+
+    const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: "za" },
-      types: ["geocode", "establishment"],
       fields: ["formatted_address", "geometry", "place_id", "name"],
     });
 
     autocompleteRef.current = ac;
+    setReady(true);
 
-    // When the user picks a suggestion from the dropdown
-    ac.addListener("place_changed", () => {
+    const listener = ac.addListener("place_changed", () => {
       const place = ac.getPlace();
       if (!place.geometry?.location) return;
 
       const address =
-        place.formatted_address ?? place.name ?? inputRef.current?.value ?? "";
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
-      const placeId = place.place_id ?? "";
+        place.formatted_address ??
+        place.name ??
+        inputRef.current?.value ??
+        "";
 
       onChange(address);
-      onPlaceSelect({ address, lat, lng, placeId });
+      onPlaceSelect({
+        address,
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+        placeId: place.place_id ?? "",
+      });
     });
 
     return () => {
-      if (autocompleteRef.current) {
-        google.maps.event.clearInstanceListeners(autocompleteRef.current);
-        autocompleteRef.current = null;
-      }
+      listener.remove();
+      autocompleteRef.current = null;
+      setReady(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [placesLib]);
+  }, [onChange, onPlaceSelect]);
 
-  // Keep the input value in sync when the parent changes it externally
   useEffect(() => {
     if (inputRef.current && inputRef.current.value !== value) {
       inputRef.current.value = value;
@@ -106,6 +107,7 @@ export default function AddressAutocomplete({
         defaultValue={value}
         placeholder={placeholder}
         autoComplete="off"
+        aria-autocomplete="list"
         onInput={(e) => onChange((e.target as HTMLInputElement).value)}
         onFocus={() => {
           setIsFocused(true);
@@ -120,17 +122,29 @@ export default function AddressAutocomplete({
           boxSizing: "border-box",
           outline: "none",
           ...inputStyle,
-          // On focus, replace the entire `border` shorthand so we never mix
-          // `border` (shorthand) and `borderColor` (longhand) in the same style
-          // object — React drops one of them during re-renders when both are set.
-          border: isFocused
-            ? `${borderWidthStyle.width} ${borderWidthStyle.style} var(--color-primary)`
-            : (inputStyle?.border as string | undefined) ?? "1px solid var(--color-border)",
-          boxShadow: isFocused
-            ? "0 0 0 3px var(--color-primary-alpha)"
-            : (inputStyle?.boxShadow as string | undefined) ?? "none",
+          border: computedBorder,
+          boxShadow: computedShadow,
+          opacity: ready ? 1 : 0.7,
         }}
       />
+      {!ready && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            right: "12px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: "14px",
+            height: "14px",
+            borderRadius: "50%",
+            border: "2px solid var(--color-border)",
+            borderTopColor: "var(--color-primary)",
+            animation: "spin 0.7s linear infinite",
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </div>
   );
 }

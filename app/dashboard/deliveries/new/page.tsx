@@ -279,7 +279,7 @@ export default function NewDeliveryPage() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!} libraries={["places"]}>
+    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!} libraries={["places"]} version="weekly">
 
       {/* Hidden PayFast form */}
       {payfastData && (

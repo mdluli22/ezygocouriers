@@ -17,6 +17,11 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# NEXT_PUBLIC_* vars are inlined at build time by Next.js, so they must be
+# available here — not just at runtime. Pass them in via --build-arg.
+ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
 RUN npm run build
 
 # ─── Stage 3: Runner (Production) ────────────────────────────────────────────

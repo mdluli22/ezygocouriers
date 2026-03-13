@@ -51,7 +51,7 @@ export default function HeroSection() {
   }
 
   return (
-    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!} libraries={["places"]}>
+    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!} libraries={["places"]} version="weekly">
     <section
       className="relative min-h-screen flex flex-col overflow-hidden"
       style={{ backgroundColor: heroBg }}

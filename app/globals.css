@@ -334,3 +334,7 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
 }
+
+@keyframes spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
