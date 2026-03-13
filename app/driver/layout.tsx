@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { getSession } from "@/lib/auth/session";
 import DriverNav from "@/components/driver/DriverNav";
 
 export const metadata: Metadata = { title: "Driver Portal" };
 
 export default async function DriverLayout({ children }: { children: React.ReactNode }) {
+  // proxy.ts handles redirects for protected pages; layout skips the guard
+  // for the login page (which is a public child of this route segment).
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+  if (pathname === "/driver/login") {
+    return <>{children}</>;
+  }
+
   const session = await getSession();
   if (!session) redirect("/driver/login");
   if (session.role !== "driver") redirect("/dashboard");
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--color-surface)" }}>
       <header

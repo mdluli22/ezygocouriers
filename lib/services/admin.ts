@@ -12,8 +12,9 @@ export async function getAdminStats() {
               COUNT(*) FILTER (WHERE status = 'cancelled')  AS cancelled
            FROM deliveries`),
     query(`SELECT COUNT(*) AS total,
-              COUNT(*) FILTER (WHERE is_active = true)  AS active,
-              COUNT(*) FILTER (WHERE is_active = false) AS inactive
+              COUNT(*) FILTER (WHERE status = 'active')   AS active,
+              COUNT(*) FILTER (WHERE status = 'inactive') AS inactive,
+              COUNT(*) FILTER (WHERE status = 'suspended') AS suspended
            FROM drivers`),
     query(`SELECT COUNT(*) AS total,
               COUNT(*) FILTER (WHERE role = 'customer') AS customers,
@@ -108,10 +109,10 @@ export async function getAdminDrivers() {
     `SELECT
        dr.id,
        dr.license_number,
-       dr.vehicle_make,
-       dr.vehicle_model,
-       dr.vehicle_registration,
-       dr.is_active,
+       dr.vehicle_type,
+       dr.vehicle_reg,
+       dr.status,
+       dr.notes,
        dr.created_at,
        u.id          AS user_id,
        u.full_name,
@@ -135,9 +136,8 @@ export async function createDriver(data: {
   phone?: string;
   password_hash: string;
   license_number: string;
-  vehicle_make: string;
-  vehicle_model: string;
-  vehicle_registration: string;
+  vehicle_type: string;
+  vehicle_reg: string;
 }): Promise<{ userId: number; driverId: number }> {
   const client = await getClient();
   try {
@@ -152,16 +152,10 @@ export async function createDriver(data: {
     const userId = userResult.rows[0].id;
 
     const driverResult = await client.query<{ id: number }>(
-      `INSERT INTO drivers (user_id, license_number, vehicle_make, vehicle_model, vehicle_registration)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO drivers (user_id, license_number, vehicle_type, vehicle_reg)
+       VALUES ($1, $2, $3, $4)
        RETURNING id`,
-      [
-        userId,
-        data.license_number,
-        data.vehicle_make,
-        data.vehicle_model,
-        data.vehicle_registration,
-      ]
+      [userId, data.license_number, data.vehicle_type, data.vehicle_reg]
     );
     const driverId = driverResult.rows[0].id;
 
@@ -177,7 +171,10 @@ export async function createDriver(data: {
 
 export async function toggleDriverStatus(driverId: number): Promise<void> {
   await query(
-    `UPDATE drivers SET is_active = NOT is_active WHERE id = $1`,
+    `UPDATE drivers
+     SET status = CASE WHEN status = 'active' THEN 'inactive' ELSE 'active' END,
+         updated_at = NOW()
+     WHERE id = $1`,
     [driverId]
   );
 }

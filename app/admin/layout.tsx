@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { getSession } from "@/lib/auth/session";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
@@ -7,6 +8,16 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // proxy.ts handles redirects for protected pages; skip the guard for the
+  // login page which is a public child of this route segment.
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+
+  // Render the login page without the sidebar shell
+  if (pathname === "/admin/login") {
+    return <>{children}</>;
+  }
+
   const session = await getSession();
   if (!session) redirect("/admin/login");
   if (session.role !== "admin") redirect("/dashboard");

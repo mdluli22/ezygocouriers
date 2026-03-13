@@ -33,17 +33,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       full_name, email, phone, password,
-      license_number, vehicle_make, vehicle_model, vehicle_registration,
+      license_number, vehicle_type, vehicle_reg,
     } = body;
 
-    if (!full_name || !email || !password || !license_number || !vehicle_make || !vehicle_model || !vehicle_registration) {
+    if (!full_name || !email || !password || !license_number || !vehicle_type || !vehicle_reg) {
       return errorResponse("All fields are required.", undefined, 422);
     }
 
     const password_hash = await hashPassword(password);
     const result = await createDriver({
       full_name, email, phone, password_hash,
-      license_number, vehicle_make, vehicle_model, vehicle_registration,
+      license_number, vehicle_type, vehicle_reg,
     });
 
     return successResponse("Driver account created.", result, 201);
