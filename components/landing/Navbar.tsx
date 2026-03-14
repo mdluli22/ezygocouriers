@@ -12,13 +12,17 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   const navBg = scrolled
@@ -99,9 +103,12 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
           </Link>
 
           {/* Sign in dropdown */}
-          <div className="relative hidden sm:block" ref={dropdownRef}>
+          <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen((o) => !o)}
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={dropdownOpen}
               className="flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-100 px-3 py-2 rounded-xl"
               style={{
                 color: linkColor,
@@ -110,7 +117,9 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
                   : "transparent",
               }}
             >
-              Sign in
+              {/* Mobile: show compact user icon; Desktop: full text */}
+              <span className="sm:hidden text-lg leading-none">👤</span>
+              <span className="hidden sm:inline">Sign in</span>
               <svg
                 className={`w-3.5 h-3.5 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
                 fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
@@ -121,7 +130,7 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
 
             {dropdownOpen && (
               <div
-                className="absolute right-0 mt-2 w-52 rounded-2xl shadow-xl overflow-hidden z-50"
+                className="absolute right-0 mt-2 w-52 max-w-[90vw] rounded-2xl shadow-xl overflow-hidden z-50"
                 style={{
                   backgroundColor: isDark ? "#0F2020" : "#FFFFFF",
                   border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(47,79,79,0.12)",
