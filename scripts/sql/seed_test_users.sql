@@ -3,6 +3,7 @@
 -- =============================================================================
 -- Admin  → admin@ezygo.co.za   / Admin@1234
 -- Driver → driver@ezygo.co.za  / Driver@1234
+-- Customer -> customer@ezygo.co.za / Driver@1234
 --
 -- Run via:
 --   docker exec -i ezygo_db psql -U $DB_USER -d $DB_NAME < scripts/sql/seed_test_users.sql

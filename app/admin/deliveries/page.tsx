@@ -171,7 +171,7 @@ export default function AdminDeliveriesPage() {
 
               {d.driver_name && (
                 <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
-                  🚗 {d.driver_name}
+                  {d.driver_name}
                 </p>
               )}
             </div>

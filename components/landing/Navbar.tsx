@@ -55,15 +55,20 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
 
         {/* Nav links */}
         <div className="hidden md:flex items-center gap-8">
-          {["How it works", "Pricing", "About", "Contact"].map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase().replace(/\s/g, "-")}`}
+          {[
+            { label: "How it works", href: "#how-it-works" },
+            { label: "Pricing", href: "#pricing" },
+            { label: "About", href: "../legal/aboutus" },
+            { label: "Contact", href: "#contact" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
               className="text-sm font-medium transition-opacity hover:opacity-100"
-              style={{ color: linkColor, opacity: undefined }}
+              style={{ color: linkColor, opacity: 0.7 }}
             >
-              {item}
-            </a>
+              {item.label}
+            </Link>
           ))}
         </div>
 
@@ -118,7 +123,7 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
               }}
             >
               {/* Mobile: show compact user icon; Desktop: full text */}
-              <span className="sm:hidden text-lg leading-none">👤</span>
+              {/* <span className="sm:hidden text-lg leading-none">👤</span> */}
               <span className="hidden sm:inline">Sign in</span>
               <svg
                 className={`w-3.5 h-3.5 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
@@ -142,9 +147,9 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
                   </p>
                 </div>
                 {[
-                  { label: "Customer",  href: "/auth/login",   icon: "👤", desc: "Book deliveries" },
-                  { label: "Driver",    href: "/driver/login", icon: "🚚", desc: "Manage your trips" },
-                  { label: "Admin",     href: "/admin/login",  icon: "🔐", desc: "Platform management" },
+                  { label: "Customer",  href: "/auth/login",   desc: "Book deliveries" },
+                  { label: "Driver",    href: "/driver/login",  desc: "Manage your trips" },
+                  { label: "Admin",     href: "/admin/login",   desc: "Platform management" },
                 ].map((item) => (
                   <Link
                     key={item.href}
@@ -161,7 +166,7 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
                       (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
                     }}
                   >
-                    <span className="text-lg leading-none">{item.icon}</span>
+                    {/* <span className="text-lg leading-none">{item.icon}</span> */}
                     <div>
                       <p className="text-sm font-semibold leading-tight">{item.label}</p>
                       <p className="text-xs leading-tight" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(13,36,36,0.45)" }}>

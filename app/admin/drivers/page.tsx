@@ -135,9 +135,9 @@ export default function AdminDriversPage() {
               </div>
 
               <div className="text-xs space-y-1" style={{ color: "var(--color-text-secondary)" }}>
-                <p>🚗 {dr.vehicle_make} {dr.vehicle_model} · {dr.vehicle_registration}</p>
-                <p>🪪 {dr.license_number}</p>
-                {dr.phone && <p>📞 {dr.phone}</p>}
+                <p> {dr.vehicle_make} {dr.vehicle_model} · {dr.vehicle_registration}</p>
+                <p> {dr.license_number}</p>
+                {dr.phone && <p>{dr.phone}</p>}
               </div>
 
               <div className="flex gap-4 text-xs pt-1 border-t" style={{ borderColor: "var(--color-border)" }}>
