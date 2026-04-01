@@ -54,6 +54,7 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
         </div>
 
         {/* Nav links */}
+
         <div className="hidden md:flex items-center gap-8">
           {[
             { label: "How it works", href: "#how-it-works" },
@@ -123,7 +124,6 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
               }}
             >
               {/* Mobile: show compact user icon; Desktop: full text */}
-              {/* <span className="sm:hidden text-lg leading-none">👤</span> */}
               <span className="hidden sm:inline">Sign in</span>
               <svg
                 className={`w-3.5 h-3.5 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
