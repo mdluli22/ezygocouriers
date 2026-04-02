@@ -90,7 +90,7 @@ export function CTABanner() {
         <h2 className="text-5xl font-black text-white mb-6 leading-none" style={{ letterSpacing: "-0.03em" }}>
           Ready to send<br /><span style={{ color: "#F59E0B" }}>your first parcel?</span>
         </h2>
-        <p className="text-lg mb-10" style={{ color: "rgba(255,255,255,0.6)" }}>Sign up free in 30 seconds. No credit card required to get started.</p>
+        <p className="text-small mb-10" style={{ color: "rgba(255,255,255,0.6)" }}>Sign up free in 30 seconds. No credit card required to get started.</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a href="/auth/signup" className="px-8 py-4 rounded-xl font-black text-lg transition-all hover:scale-105 hover:shadow-xl" style={{ backgroundColor: "#F59E0B", color: "#1A2F2F" }}>
             Create free account →
@@ -104,6 +104,7 @@ export function CTABanner() {
   );
 }
 
+// Footer for the landing page
 export function Footer() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -128,15 +129,29 @@ export function Footer() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-sm">
             {[
-              { heading: "Product", links: ["How it works", "Pricing", "Track a parcel"] },
-              { heading: "Company", links: ["About", "Contact", "Careers"] },
-              { heading: "Legal",   links: ["Terms of Service", "Privacy Policy", "Cookie Policy"] },
+              { heading: "Product", links: [
+                { label: "How it works", href: "#how-it-works" },
+                { label: "Pricing", href: "#pricing" },
+                { label: "Sign up", href: "/auth/signup" }, 
+              ]},
+              
+              { heading: "Company", links: [
+                { label: "About us", href: "../legal/aboutus" },
+                { label: "Careers", href: "../legal/careers" },
+                { label: "Contact", href: "../legal/contact" },
+                ]},
+
+              { heading: "Legal",   links: [
+                { label: "Terms of Service", href: "../legal/terms-conditions" },
+                { label: "Privacy Policy", href: "../legal/privacy-policy" },
+                { label: "Cookie Policy", href: "../legal/cookies" },
+              ]},
             ].map((col) => (
               <div key={col.heading}>
                 <p className="font-bold mb-3 text-xs uppercase tracking-widest" style={{ color: "#F59E0B" }}>{col.heading}</p>
                 <ul className="space-y-2">
                   {col.links.map((l) => (
-                    <li key={l}><a href="#" className="transition-opacity hover:opacity-100" style={{ color: linkText }}>{l}</a></li>
+                    <li key={l.label}><a href={l.href} className="transition-opacity hover:opacity-100" style={{ color: linkText }}>{l.label}</a></li>
                   ))}
                 </ul>
               </div>

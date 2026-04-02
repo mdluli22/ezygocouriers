@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import ScrollToTop from "@/components/scrollToTop";
 
 export const metadata: Metadata = {
   title: "About Us | EzyGo Couriers",
@@ -10,7 +12,7 @@ const pillars = [
   {
     num: "01",
     title: "Speed",
-    body: "Delivering when you need it — urgent same-day or scheduled. We respect your time as much as you do.",
+    body: "Delivering when you need it, urgent same-day. We respect your time as much as you do.",
     icon: (
       <svg viewBox="0 0 18 18" fill="none" className="w-[18px] h-[18px]">
         <path
@@ -23,7 +25,7 @@ const pillars = [
   {
     num: "02",
     title: "Reliability",
-    body: "Every parcel tracked live, every status update clear, every hand-off accountable — no guesswork, no surprises.",
+    body: "Every parcel tracked live, every status update clear, every hand-off accountable and no guesswork, no surprises.",
     icon: (
       <svg viewBox="0 0 18 18" fill="none" className="w-[18px] h-[18px]">
         <circle cx="9" cy="9" r="6.5" stroke="#E85A1B" strokeWidth="1.5" />
@@ -40,7 +42,7 @@ const pillars = [
   {
     num: "03",
     title: "Accessibility",
-    body: "Starting at just R100 — fair pricing for individuals and growing businesses throughout South Africa.",
+    body: "Starting at just R100, fair pricing for individuals and growing businesses throughout South Africa.",
     icon: (
       <svg viewBox="0 0 18 18" fill="none" className="w-[18px] h-[18px]">
         <rect x="2" y="5" width="14" height="10" rx="2" stroke="#E85A1B" strokeWidth="1.5" />
@@ -85,6 +87,29 @@ export default function AboutPage() {
       style={{ fontFamily: "'DM Sans', sans-serif" }}
       className="bg-[#F5F3EF] text-[#1A1714] overflow-x-hidden"
     >
+      {/* ── BACK HOME BUTTON ── */}
+      <div className="bg-[#1A1714] px-10 pt-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-[12px] font-medium text-white/50 hover:text-white transition-colors group"
+        >
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5"
+          >
+            <path
+              d="M10 3L5 8L10 13"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Back to Home
+        </Link>
+      </div>
+
       {/* ── HERO ── */}
       <section className="bg-[#1A1714] px-10 pt-[72px] pb-20 relative overflow-hidden">
         {/* decorative rings */}
@@ -295,6 +320,7 @@ export default function AboutPage() {
           </a>
         </div>
       </section>
+      <ScrollToTop />
     </main>
   );
 }
