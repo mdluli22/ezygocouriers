@@ -76,9 +76,11 @@ export default function HeroSection() {
         Its own stampEdgeFade() call fades all four edges into heroBg,
         so it looks like one continuous painted background.
       */}
-      <div className="absolute inset-0 pointer-events-none">
+      
+      {/* Insert The City Canvas onces it works */}
+      {/* <div className="absolute inset-0 pointer-events-none">
         <CityCanvas fadeColor={heroBg} theme={theme} />
-      </div>
+      </div> */}
 
       {/*
         ── Top & bottom vignette ─────────────────────────────────────

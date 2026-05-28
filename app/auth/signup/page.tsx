@@ -304,9 +304,9 @@ export default function SignupPage() {
         {/* Terms notice */}
         <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
           By creating an account you agree to our{" "}
-          <Link href="/terms" className="underline hover:opacity-80">Terms of Service</Link>{" "}
+          <Link href="/legal/terms-conditions" className="underline hover:opacity-80">Terms of Service</Link>{" "}
           and{" "}
-          <Link href="/privacy" className="underline hover:opacity-80">Privacy Policy</Link>.
+          <Link href="/legal/privacy-policy" className="underline hover:opacity-80">Privacy Policy</Link>.
         </p>
 
         {/* Submit */}
