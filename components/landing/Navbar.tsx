@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
+import Image from "next/image";
 
 export default function Navbar({ scrolled }: { scrolled: boolean }) {
   const { theme, toggle } = useTheme();
@@ -47,10 +48,15 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
 
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-lg" style={{ backgroundColor: "#F59E0B", color: "#1A2F2F" }}>
-            E
-          </div>
-          <span className="font-black text-xl tracking-tight" style={{ color: logoText }}>EzyGo</span>
+          <Image
+            src="/EzyGoIcon.png"
+            alt="EzyGo Logo"
+            width={190}
+            height={90}
+            priority
+            className="object-contain"
+          />
+          {/* <span className="font-black text-xl tracking-tight" style={{ color: logoText }}>EzyGo</span> */}
         </div>
 
         {/* Nav links */}
@@ -60,7 +66,7 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
             { label: "How it works", href: "#how-it-works" },
             { label: "Pricing", href: "#pricing" },
             { label: "About", href: "../legal/aboutus" },
-            { label: "Contact", href: "#contact" },
+            // { label: "Contact", href: "#contact" },
           ].map((item) => (
             <Link
               key={item.href}

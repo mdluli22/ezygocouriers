@@ -11,16 +11,16 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "EzyGo — Fast & Reliable Courier Delivery",
+    default: "EzyGo | Fast & Reliable Courier Delivery",
     template: "%s | EzyGo",
   },
   description:
-    "EzyGo is a fast, reliable, and affordable courier and parcel delivery service across South Africa.",
-  keywords: ["courier", "delivery", "parcel", "South Africa", "logistics"],
+    "EzyGo is a fast, reliable, and affordable courier and parcel delivery service across Cape Town.",
+  keywords: ["courier", "delivery", "parcel", "Cape Town", "logistics"],
   authors: [{ name: "EzyGo" }],
   openGraph: {
     title: "EzyGo — Fast & Reliable Courier Delivery",
-    description: "Send parcels across South Africa with ease.",
+    description: "Send parcels across Cape Town with ease.",
     type: "website",
   },
 };
