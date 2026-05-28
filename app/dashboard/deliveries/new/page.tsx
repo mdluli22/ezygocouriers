@@ -399,7 +399,7 @@ export default function NewDeliveryPage() {
 
             {/* What are you sending */}
             <div className="rounded-2xl p-4 space-y-4" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>📦 What are you sending?</h3>
+              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>What are you sending?</h3>
               <textarea
                 rows={2}
                 placeholder="e.g. Documents, clothing, electronics…"
@@ -414,9 +414,9 @@ export default function NewDeliveryPage() {
                 <p className="text-[11px] font-bold tracking-widest mb-2" style={{ color: "var(--color-text-muted)" }}>PACKAGE SIZE</p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { value: "small", label: "Small", sub: "≤ 5 kg", icon: "📦" },
-                    { value: "medium", label: "Medium", sub: "≤ 15 kg", icon: "🗂️" },
-                    { value: "large", label: "Large", sub: "≤ 30 kg", icon: "🏗️" },
+                    { value: "small", label: "Small", sub: "≤ 5 kg"},
+                    { value: "medium", label: "Medium", sub: "≤ 15 kg"},
+                    { value: "large", label: "Large", sub: "≤ 30 kg"},
                   ].map((opt) => (
                     <button key={opt.value} type="button" onClick={() => setPackageType(opt.value)}
                       className="flex flex-col items-center gap-0.5 p-3 rounded-xl text-xs font-semibold transition-all"
@@ -426,7 +426,7 @@ export default function NewDeliveryPage() {
                           : { backgroundColor: "var(--color-bg)", color: "var(--color-text-primary)", border: "2px solid var(--color-border)" }
                       }
                     >
-                      <span className="text-xl">{opt.icon}</span>
+                      {/* <span className="text-xl">{opt.icon}</span> */}
                       <span>{opt.label}</span>
                       <span style={{ opacity: 0.6, fontWeight: 400 }}>{opt.sub}</span>
                     </button>
@@ -458,7 +458,7 @@ export default function NewDeliveryPage() {
 
             {/* Sender */}
             <div className="rounded-2xl p-4 space-y-3" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>👤 Your contact (sender)</h3>
+              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>Your contact (sender)</h3>
               <input type="text" placeholder="Your name" value={pickupContactName} onChange={(e) => setPickupContactName(e.target.value)} className={`input ${fieldErrors.pickup_contact_name ? "input-error" : ""}`} />
               {fieldErrors.pickup_contact_name && <p className="error-text">{fieldErrors.pickup_contact_name}</p>}
               <input type="tel" placeholder="Your phone number" value={pickupPhone} onChange={(e) => setPickupPhone(e.target.value)} className={`input ${fieldErrors.pickup_contact_phone ? "input-error" : ""}`} />
@@ -468,7 +468,7 @@ export default function NewDeliveryPage() {
 
             {/* Recipient */}
             <div className="rounded-2xl p-4 space-y-3" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>📬 Recipient details</h3>
+              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>Recipient details</h3>
               <input type="text" placeholder="Recipient name" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} className={`input ${fieldErrors.recipient_name ? "input-error" : ""}`} />
               {fieldErrors.recipient_name && <p className="error-text">{fieldErrors.recipient_name}</p>}
               <input type="tel" placeholder="Recipient phone number" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} className={`input ${fieldErrors.recipient_phone ? "input-error" : ""}`} />
@@ -546,8 +546,8 @@ export default function NewDeliveryPage() {
                   <span className="text-sm font-semibold text-right" style={{ color: "var(--color-text-primary)" }}>{parcelDescription}</span>
                 </div>
                 <div className="flex gap-3 flex-wrap">
-                  {fragile && <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "rgb(245 158 11 / 0.12)", color: "var(--color-warning)" }}>⚠️ Fragile</span>}
-                  {requirePin && <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "rgb(59 130 246 / 0.12)", color: "var(--color-info)" }}>🔐 PIN required</span>}
+                  {fragile && <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "rgb(245 158 11 / 0.12)", color: "var(--color-warning)" }}>Fragile</span>}
+                  {requirePin && <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "rgb(59 130 246 / 0.12)", color: "var(--color-info)" }}>PIN required</span>}
                 </div>
               </div>
               <div className="px-4 py-2.5 flex justify-end" style={{ borderTop: "1px solid var(--color-border)", backgroundColor: "var(--color-bg)" }}>

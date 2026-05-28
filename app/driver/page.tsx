@@ -27,10 +27,10 @@ const STATUS_STEP: Record<DeliveryStatus, number> = {
 
 function TripProgress({ status }: { status: DeliveryStatus }) {
   const steps = [
-    { label: "Assigned",   icon: "📋" },
-    { label: "Picked Up",  icon: "📦" },
-    { label: "In Transit", icon: "🚚" },
-    { label: "Delivered",  icon: "✅" },
+    { label: "Assigned" },
+    { label: "Picked Up" },
+    { label: "In Transit" },
+    { label: "Delivered" },
   ];
   const current = STATUS_STEP[status] ?? 0;
 
@@ -53,7 +53,7 @@ function TripProgress({ status }: { status: DeliveryStatus }) {
                   transform:       active         ? "scale(1.15)" : "scale(1)",
                 }}
               >
-                {done ? "✓" : step.icon}
+                {done ? "✓" : "?"}
               </div>
               <span className="text-[10px] font-semibold whitespace-nowrap"
                 style={{ color: done || active ? "#F59E0B" : "rgba(255,255,255,0.35)" }}>
@@ -230,7 +230,7 @@ export default function DriverDashboardPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse"
           style={{ backgroundColor: "#1A2F2F" }}>
-          <span className="text-2xl">🚚</span>
+          {/* <span className="text-2xl">🚚</span> */}
         </div>
         <p className="text-sm font-semibold" style={{ color: "var(--color-text-muted)" }}>Loading your trips…</p>
       </div>

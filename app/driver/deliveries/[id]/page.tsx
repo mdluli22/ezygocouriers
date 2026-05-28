@@ -102,7 +102,7 @@ export default function DriverDeliveryDetailPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse"
           style={{ backgroundColor: "#1A2F2F" }}>
-          <span className="text-2xl">🚚</span>
+          {/* <span className="text-2xl">🚚</span> */}
         </div>
         <p className="text-sm font-semibold" style={{ color: "var(--color-text-muted)" }}>Loading trip…</p>
       </div>
@@ -112,7 +112,7 @@ export default function DriverDeliveryDetailPage() {
   if (error || !delivery) {
     return (
       <div className="max-w-lg mx-auto text-center py-20 space-y-4">
-        <span className="text-5xl">😕</span>
+        <span className="text-5xl">❗️</span>
         <p className="font-bold" style={{ color: "var(--color-primary)" }}>Trip not found</p>
         <Link href="/driver" className="btn-primary inline-flex">Back to dashboard</Link>
       </div>
@@ -231,7 +231,7 @@ export default function DriverDeliveryDetailPage() {
                 disabled={updating !== null}
                 className="w-full py-2.5 rounded-2xl font-semibold text-sm transition-all disabled:opacity-60"
                 style={{ backgroundColor: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>
-                {updating === "cancelled" ? "Cancelling…" : "❌ Cancel this trip"}
+                {updating === "cancelled" ? "Cancelling…" : "Cancel this trip"}
               </button>
             )}
           </div>
@@ -245,7 +245,7 @@ export default function DriverDeliveryDetailPage() {
                 backgroundColor: delivery.status === "delivered" ? "rgba(16,185,129,0.12)" : "rgba(100,116,139,0.12)",
                 color:           delivery.status === "delivered" ? "#34D399" : "rgba(255,255,255,0.5)",
               }}>
-              {delivery.status === "delivered" ? "✅ Delivery completed successfully!" : `This trip is ${STATUS_LABELS[delivery.status].toLowerCase()}.`}
+              {delivery.status === "delivered" ? "Delivery completed successfully!" : `This trip is ${STATUS_LABELS[delivery.status].toLowerCase()}.`}
             </div>
           </div>
         )}
@@ -255,7 +255,7 @@ export default function DriverDeliveryDetailPage() {
       <section className="rounded-2xl p-5 space-y-4"
         style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-2">
-          <span className="text-base">📍</span>
+          {/* <span className="text-base">📍</span> */}
           <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Pickup</h3>
         </div>
         <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
@@ -279,7 +279,7 @@ export default function DriverDeliveryDetailPage() {
         </div>
         {delivery.pickup_notes && (
           <p className="text-xs p-3 rounded-xl" style={{ backgroundColor: "var(--color-surface-raised)", color: "var(--color-text-secondary)" }}>
-            📝 {delivery.pickup_notes}
+            {delivery.pickup_notes}
           </p>
         )}
       </section>
@@ -288,7 +288,7 @@ export default function DriverDeliveryDetailPage() {
       <section className="rounded-2xl p-5 space-y-4"
         style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-2">
-          <span className="text-base">🏁</span>
+          {/* <span className="text-base">🏁</span> */}
           <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Drop-off</h3>
         </div>
         <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
@@ -310,7 +310,7 @@ export default function DriverDeliveryDetailPage() {
         </div>
         {delivery.dropoff_notes && (
           <p className="text-xs p-3 rounded-xl" style={{ backgroundColor: "var(--color-surface-raised)", color: "var(--color-text-secondary)" }}>
-            📝 {delivery.dropoff_notes}
+            {delivery.dropoff_notes}
           </p>
         )}
       </section>
@@ -319,13 +319,13 @@ export default function DriverDeliveryDetailPage() {
       <section className="rounded-2xl p-5 space-y-3"
         style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-2">
-          <span className="text-base">📦</span>
+          {/* <span className="text-base">📦</span> */}
           <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Parcel</h3>
         </div>
         <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>{delivery.parcel_description}</p>
         {delivery.special_instructions && (
           <p className="text-xs p-3 rounded-xl" style={{ backgroundColor: "rgba(245,158,11,0.08)", color: "var(--color-warning)" }}>
-            ⚠️ {delivery.special_instructions}
+            {delivery.special_instructions}
           </p>
         )}
       </section>
@@ -334,7 +334,7 @@ export default function DriverDeliveryDetailPage() {
       <section className="rounded-2xl p-5 space-y-3"
         style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-2">
-          <span className="text-base">👤</span>
+          {/* <span className="text-base">👤</span> */}
           <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Customer</h3>
         </div>
         <div className="flex items-center justify-between">
@@ -343,7 +343,7 @@ export default function DriverDeliveryDetailPage() {
             <a href={`tel:${delivery.customer_phone}`}
               className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
               style={{ backgroundColor: "rgba(59,130,246,0.1)", color: "var(--color-info)" }}>
-              📞 {delivery.customer_phone}
+                {delivery.customer_phone}
             </a>
           )}
         </div>
