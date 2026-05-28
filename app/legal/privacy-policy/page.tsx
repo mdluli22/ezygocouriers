@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import ScrollToTop from "@/components/scrollToTop";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | EzyGo Couriers",
@@ -243,6 +245,29 @@ export default function PrivacyPage() {
       style={{ fontFamily: "'DM Sans', sans-serif" }}
       className="bg-[#F5F3EF] text-[#1A1714] overflow-x-hidden"
     >
+      {/* ── BACK HOME BUTTON ── */}
+      <div className="bg-[#1A1714] px-10 pt-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-[12px] font-medium text-white/50 hover:text-white transition-colors group"
+        >
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5"
+          >
+            <path
+              d="M10 3L5 8L10 13"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Back to Home
+        </Link>
+      </div>
+
       {/* ── HERO ── */}
       <section className="bg-[#1A1714] px-10 pt-16 pb-20 relative overflow-hidden">
         <span className="absolute right-[-60px] top-[-60px] w-[360px] h-[360px] rounded-full border border-[rgba(232,90,27,0.18)] pointer-events-none" />
@@ -336,6 +361,7 @@ export default function PrivacyPage() {
           </div>
         </article>
       </div>
+      <ScrollToTop />
     </main>
   );
 }
