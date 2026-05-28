@@ -113,7 +113,7 @@ export default function HeroSection() {
             }}
           >
             <span className="w-2 h-2 rounded-full bg-current" />
-            Now delivering across South Africa · Flat R99
+            Now delivering across Cape Town · Flat R99
           </div>
 
           {/* Headline */}

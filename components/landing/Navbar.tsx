@@ -49,14 +49,14 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
         {/* Logo */}
         <div className="flex items-center gap-3">
           <Image
-            src="/Logo.png"
+            src="/EzyGoIcon.png"
             alt="EzyGo Logo"
-            width={32}
-            height={32}
+            width={190}
+            height={90}
             priority
             className="object-contain"
           />
-          <span className="font-black text-xl tracking-tight" style={{ color: logoText }}>EzyGo</span>
+          {/* <span className="font-black text-xl tracking-tight" style={{ color: logoText }}>EzyGo</span> */}
         </div>
 
         {/* Nav links */}

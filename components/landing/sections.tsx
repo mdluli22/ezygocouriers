@@ -124,7 +124,7 @@ export function Footer() {
               <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm" style={{ backgroundColor: "#F59E0B", color: "#1A2F2F" }}>E</div>
               <span className="font-black text-xl text-white tracking-tight">EzyGo</span>
             </div>
-            <p className="text-sm" style={{ color: bodyText }}>Fast, reliable courier delivery across South Africa. One flat fee — no surprises.</p>
+            <p className="text-sm" style={{ color: bodyText }}>Fast, reliable courier delivery across Cape Town. One flat fee — no surprises.</p>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-sm">
