@@ -76,9 +76,11 @@ export default function HeroSection() {
         Its own stampEdgeFade() call fades all four edges into heroBg,
         so it looks like one continuous painted background.
       */}
-      <div className="absolute inset-0 pointer-events-none">
+      
+      {/* Insert The City Canvas onces it works */}
+      {/* <div className="absolute inset-0 pointer-events-none">
         <CityCanvas fadeColor={heroBg} theme={theme} />
-      </div>
+      </div> */}
 
       {/*
         ── Top & bottom vignette ─────────────────────────────────────
@@ -103,7 +105,7 @@ export default function HeroSection() {
         <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-start justify-center lg:pr-10 max-w-xl mx-auto lg:mx-0">
 
           {/* Badge */}
-          <div
+          {/* <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-8"
             style={{
               backgroundColor: badgeBg,
@@ -114,7 +116,7 @@ export default function HeroSection() {
           >
             <span className="w-2 h-2 rounded-full bg-current" />
             Now delivering across Cape Town · Flat R99
-          </div>
+          </div> */}
 
           {/* Headline */}
           <h1

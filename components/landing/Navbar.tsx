@@ -155,7 +155,7 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
                 {[
                   { label: "Customer",  href: "/auth/login",   desc: "Book deliveries" },
                   { label: "Driver",    href: "/driver/login",  desc: "Manage your trips" },
-                  { label: "Admin",     href: "/admin/login",   desc: "Platform management" },
+                  // { label: "Admin",     href: "/admin/login",   desc: "Platform management" },
                 ].map((item) => (
                   <Link
                     key={item.href}
