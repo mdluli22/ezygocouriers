@@ -47,8 +47,8 @@ const termSections: TermSection[] = [
         </p>
         <p>
           <span className="font-medium text-[#1A1714]">Email:</span>{" "}
-          <a href="mailto:support@ezygo.co.za" className="text-[#E85A1B] underline">
-            support@ezygo.co.za
+          <a href="mailto:admin@ezygocouriers.co.za" className="text-[#E85A1B] underline">
+            admin@ezygocouriers.co.za
           </a>
         </p>
         <p>

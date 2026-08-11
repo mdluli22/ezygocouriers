@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth/jwt";
+import { getSessionCookie } from "better-auth/cookies";
+import { auth } from "@/lib/auth/auth";
 
 // ─── Route Definitions ────────────────────────────────────────────────────────
 
@@ -15,7 +16,13 @@ const ADMIN_ROUTES = ["/admin"];
 const ADMIN_PUBLIC = ["/admin/login"];
 
 // Routes that logged-in users should not be able to revisit
-const AUTH_ROUTES = ["/auth/login", "/auth/signup", "/driver/login", "/admin/login"];
+const AUTH_ROUTES = [
+  "/auth/login",
+  "/auth/signup",
+  "/auth/verify-email",
+  "/driver/login",
+  "/admin/login",
+];
 
 // ─── Dashboard redirect per role ─────────────────────────────────────────────
 const ROLE_HOME: Record<string, string> = {
@@ -30,10 +37,6 @@ function matchesRoute(pathname: string, routes: string[]): boolean {
   return routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
-function getSessionToken(req: NextRequest): string | undefined {
-  return req.cookies.get("session_token")?.value;
-}
-
 /** Pass the request through, injecting x-pathname so server layouts can read it. */
 function nextWithPathname(req: NextRequest) {
   const requestHeaders = new Headers(req.headers);
@@ -43,15 +46,32 @@ function nextWithPathname(req: NextRequest) {
 
 // ─── Proxy ────────────────────────────────────────────────────────────────────
 
-export function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const token = getSessionToken(req);
-  const session = token ? verifyToken(token) : null;
+  const isAuthRoute = matchesRoute(pathname, AUTH_ROUTES);
+  const isProtectedRoute =
+    matchesRoute(pathname, PROTECTED_ROUTES) ||
+    (matchesRoute(pathname, ADMIN_ROUTES) && !ADMIN_PUBLIC.includes(pathname)) ||
+    (matchesRoute(pathname, DRIVER_ROUTES) && !DRIVER_PUBLIC.includes(pathname));
+
+  // Public routes do not need a database session lookup.
+  if (!isAuthRoute && !isProtectedRoute) {
+    return nextWithPathname(req);
+  }
+
+  const hasSessionCookie = getSessionCookie(req, { cookiePrefix: "ezygo" });
+  const session = hasSessionCookie
+    ? await auth.api.getSession({ headers: req.headers })
+    : null;
+  const role =
+    session?.user.isActive === true && session.user.emailVerified === true
+      ? session.user.role
+      : null;
 
   // ── 1. Logged-in users trying to access auth pages ──────────────────────────
-  if (matchesRoute(pathname, AUTH_ROUTES)) {
-    if (session) {
-      const home = ROLE_HOME[session.role] ?? "/dashboard";
+  if (isAuthRoute) {
+    if (role) {
+      const home = ROLE_HOME[role] ?? "/dashboard";
       return NextResponse.redirect(new URL(home, req.url));
     }
     return nextWithPathname(req);  // still inject x-pathname so layouts can detect the login page
@@ -59,13 +79,13 @@ export function proxy(req: NextRequest) {
 
   // ── 2. Admin-only routes ─────────────────────────────────────────────────────
   if (matchesRoute(pathname, ADMIN_ROUTES) && !ADMIN_PUBLIC.includes(pathname)) {
-    if (!session) {
+    if (!role) {
       const loginUrl = new URL("/admin/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    if (session.role !== "admin") {
-      const home = ROLE_HOME[session.role] ?? "/dashboard";
+    if (role !== "admin") {
+      const home = ROLE_HOME[role] ?? "/dashboard";
       return NextResponse.redirect(new URL(home, req.url));
     }
     return nextWithPathname(req);
@@ -73,13 +93,13 @@ export function proxy(req: NextRequest) {
 
   // ── 3. Driver-only routes ────────────────────────────────────────────────────
   if (matchesRoute(pathname, DRIVER_ROUTES) && !DRIVER_PUBLIC.includes(pathname)) {
-    if (!session) {
+    if (!role) {
       const loginUrl = new URL("/driver/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    if (session.role !== "driver") {
-      const home = ROLE_HOME[session.role] ?? "/dashboard";
+    if (role !== "driver") {
+      const home = ROLE_HOME[role] ?? "/dashboard";
       return NextResponse.redirect(new URL(home, req.url));
     }
     return nextWithPathname(req);
@@ -87,7 +107,7 @@ export function proxy(req: NextRequest) {
 
   // ── 4. General protected routes (any authenticated role) ────────────────────
   if (matchesRoute(pathname, PROTECTED_ROUTES)) {
-    if (!session) {
+    if (!role) {
       const loginUrl = new URL("/auth/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);

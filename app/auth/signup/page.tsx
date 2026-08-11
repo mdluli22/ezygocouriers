@@ -108,7 +108,9 @@ export default function SignupPage() {
         return;
       }
 
-      router.push("/dashboard/deliveries/new");
+      router.push(
+        `/auth/verify-email?email=${encodeURIComponent(data.data?.email || form.email)}`
+      );
     } catch {
       setServerError("Something went wrong. Please check your connection.");
     } finally {

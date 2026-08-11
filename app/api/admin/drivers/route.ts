@@ -1,6 +1,8 @@
 import { getSession } from "@/lib/auth/session";
 import { getAdminDrivers, createDriver, toggleDriverStatus } from "@/lib/services/admin";
 import { hashPassword } from "@/lib/auth/password";
+import { auth } from "@/lib/auth/auth";
+import { sendAuthOtp } from "@/lib/email/smtp";
 import {
   successResponse,
   errorResponse,
@@ -46,7 +48,24 @@ export async function POST(req: NextRequest) {
       license_number, vehicle_type, vehicle_reg,
     });
 
-    return successResponse("Driver account created.", result, 201);
+    let verificationEmailSent = true;
+    try {
+      const otp = await auth.api.createVerificationOTP({
+        body: { email, type: "email-verification" },
+      });
+      await sendAuthOtp({ to: email, otp, type: "email-verification" });
+    } catch (emailError) {
+      verificationEmailSent = false;
+      console.error("[Driver verification email]", emailError);
+    }
+
+    return successResponse(
+      verificationEmailSent
+        ? "Driver account created. A verification code was emailed to the driver."
+        : "Driver account created, but the verification email could not be sent.",
+      { ...result, verification_email_sent: verificationEmailSent },
+      201
+    );
   } catch (error: unknown) {
     console.error("[POST /api/admin/drivers]", error);
     if (error instanceof Error && error.message.includes("unique")) {

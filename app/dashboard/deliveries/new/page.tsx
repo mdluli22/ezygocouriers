@@ -54,11 +54,21 @@ function AuthModal({ onSuccess, onClose }: { onSuccess: (user: User) => void; on
     e.preventDefault();
     setLoading(true); setError("");
     try {
-      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ full_name: fullName, email, password }) });
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: fullName,
+          email,
+          password,
+          confirm_password: password,
+        }),
+      });
       const data = await res.json();
       if (!res.ok) { setError(data.message || "Signup failed."); return; }
-      const me = await (await fetch("/api/auth/me")).json();
-      if (me.success) onSuccess({ id: me.data.id, full_name: me.data.full_name, email: me.data.email });
+      window.location.assign(
+        `/auth/verify-email?email=${encodeURIComponent(data.data?.email || email)}`
+      );
     } catch { setError("Something went wrong."); }
     finally { setLoading(false); }
   }
@@ -227,7 +237,8 @@ export default function NewDeliveryPage() {
 
   function goToStep3() {
     const errs: Record<string, string> = {};
-    if (!parcelDescription.trim()) errs["parcel_description"] = "Please describe what you're sending";
+    if (!parcelDescription.trim()) 
+      errs["parcel_description"] = "Please select what you're sending";
     if (Object.keys(errs).length) { setFieldErrors(errs); return; }
     setFieldErrors({});
     if (!user) { setShowAuth(true); return; }
@@ -400,13 +411,33 @@ export default function NewDeliveryPage() {
             {/* What are you sending */}
             <div className="rounded-2xl p-4 space-y-4" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
               <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>What are you sending?</h3>
-              <textarea
-                rows={2}
-                placeholder="e.g. Documents, clothing, electronics…"
+              <select
                 value={parcelDescription}
-                onChange={(e) => setParcelDescription(e.target.value)}
-                className={`input resize-none ${fieldErrors.parcel_description ? "input-error" : ""}`}
-              />
+                onChange={(e) => {
+                  setParcelDescription(e.target.value);
+
+                  if (e.target.value) {
+                    setFieldErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.parcel_description;
+                      return next;
+                    });
+                  }
+                }}
+                className={`input ${fieldErrors.parcel_description ? "input-error" : ""}`}
+              >
+                <option value="">Select what you're sending</option>
+                <option value="Documents">Documents</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Food">Food</option>
+                <option value="Groceries">Groceries</option>
+                <option value="Flowers">Flowers</option>
+                <option value="Gifts">Gifts</option>
+                <option value="Medical items">Medical items</option>
+                <option value="Business supplies">Business supplies</option>
+                <option value="Other">Other</option>
+              </select>
               {fieldErrors.parcel_description && <p className="error-text">{fieldErrors.parcel_description}</p>}
 
               {/* Package size */}

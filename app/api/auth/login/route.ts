@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
+import { APIError } from "better-auth/api";
 import { loginSchema } from "@/lib/validations/auth";
-import { query } from "@/lib/db/server";
-import { comparePassword } from "@/lib/auth/password";
-import { setSessionCookie } from "@/lib/auth/session";
+import { auth } from "@/lib/auth/auth";
+import { applyAuthCookies } from "@/lib/auth/response";
 import {
   successResponse,
   errorResponse,
@@ -25,66 +25,40 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = result.data;
 
-    // 2. Find user by email
-    const result2 = await query<{
-      id: number;
-      full_name: string;
-      email: string;
-      role: string;
-      password_hash: string | null;
-      is_active: boolean;
-      auth_provider: string;
-    }>(
-      `SELECT id, full_name, email, role, password_hash, is_active, auth_provider
-       FROM users WHERE email = $1 LIMIT 1`,
-      [email]
-    );
-
-    const user = result2.rows[0];
-
-    // 3. Generic invalid credentials message (never reveal if email exists)
-    if (!user || !user.password_hash) {
-      return errorResponse("Invalid email or password.", undefined, 401);
-    }
-
-    // 4. Block Google-only accounts from password login
-    if (user.auth_provider === "google" && !user.password_hash) {
-      return errorResponse(
-        "This account uses Google sign-in. Please continue with Google.",
-        undefined,
-        401
-      );
-    }
-
-    // 5. Verify password
-    const passwordMatch = await comparePassword(password, user.password_hash);
-    if (!passwordMatch) {
-      return errorResponse("Invalid email or password.", undefined, 401);
-    }
-
-    // 6. Check account is active
-    if (!user.is_active) {
-      return errorResponse(
-        "Your account has been suspended. Please contact support.",
-        undefined,
-        403
-      );
-    }
-
-    // 7. Set session cookie
-    await setSessionCookie({
-      userId: user.id,
-      email: user.email,
-      role: user.role as "customer" | "driver" | "admin",
+    const signIn = await auth.api.signInEmail({
+      body: { email, password },
+      headers: req.headers,
+      returnHeaders: true,
     });
 
-    return successResponse("Welcome back!", {
-      id: user.id,
-      full_name: user.full_name,
-      email: user.email,
-      role: user.role,
+    const response = successResponse("Welcome back!", {
+      id: Number(signIn.response.user.id),
+      full_name: signIn.response.user.name,
+      email: signIn.response.user.email,
+      role: signIn.response.user.role,
     });
+
+    return applyAuthCookies(response, signIn.headers);
   } catch (error) {
+    if (error instanceof APIError) {
+      const errorCode =
+        typeof error.body === "object" && error.body && "code" in error.body
+          ? String(error.body.code)
+          : "";
+      if (errorCode === "EMAIL_NOT_VERIFIED") {
+        return errorResponse(
+          "Please verify your email address before signing in.",
+          { email: "Email verification is required" },
+          403
+        );
+      }
+
+      const status = error.statusCode === 403 ? 403 : 401;
+      const message = status === 403
+        ? "Your account cannot sign in. Please contact support."
+        : "Invalid email or password.";
+      return errorResponse(message, undefined, status);
+    }
     console.error("[POST /api/auth/login]", error);
     return serverErrorResponse("Something went wrong. Please try again.");
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { authClient } from "@/lib/auth/client";
 
 interface GoogleAuthButtonProps {
   label?: string;
@@ -11,9 +12,14 @@ export default function GoogleAuthButton({
 }: GoogleAuthButtonProps) {
   const [loading, setLoading] = useState(false);
 
-  function handleClick() {
+  async function handleClick() {
     setLoading(true);
-    window.location.href = "/api/auth/google";
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/dashboard/deliveries/new",
+      errorCallbackURL: "/auth/login?error=google_failed",
+    });
+    setLoading(false);
   }
 
   return (

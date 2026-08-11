@@ -51,6 +51,10 @@ function DriverLoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 403 && data.errors?.email) {
+          router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
+          return;
+        }
         if (data.errors) {
           setFieldErrors(data.errors);
         } else {

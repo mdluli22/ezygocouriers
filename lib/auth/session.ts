@@ -1,42 +1,37 @@
-import { cookies } from "next/headers";
-import { signToken, verifyToken, JWTPayload } from "./jwt";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth/auth";
 
-const COOKIE_NAME = "session_token";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days in seconds
+export type UserRole = "customer" | "driver" | "admin";
+
+export interface AppSession {
+  userId: number;
+  email: string;
+  role: UserRole;
+}
 
 /**
- * Set the session cookie after successful login or signup.
+ * Resolve the authoritative Better Auth session from the database.
+ * The compact AppSession shape keeps the rest of the business logic stable.
  */
-export async function setSessionCookie(payload: JWTPayload): Promise<void> {
-  const token = signToken(payload);
-  const cookieStore = await cookies();
-
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: COOKIE_MAX_AGE,
-    path: "/",
+export async function getSession(): Promise<AppSession | null> {
+  const session = await auth.api.getSession({
+    headers: await headers(),
   });
-}
 
-/**
- * Read and verify the current session from cookies.
- * Returns the decoded payload or null if missing/invalid.
- */
-export async function getSession(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+  if (
+    !session?.user ||
+    session.user.isActive !== true ||
+    session.user.emailVerified !== true
+  ) {
+    return null;
+  }
 
-  if (!token) return null;
+  const userId = Number(session.user.id);
+  if (!Number.isInteger(userId)) return null;
 
-  return verifyToken(token);
-}
-
-/**
- * Clear the session cookie on logout.
- */
-export async function clearSessionCookie(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  return {
+    userId,
+    email: session.user.email,
+    role: session.user.role,
+  };
 }

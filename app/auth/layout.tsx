@@ -78,7 +78,7 @@ export default function AuthLayout({
               { value: "R99", label: "Flat delivery fee" },
               { value: "Real-time", label: "Live tracking" },
               { value: "3 roles", label: "Customer · Driver · Admin" },
-              { value: "Secure", label: "JWT + Google auth" },
+              { value: "Secure", label: "Better Auth + Google" },
             ].map((stat) => (
               <div
                 key={stat.label}

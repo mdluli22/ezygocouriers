@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EzyGo Couriers
 
-## Getting Started
+EzyGo is a Next.js courier platform backed by PostgreSQL. Authentication is
+provided by [Better Auth](https://www.better-auth.com/) with email/password,
+Google OAuth, database-backed sessions, and application roles for customers,
+drivers, and administrators.
 
-First, run the development server:
+## Getting started
+
+Copy the environment template and configure the required values:
+
+```bash
+cp .env.example .env
+```
+
+`BETTER_AUTH_SECRET` must contain at least 32 high-entropy characters. Generate
+one with:
+
+```bash
+openssl rand -base64 32
+```
+
+For Google sign-in, configure this OAuth callback in Google Cloud:
+
+```text
+http://localhost:3000/api/auth/callback/google
+```
+
+Use the production domain in place of `localhost` for production.
+
+Email/password accounts require a six-digit verification code. Configure the
+existing SMTP mailbox with:
+
+```text
+SMTP_HOST
+SMTP_PORT
+SMTP_SECURE
+SMTP_USER
+SMTP_PASSWORD
+SMTP_FROM
+```
+
+Replace every placeholder value with credentials for a real mailbox. The SMTP
+username is normally the full mailbox address, and the password is the mailbox
+or app-specific SMTP password. Restart the application after changing these
+values. Signup checks the SMTP connection before creating an account so it does
+not claim that a code was sent when the mail server rejected the credentials.
+Use `SMTP_PORT=587` with `SMTP_SECURE=false` for STARTTLS, or port `465` with
+`SMTP_SECURE=true` for implicit TLS.
+
+Codes expire after ten minutes and are limited to five verification attempts.
+Google accounts use the provider's verified-email status.
+
+Start PostgreSQL and the app with Docker:
+
+```bash
+docker compose up --build
+```
+
+Or run the development server directly:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in a browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Better Auth database migration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+New Docker database volumes run the SQL scripts automatically. For an existing
+database, apply the migration once before deploying the new application code:
 
-## Learn More
+```bash
+docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
+  < scripts/sql/002_better_auth.sql
+```
 
-To learn more about Next.js, take a look at the following resources:
+The migration preserves existing integer user IDs, roles, foreign keys, Google
+identities, and bcrypt password hashes. Existing sessions from the previous JWT
+implementation are intentionally invalidated.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Verification
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build
+```

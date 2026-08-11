@@ -1,8 +1,15 @@
 import { NextRequest } from "next/server";
+import { APIError } from "better-auth/api";
 import { signupSchema } from "@/lib/validations/auth";
 import { query } from "@/lib/db/server";
-import { hashPassword } from "@/lib/auth/password";
-import { setSessionCookie } from "@/lib/auth/session";
+import { auth } from "@/lib/auth/auth";
+import { applyAuthCookies } from "@/lib/auth/response";
+import {
+  isRecipientRejected,
+  isSmtpConfigured,
+  sendAuthOtp,
+  verifySmtpConnection,
+} from "@/lib/email/smtp";
 import {
   successResponse,
   errorResponse,
@@ -25,6 +32,25 @@ export async function POST(req: NextRequest) {
 
     const { full_name, email, phone, password } = result.data;
 
+    if (!isSmtpConfigured()) {
+      return errorResponse(
+        "Email verification is temporarily unavailable. SMTP credentials are missing or still use placeholder values.",
+        undefined,
+        503
+      );
+    }
+
+    try {
+      await verifySmtpConnection();
+    } catch (emailError) {
+      console.error("[Signup SMTP verification]", emailError);
+      return errorResponse(
+        "Email verification is temporarily unavailable because the mail server could not be reached or rejected its credentials.",
+        undefined,
+        503
+      );
+    }
+
     // 2. Check if email already exists
     const existing = await query(
       "SELECT id FROM users WHERE email = $1 LIMIT 1",
@@ -38,37 +64,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Hash the password
-    const password_hash = await hashPassword(password);
+    try {
+      const otp = await auth.api.createVerificationOTP({
+        body: { email, type: "email-verification" },
+      });
+      await sendAuthOtp({ to: email, otp, type: "email-verification" });
+    } catch (emailError) {
+      console.error("[Signup verification email]", emailError);
+      const recipientRejected = isRecipientRejected(emailError);
+      return errorResponse(
+        recipientRejected
+          ? "The email provider rejected this recipient address. Check the address and domain, then try again."
+          : "The verification email could not be delivered. Please try again later.",
+        recipientRejected
+          ? { email: "This email address could not receive mail." }
+          : undefined,
+        recipientRejected ? 422 : 502
+      );
+    }
 
-    // 4. Insert the new user
-    const insertResult = await query<{
-      id: number;
-      full_name: string;
-      email: string;
-      role: string;
-    }>(
-      `INSERT INTO users (full_name, email, phone, password_hash, auth_provider, role)
-       VALUES ($1, $2, $3, $4, 'email', 'customer')
-       RETURNING id, full_name, email, role`,
-      [full_name, email, phone || null, password_hash]
-    );
-
-    const user = insertResult.rows[0];
-
-    // 5. Set session cookie
-    await setSessionCookie({
-      userId: user.id,
-      email: user.email,
-      role: user.role as "customer" | "driver" | "admin",
+    const signUp = await auth.api.signUpEmail({
+      body: {
+        name: full_name,
+        email,
+        password,
+        phone: phone || undefined,
+      },
+      headers: req.headers,
+      returnHeaders: true,
     });
 
-    return successResponse(
-      "Account created successfully. Welcome to EzyGo!",
-      { id: user.id, full_name: user.full_name, email: user.email, role: user.role },
+    const response = successResponse(
+      "Account created. Enter the verification code sent to your email.",
+      {
+        id: Number(signUp.response.user.id),
+        full_name: signUp.response.user.name,
+        email: signUp.response.user.email,
+        role: signUp.response.user.role,
+        requires_verification: true,
+      },
       201
     );
+    return applyAuthCookies(response, signUp.headers);
   } catch (error) {
+    if (error instanceof APIError) {
+      if (error.statusCode === 409 || error.statusCode === 422) {
+        return errorResponse(
+          "An account with this email already exists.",
+          { email: "Email is already registered" },
+          409
+        );
+      }
+      return errorResponse(error.message || "Unable to create account.", undefined, error.statusCode);
+    }
     console.error("[POST /api/auth/signup]", error);
     return serverErrorResponse("Something went wrong. Please try again.");
   }

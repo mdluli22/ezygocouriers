@@ -151,6 +151,13 @@ export async function createDriver(data: {
     );
     const userId = userResult.rows[0].id;
 
+    await client.query(
+      `INSERT INTO auth_accounts
+         (id, account_id, provider_id, user_id, password)
+       VALUES ($1, $2, 'credential', $3, $4)`,
+      [crypto.randomUUID(), String(userId), userId, data.password_hash]
+    );
+
     const driverResult = await client.query<{ id: number }>(
       `INSERT INTO drivers (user_id, license_number, vehicle_type, vehicle_reg)
        VALUES ($1, $2, $3, $4)

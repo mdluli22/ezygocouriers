@@ -61,6 +61,31 @@ ON CONFLICT (user_id) DO UPDATE
       license_number = EXCLUDED.license_number,
       status         = 'active';
 
+-- ── Sync Better Auth credential accounts ─────────────────────────────────────
+INSERT INTO auth_accounts (
+  id,
+  account_id,
+  provider_id,
+  user_id,
+  password,
+  created_at,
+  updated_at
+)
+SELECT
+  uuid_generate_v4()::TEXT,
+  id::TEXT,
+  'credential',
+  id,
+  password_hash,
+  created_at,
+  updated_at
+FROM users
+WHERE email IN ('admin@ezygo.co.za', 'driver@ezygo.co.za')
+  AND password_hash IS NOT NULL
+ON CONFLICT (provider_id, account_id) DO UPDATE
+  SET password   = EXCLUDED.password,
+      updated_at = NOW();
+
 -- ── Confirm ───────────────────────────────────────────────────────────────────
 SELECT id, full_name, email, role, is_active
 FROM   users

@@ -36,6 +36,7 @@ function LoginForm() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [serverError, setServerError] = useState("");
+  const [notice, setNotice] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   // Handle OAuth error params from Google callback redirect
@@ -43,6 +44,9 @@ function LoginForm() {
     const oauthError = searchParams.get("error");
     if (oauthError && OAUTH_ERROR_MESSAGES[oauthError]) {
       setServerError(OAUTH_ERROR_MESSAGES[oauthError]);
+    }
+    if (searchParams.get("verified") === "1") {
+      setNotice("Email verified successfully. You can now sign in.");
     }
   }, [searchParams]);
 
@@ -62,6 +66,10 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 403 && data.errors?.email) {
+          router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
+          return;
+        }
         if (data.errors) {
           setFieldErrors(data.errors);
         } else {
@@ -120,6 +128,19 @@ function LoginForm() {
       </div>
 
       {/* Server error */}
+      {notice && (
+        <div
+          className="flex items-start gap-3 p-4 rounded-xl text-sm font-medium"
+          style={{
+            backgroundColor: "rgb(34 197 94 / 0.1)",
+            color: "var(--color-success)",
+            border: "1px solid rgb(34 197 94 / 0.25)",
+          }}
+        >
+          {notice}
+        </div>
+      )}
+
       {serverError && (
         <div
           className="flex items-start gap-3 p-4 rounded-xl text-sm font-medium"

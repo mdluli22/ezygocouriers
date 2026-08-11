@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
 
 /**
+ * Better Auth's server API returns Set-Cookie headers separately. Copy every
+ * cookie onto a compatibility response so existing frontend calls can keep
+ * their current JSON contract during the migration.
+ */
+export function applyAuthCookies(
+  response: NextResponse,
+  authHeaders: Headers
+): NextResponse {
+  for (const cookie of authHeaders.getSetCookie()) {
+    response.headers.append("set-cookie", cookie);
+  }
+  return response;
+}
+
+/**
  * Return a consistent success JSON response.
  */
 export function successResponse<T>(
