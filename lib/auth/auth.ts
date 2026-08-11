@@ -7,12 +7,48 @@ import { sendAuthOtp } from "@/lib/email/smtp";
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
+function getAllowedAuthHosts() {
+  const configuredHosts = [
+    process.env.BETTER_AUTH_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+  ].flatMap((value) => {
+    if (!value) return [];
+
+    try {
+      return [new URL(value).host];
+    } catch {
+      return [];
+    }
+  });
+
+  const extraHosts = (process.env.BETTER_AUTH_ALLOWED_HOSTS || "")
+    .split(",")
+    .map((host) => host.trim())
+    .filter(Boolean);
+
+  return Array.from(
+    new Set([
+      "ezygocouriers.co.za",
+      "www.ezygocouriers.co.za",
+      "localhost",
+      "localhost:*",
+      "127.0.0.1",
+      "127.0.0.1:*",
+      ...configuredHosts,
+      ...extraHosts,
+    ])
+  );
+}
+
 export const auth = betterAuth({
   appName: "EzyGo Couriers",
-  baseURL:
-    process.env.BETTER_AUTH_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000",
+  // Resolve OAuth callbacks from the incoming request. A stale localhost
+  // environment value must not turn a production Google callback into
+  // http://localhost:3000/api/auth/callback/google.
+  baseURL: {
+    allowedHosts: getAllowedAuthHosts(),
+    protocol: "auto",
+  },
   secret: process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET,
   database: pool,
   emailAndPassword: {

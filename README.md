@@ -27,6 +27,14 @@ http://localhost:3000/api/auth/callback/google
 ```
 
 Use the production domain in place of `localhost` for production.
+For this deployment, the production callback is:
+
+```text
+https://ezygocouriers.co.za/api/auth/callback/google
+```
+
+The legacy `/api/auth/google/callback` route is no longer used. If the app is
+served from another hostname, add it to `BETTER_AUTH_ALLOWED_HOSTS` as well.
 
 Email/password accounts require a six-digit verification code. Configure the
 existing SMTP mailbox with:
