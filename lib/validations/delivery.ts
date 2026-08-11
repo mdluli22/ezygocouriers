@@ -44,13 +44,13 @@ export const createDeliverySchema = z.object({
   special_instructions: z.string().max(500).optional().or(z.literal("")),
 
   // Package extras (optional)
-  package_type: z.string().max(50).optional().or(z.literal("")),
+  package_type: z.enum(["small", "medium", "large"]).optional(),
   package_category: z.string().max(50).optional().or(z.literal("")),
   fragile: z.boolean().optional(),
 
   // Delivery options
   require_pin: z.boolean().optional(),
-  scheduled_time: z.string().optional().nullable(),
+  scheduled_time: z.iso.datetime({ offset: true }).optional().nullable(),
 });
 
 export type CreateDeliveryInput = z.infer<typeof createDeliverySchema>;

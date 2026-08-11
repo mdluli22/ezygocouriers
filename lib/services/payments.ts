@@ -41,7 +41,7 @@ export async function completePayment(params: {
 
     await client.query(
       `UPDATE payments
-       SET status = 'completed', pf_payment_id = $1, paid_at = NOW(), updated_at = NOW()
+       SET status = 'complete', payfast_pf_payment_id = $1, paid_at = NOW(), updated_at = NOW()
        WHERE id = $2`,
       [params.pfPaymentId, params.paymentId]
     );

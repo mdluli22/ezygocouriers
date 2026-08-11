@@ -19,6 +19,11 @@ export async function getDriverDeliveries(driverUserId: number) {
        d.pickup_contact_phone,
        d.parcel_description,
        d.special_instructions,
+       d.package_type,
+       d.package_category,
+       d.fragile,
+       d.require_pin,
+       d.scheduled_time,
        d.created_at,
        d.updated_at,
        pa.street_address  AS pickup_street,
@@ -113,13 +118,6 @@ export async function updateDeliveryStatus(
     );
   }
 
-  // 3. Get driver record ID for the log
-  const driverResult = await query<{ id: number }>(
-    `SELECT id FROM drivers WHERE user_id = $1 LIMIT 1`,
-    [driverUserId]
-  );
-  const driverUsersId = driverResult.rows[0]?.id;
-
   const client = await getClient();
   try {
     await client.query("BEGIN");
@@ -132,7 +130,7 @@ export async function updateDeliveryStatus(
     await client.query(
       `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)
        VALUES ($1, $2, $3, $4)`,
-      [deliveryId, newStatus, note || null, driverUsersId]
+      [deliveryId, newStatus, note || null, driverUserId]
     );
 
     await client.query("COMMIT");

@@ -42,23 +42,17 @@ export async function createDelivery(
       input.dropoff_address.street_address ||
       input.dropoff_address.formatted_address;
 
-    // Build combined notes: meeting option + user note + building info
-    const buildNotes = (addr: typeof input.pickup_address) => {
-      const parts: string[] = [];
-      if (addr.building_or_business) parts.push(`Building: ${addr.building_or_business}`);
-      if (addr.apt_suite) parts.push(`Apt/Suite: ${addr.apt_suite}`);
-      if (addr.meeting_option) parts.push(`Meeting: ${addr.meeting_option.replace(/_/g, " ")}`);
-      if (addr.notes) parts.push(addr.notes);
-      return parts.join(" | ") || null;
-    };
-
     // 1. Insert pickup address
     const pickupResult = await client.query<{ id: number }>(
-      `INSERT INTO addresses (user_id, street_address, suburb, city, province, postal_code, country, latitude, longitude, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO addresses (
+         user_id, formatted_address, street_address, suburb, city, province,
+         postal_code, country, latitude, longitude, building_or_business,
+         apt_suite, meeting_option, notes
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING id`,
       [
         customerId,
+        input.pickup_address.formatted_address,
         pickupStreet,
         input.pickup_address.suburb || null,
         input.pickup_address.city || null,
@@ -67,18 +61,25 @@ export async function createDelivery(
         input.pickup_address.country || "South Africa",
         input.pickup_address.latitude ?? null,
         input.pickup_address.longitude ?? null,
-        buildNotes(input.pickup_address),
+        input.pickup_address.building_or_business || null,
+        input.pickup_address.apt_suite || null,
+        input.pickup_address.meeting_option || null,
+        input.pickup_address.notes || null,
       ]
     );
     const pickupAddressId = pickupResult.rows[0].id;
 
     // 2. Insert dropoff address
     const dropoffResult = await client.query<{ id: number }>(
-      `INSERT INTO addresses (user_id, street_address, suburb, city, province, postal_code, country, latitude, longitude, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO addresses (
+         user_id, formatted_address, street_address, suburb, city, province,
+         postal_code, country, latitude, longitude, building_or_business,
+         apt_suite, meeting_option, notes
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING id`,
       [
         customerId,
+        input.dropoff_address.formatted_address,
         dropoffStreet,
         input.dropoff_address.suburb || null,
         input.dropoff_address.city || null,
@@ -87,7 +88,10 @@ export async function createDelivery(
         input.dropoff_address.country || "South Africa",
         input.dropoff_address.latitude ?? null,
         input.dropoff_address.longitude ?? null,
-        buildNotes(input.dropoff_address),
+        input.dropoff_address.building_or_business || null,
+        input.dropoff_address.apt_suite || null,
+        input.dropoff_address.meeting_option || null,
+        input.dropoff_address.notes || null,
       ]
     );
     const dropoffAddressId = dropoffResult.rows[0].id;
@@ -105,8 +109,9 @@ export async function createDelivery(
          customer_id, pickup_address_id, dropoff_address_id, quote_id,
          pickup_contact_name, pickup_contact_phone,
          recipient_name, recipient_phone,
-         parcel_description, special_instructions, status
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'quoted')
+         parcel_description, special_instructions, package_type,
+         package_category, fragile, require_pin, scheduled_time, status
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'quoted')
        RETURNING id, tracking_number, status`,
       [
         customerId,
@@ -119,6 +124,11 @@ export async function createDelivery(
         input.recipient_phone,
         input.parcel_description,
         input.special_instructions || null,
+        input.package_type || null,
+        input.package_category || null,
+        input.fragile ?? false,
+        input.require_pin ?? false,
+        input.scheduled_time || null,
       ]
     );
 
@@ -211,6 +221,11 @@ export async function getCustomerDeliveries(customerId: number) {
        d.recipient_name,
        d.recipient_phone,
        d.parcel_description,
+       d.package_type,
+       d.package_category,
+       d.fragile,
+       d.require_pin,
+       d.scheduled_time,
        d.created_at,
        d.updated_at,
        pa.street_address  AS pickup_street,

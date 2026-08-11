@@ -87,6 +87,19 @@ The migration preserves existing integer user IDs, roles, foreign keys, Google
 identities, and bcrypt password hashes. Existing sessions from the previous JWT
 implementation are intentionally invalidated.
 
+## Delivery checkout database migration
+
+Existing database volumes also need the structured delivery and payment
+compatibility migration:
+
+```bash
+docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
+  < scripts/sql/003_delivery_checkout_details.sql
+```
+
+The migration is idempotent and preserves existing deliveries, addresses, and
+payments.
+
 ## Verification
 
 ```bash
