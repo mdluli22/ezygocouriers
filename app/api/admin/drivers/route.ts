@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     try {
       const otp = await auth.api.createVerificationOTP({
         body: { email, type: "email-verification" },
+        headers: req.headers,
       });
       await sendAuthOtp({ to: email, otp, type: "email-verification" });
     } catch (emailError) {
