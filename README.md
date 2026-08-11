@@ -100,6 +100,17 @@ docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
 The migration is idempotent and preserves existing deliveries, addresses, and
 payments.
 
+## PayFast sandbox testing
+
+Set `PAYFAST_SANDBOX=true`. You can provide credentials from your own PayFast
+sandbox account, or leave `PAYFAST_MERCHANT_ID` and `PAYFAST_MERCHANT_KEY` blank
+to use PayFast's published shared test credentials.
+
+For end-to-end ITN testing, `PAYFAST_APP_URL` (or `NEXT_PUBLIC_APP_URL`) must be
+a public HTTPS origin. PayFast rejects localhost callback URLs. Local form-only
+testing still works, but payment notifications cannot reach a local server
+unless it is exposed through a public HTTPS tunnel.
+
 ## Verification
 
 ```bash

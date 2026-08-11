@@ -211,6 +211,7 @@ function TrackingContent() {
   const params       = useParams();
   const searchParams = useSearchParams();
   const justConfirmed = searchParams.get("confirmed") === "1";
+  const paymentResult = searchParams.get("payment");
 
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [logs, setLogs]         = useState<StatusLog[]>([]);
@@ -271,6 +272,32 @@ function TrackingContent() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           Delivery confirmed! Proceed to payment to get a driver assigned.
+        </div>
+      )}
+
+      {paymentResult === "success" && (
+        <div
+          className="flex items-center gap-3 p-4 rounded-xl text-sm font-semibold"
+          style={{
+            backgroundColor: "rgb(16 185 129 / 0.1)",
+            color: "var(--color-success)",
+            border: "1px solid rgb(16 185 129 / 0.2)",
+          }}
+        >
+          Test payment completed. PayFast is confirming the transaction.
+        </div>
+      )}
+
+      {paymentResult === "cancelled" && (
+        <div
+          className="p-4 rounded-xl text-sm font-semibold"
+          style={{
+            backgroundColor: "rgb(245 158 11 / 0.1)",
+            color: "var(--color-warning)",
+            border: "1px solid rgb(245 158 11 / 0.2)",
+          }}
+        >
+          Payment was cancelled. You can try again when you are ready.
         </div>
       )}
 

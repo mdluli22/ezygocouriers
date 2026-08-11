@@ -39,6 +39,33 @@ export async function completePayment(params: {
   try {
     await client.query("BEGIN");
 
+    const paymentResult = await client.query<{
+      delivery_id: number;
+      status: string;
+    }>(
+      `SELECT delivery_id, status
+       FROM payments
+       WHERE id = $1
+       FOR UPDATE`,
+      [params.paymentId]
+    );
+    const payment = paymentResult.rows[0];
+
+    if (!payment || payment.delivery_id !== params.deliveryId) {
+      throw new Error("Payment does not belong to this delivery.");
+    }
+
+    // PayFast may retry an ITN. Treat an already-completed payment as success
+    // without duplicating status history.
+    if (payment.status === "complete") {
+      await client.query("COMMIT");
+      return;
+    }
+
+    if (payment.status !== "pending") {
+      throw new Error(`Cannot complete a payment with status '${payment.status}'.`);
+    }
+
     await client.query(
       `UPDATE payments
        SET status = 'complete', payfast_pf_payment_id = $1, paid_at = NOW(), updated_at = NOW()
@@ -46,12 +73,16 @@ export async function completePayment(params: {
       [params.pfPaymentId, params.paymentId]
     );
 
-    await client.query(
+    const deliveryResult = await client.query(
       `UPDATE deliveries
        SET status = 'paid', updated_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 AND status = 'confirmed'`,
       [params.deliveryId]
     );
+
+    if (deliveryResult.rowCount !== 1) {
+      throw new Error("Delivery is not awaiting payment.");
+    }
 
     await client.query(
       `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)
@@ -79,6 +110,19 @@ export async function failPayment(
     `UPDATE payments
      SET status = 'failed', failure_reason = $1, updated_at = NOW()
      WHERE id = $2`,
+    [reason ?? null, paymentId]
+  );
+}
+
+/** Mark a pending PayFast payment as cancelled. */
+export async function cancelPayment(
+  paymentId: number,
+  reason?: string
+): Promise<void> {
+  await query(
+    `UPDATE payments
+     SET status = 'cancelled', failure_reason = $1, updated_at = NOW()
+     WHERE id = $2 AND status = 'pending'`,
     [reason ?? null, paymentId]
   );
 }

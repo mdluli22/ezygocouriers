@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
-import { buildPaymentData } from "@/lib/payfast";
+import { buildPaymentData, PAYFAST_HOST } from "@/lib/payfast";
 import { createPaymentRecord } from "@/lib/services/payments";
 import {
   successResponse,
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     });
 
     return successResponse("Payment initialised.", {
-      payfast_url: `${process.env.PAYFAST_HOST ?? "https://sandbox.payfast.co.za"}/eng/process`,
+      payfast_url: `${PAYFAST_HOST}/eng/process`,
       form_data:   formData,
     });
   } catch (error) {
