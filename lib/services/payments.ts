@@ -14,6 +14,8 @@ export async function createPaymentRecord(params: {
   const result = await query<{ id: number }>(
     `INSERT INTO payments (delivery_id, quote_id, customer_id, amount, currency, status)
      VALUES ($1, $2, $3, $4, $5, 'pending')
+     ON CONFLICT (delivery_id) WHERE status = 'pending'
+     DO UPDATE SET delivery_id = EXCLUDED.delivery_id
      RETURNING id`,
     [
       params.deliveryId,
@@ -55,9 +57,33 @@ export async function completePayment(params: {
       throw new Error("Payment does not belong to this delivery.");
     }
 
-    // PayFast may retry an ITN. Treat an already-completed payment as success
-    // without duplicating status history.
+    // Repair a partially completed historical transaction if necessary, while
+    // keeping repeated PayFast ITNs idempotent.
     if (payment.status === "complete") {
+      if (!params.pfPaymentId.startsWith("sandbox-return-")) {
+        await client.query(
+          `UPDATE payments
+           SET payfast_pf_payment_id = $1, updated_at = NOW()
+           WHERE id = $2`,
+          [params.pfPaymentId, params.paymentId]
+        );
+      }
+
+      const repairedDelivery = await client.query(
+        `UPDATE deliveries
+         SET status = 'paid', updated_at = NOW()
+         WHERE id = $1 AND status = 'confirmed'`,
+        [params.deliveryId]
+      );
+
+      if (repairedDelivery.rowCount === 1) {
+        await client.query(
+          `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)
+           VALUES ($1, 'paid', 'Payment completion reconciled', NULL)`,
+          [params.deliveryId]
+        );
+      }
+
       await client.query("COMMIT");
       return;
     }
@@ -83,6 +109,15 @@ export async function completePayment(params: {
     if (deliveryResult.rowCount !== 1) {
       throw new Error("Delivery is not awaiting payment.");
     }
+
+    await client.query(
+      `UPDATE payments
+       SET status = 'cancelled',
+           failure_reason = 'Superseded by completed payment',
+           updated_at = NOW()
+       WHERE delivery_id = $1 AND id <> $2 AND status = 'pending'`,
+      [params.deliveryId, params.paymentId]
+    );
 
     await client.query(
       `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)

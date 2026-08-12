@@ -12,6 +12,9 @@ export default async function AdminLayout({
   // login page which is a public child of this route segment.
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "";
+  const forwardedHost = headersList.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const hostname = (forwardedHost || headersList.get("host") || "").split(":")[0];
+  const dashboardHref = hostname === "admin.ezygocouriers.co.za" ? "/" : "/admin";
 
   // Render the login page without the sidebar shell
   if (pathname === "/admin/login") {
@@ -24,7 +27,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <AdminSidebar />
+      <AdminSidebar dashboardHref={dashboardHref} />
       <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
         {children}
       </main>

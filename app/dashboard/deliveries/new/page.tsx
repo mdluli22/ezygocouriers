@@ -198,7 +198,6 @@ export default function NewDeliveryPage() {
         setPickupContactName(prev => prev || d.data.full_name);
       }
     }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -281,11 +280,8 @@ export default function NewDeliveryPage() {
   }
 
   function handleAuthSuccess(loggedInUser: User) {
-    setUser(loggedInUser);
-    setPickupContactName(prev => prev || loggedInUser.full_name);
-    setShowAuth(false);
-    setStep(3);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    void loggedInUser;
+    window.location.assign("/dashboard");
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -426,7 +422,7 @@ export default function NewDeliveryPage() {
                 }}
                 className={`input ${fieldErrors.parcel_description ? "input-error" : ""}`}
               >
-                <option value="">Select what you're sending</option>
+                <option value="">Select what you&apos;re sending</option>
                 <option value="Documents">Documents</option>
                 <option value="Clothing">Clothing</option>
                 <option value="Electronics">Electronics</option>

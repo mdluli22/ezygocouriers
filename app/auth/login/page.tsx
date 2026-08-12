@@ -81,11 +81,11 @@ function LoginForm() {
       // Redirect to original destination or role-based dashboard
       const redirect = searchParams.get("redirect");
       const roleDashboard: Record<string, string> = {
-        customer: "/dashboard/deliveries/new",
+        customer: "/dashboard",
         driver:   "/driver",
         admin:    "/admin",
       };
-      router.push(redirect || roleDashboard[data.data?.role] || "/dashboard/deliveries/new");
+      router.push(redirect || roleDashboard[data.data?.role] || "/dashboard");
     } catch {
       setServerError("Something went wrong. Please check your connection.");
     } finally {

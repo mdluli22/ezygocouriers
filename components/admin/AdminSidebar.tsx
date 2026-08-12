@@ -51,7 +51,11 @@ const NAV_ITEMS = [
   },
 ];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({
+  dashboardHref = "/admin",
+}: {
+  dashboardHref?: string;
+}) {
   const pathname = usePathname();
   const router   = useRouter();
 
@@ -70,7 +74,7 @@ export default function AdminSidebar() {
     >
       {/* Logo */}
       <div className="p-6 border-b" style={{ borderColor: "var(--color-border)" }}>
-        <Link href="/admin" className="flex items-center gap-2">
+        <Link href={dashboardHref} className="flex items-center gap-2">
           <span className="text-xl font-black" style={{ color: "var(--color-primary)" }}>
             EzyGo
           </span>
@@ -89,15 +93,16 @@ export default function AdminSidebar() {
       {/* Nav */}
       <nav className="flex-1 p-4 space-y-1">
         {NAV_ITEMS.map((item) => {
+          const href = item.href === "/admin" ? dashboardHref : item.href;
           const isActive =
             item.href === "/admin"
-              ? pathname === "/admin"
+              ? pathname === "/admin" || pathname === "/"
               : pathname.startsWith(item.href);
 
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={href}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150"
               style={{
                 backgroundColor: isActive ? "var(--color-primary)" : "transparent",

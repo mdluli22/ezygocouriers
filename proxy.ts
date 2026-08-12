@@ -31,10 +31,17 @@ const ROLE_HOME: Record<string, string> = {
   admin:    "/admin",
 };
 
+const ADMIN_HOSTNAME = "admin.ezygocouriers.co.za";
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function matchesRoute(pathname: string, routes: string[]): boolean {
   return routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function getRoleHome(role: string, req: NextRequest): string {
+  if (role === "admin" && req.nextUrl.hostname === ADMIN_HOSTNAME) return "/";
+  return ROLE_HOME[role] ?? "/dashboard";
 }
 
 /** Pass the request through, injecting x-pathname so server layouts can read it. */
@@ -71,7 +78,7 @@ export async function proxy(req: NextRequest) {
   // ── 1. Logged-in users trying to access auth pages ──────────────────────────
   if (isAuthRoute) {
     if (role) {
-      const home = ROLE_HOME[role] ?? "/dashboard";
+      const home = getRoleHome(role, req);
       return NextResponse.redirect(new URL(home, req.url));
     }
     return nextWithPathname(req);  // still inject x-pathname so layouts can detect the login page
@@ -85,7 +92,7 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
     if (role !== "admin") {
-      const home = ROLE_HOME[role] ?? "/dashboard";
+      const home = getRoleHome(role, req);
       return NextResponse.redirect(new URL(home, req.url));
     }
     return nextWithPathname(req);
@@ -99,7 +106,7 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
     if (role !== "driver") {
-      const home = ROLE_HOME[role] ?? "/dashboard";
+      const home = getRoleHome(role, req);
       return NextResponse.redirect(new URL(home, req.url));
     }
     return nextWithPathname(req);

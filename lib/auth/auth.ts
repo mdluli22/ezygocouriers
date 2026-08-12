@@ -30,6 +30,7 @@ function getAllowedAuthHosts() {
     new Set([
       "ezygocouriers.co.za",
       "www.ezygocouriers.co.za",
+      "admin.ezygocouriers.co.za",
       "localhost",
       "localhost:*",
       "127.0.0.1",
@@ -65,6 +66,9 @@ export const auth = betterAuth({
     // The signup route creates and delivers the OTP before creating the user,
     // allowing rejected recipient addresses to be reported accurately.
     sendOnSignUp: false,
+    // OTP verification establishes the customer's session so signup can finish
+    // directly on the dashboard without requiring a second login.
+    autoSignInAfterVerification: true,
   },
   socialProviders:
     googleClientId && googleClientSecret
@@ -155,6 +159,14 @@ export const auth = betterAuth({
   },
   advanced: {
     cookiePrefix: "ezygo",
+    // Set BETTER_AUTH_COOKIE_DOMAIN=ezygocouriers.co.za when sessions should
+    // follow users between the main site and trusted subdomains.
+    crossSubDomainCookies: process.env.BETTER_AUTH_COOKIE_DOMAIN
+      ? {
+          enabled: true,
+          domain: process.env.BETTER_AUTH_COOKIE_DOMAIN,
+        }
+      : undefined,
     database: {
       // Existing business tables reference users.id as an integer. Preserve
       // that ID while using UUID strings for Better Auth-owned records.

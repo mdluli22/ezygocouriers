@@ -20,7 +20,7 @@ export default function GoogleAuthButton({
     try {
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/dashboard/deliveries/new",
+        callbackURL: "/dashboard",
         errorCallbackURL: "/auth/login?error=google_failed",
       });
 

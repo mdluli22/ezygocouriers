@@ -124,8 +124,8 @@ export function buildPaymentData(params: {
   // PayFast rejects localhost URLs. They are optional, so omit them for local
   // form testing; a public HTTPS URL is required for redirect and ITN testing.
   if (config.appUrl && isPublicCallbackUrl(config.appUrl)) {
-    data.return_url = `${config.appUrl}/dashboard/tracking/${params.deliveryId}?payment=success`;
-    data.cancel_url = `${config.appUrl}/dashboard/tracking/${params.deliveryId}?payment=cancelled`;
+    data.return_url = `${config.appUrl}/dashboard?payment=success&delivery=${params.deliveryId}&payment_id=${params.paymentId}`;
+    data.cancel_url = `${config.appUrl}/dashboard?payment=cancelled&delivery=${params.deliveryId}`;
     data.notify_url = `${config.appUrl}/api/payments/callback`;
   }
 
@@ -196,7 +196,10 @@ export async function verifyITN(params: {
   const { itnData, expectedAmount, sourceIp } = params;
   const config = getPayFastConfig();
 
-  if (!isTrustedPayFastIp(sourceIp)) {
+  // Some reverse proxies do not preserve PayFast's original address. In the
+  // no-money sandbox we can rely on the remaining signature, merchant, amount,
+  // and PayFast server checks. Live mode always requires a trusted source IP.
+  if (!config.sandbox && !isTrustedPayFastIp(sourceIp)) {
     return { valid: false, reason: `Untrusted PayFast source IP: ${sourceIp}` };
   }
 

@@ -33,6 +33,12 @@ For this deployment, the production callback is:
 https://ezygocouriers.co.za/api/auth/callback/google
 ```
 
+If Google authentication will be initiated from the admin hostname, also add:
+
+```text
+https://admin.ezygocouriers.co.za/api/auth/callback/google
+```
+
 The legacy `/api/auth/google/callback` route is no longer used. If the app is
 served from another hostname, add it to `BETTER_AUTH_ALLOWED_HOSTS` as well.
 
@@ -100,6 +106,13 @@ docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
 The migration is idempotent and preserves existing deliveries, addresses, and
 payments.
 
+Apply the payment-attempt integrity migration as well:
+
+```bash
+docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
+  < scripts/sql/004_payment_attempt_integrity.sql
+```
+
 ## PayFast sandbox testing
 
 Set `PAYFAST_SANDBOX=true`. You can provide credentials from your own PayFast
@@ -110,6 +123,39 @@ For end-to-end ITN testing, `PAYFAST_APP_URL` (or `NEXT_PUBLIC_APP_URL`) must be
 a public HTTPS origin. PayFast rejects localhost callback URLs. Local form-only
 testing still works, but payment notifications cannot reach a local server
 unless it is exposed through a public HTTPS tunnel.
+
+## Admin subdomain
+
+`admin.ezygocouriers.co.za` is rewritten internally from `/` to `/admin`, so
+the browser keeps the clean subdomain root URL. Better Auth accepts the admin
+hostname, and `BETTER_AUTH_COOKIE_DOMAIN=ezygocouriers.co.za` enables sessions
+across the main site and trusted subdomains.
+
+DNS currently resolves the admin hostname to `169.255.58.72`. For a first-time
+HTTP setup on that Linux host, install the included Nginx template after
+confirming that its `proxy_pass` matches the upstream used by the main site:
+
+```bash
+sudo cp deploy/nginx/admin.ezygocouriers.co.za.conf /etc/nginx/sites-available/admin
+sudo ln -s /etc/nginx/sites-available/admin /etc/nginx/sites-enabled/admin
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+The Nginx template also maps the admin hostname's exact `/` request to the
+upstream `/admin` route. This makes the clean root work even before or alongside
+the Next.js hostname rewrite.
+
+If Certbot has already created an HTTPS server block, do not overwrite the
+active file. Merge the template's `location = /` block into the existing
+`server_name admin.ezygocouriers.co.za` HTTPS block, then run `sudo nginx -t`
+and reload Nginx.
+
+After the HTTP site passes validation, obtain the certificate:
+
+```bash
+sudo certbot --nginx -d admin.ezygocouriers.co.za
+```
 
 ## Verification
 

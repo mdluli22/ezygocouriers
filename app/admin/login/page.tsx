@@ -70,7 +70,9 @@ function AdminLoginForm() {
       }
 
       const redirect = searchParams.get("redirect");
-      router.push(redirect || "/admin");
+      const adminHome =
+        window.location.hostname === "admin.ezygocouriers.co.za" ? "/" : "/admin";
+      router.push(!redirect || redirect === "/admin" ? adminHome : redirect);
     } catch {
       setServerError("Something went wrong. Please check your connection.");
     } finally {

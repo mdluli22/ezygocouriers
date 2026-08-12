@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   STATUS_LABELS,
   STATUS_COLORS,
@@ -69,18 +70,96 @@ function DeliveryRow({ delivery }: { delivery: Delivery }) {
   );
 }
 
+const PAST_STATUSES: DeliveryStatus[] = ["delivered", "failed", "cancelled"];
+
+function DeliverySection({
+  title,
+  description,
+  deliveries,
+}: {
+  title: string;
+  description: string;
+  deliveries: Delivery[];
+}) {
+  if (deliveries.length === 0) return null;
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-base font-black" style={{ color: "var(--color-primary)" }}>
+          {title}
+        </h2>
+        <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+          {description}
+        </p>
+      </div>
+      <div className="space-y-3">
+        {deliveries.map((delivery) => (
+          <DeliveryRow key={delivery.id} delivery={delivery} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function DashboardPage() {
+  return (
+    <Suspense>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
+  const searchParams = useSearchParams();
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const paymentResult = searchParams.get("payment");
+  const isNewCustomer = searchParams.get("welcome") === "1";
+  const paidDeliveryId = Number(searchParams.get("delivery"));
+  const returnedPaymentId = Number(searchParams.get("payment_id"));
 
   useEffect(() => {
-    fetch("/api/deliveries")
-      .then((r) => { if (!r.ok) throw new Error("Failed to load"); return r.json(); })
-      .then((d) => setDeliveries(d.data ?? []))
-      .catch(() => setError("Failed to load deliveries. Please refresh."))
-      .finally(() => setLoading(false));
-  }, []);
+    let cancelled = false;
+
+    async function loadDeliveries() {
+      try {
+        if (
+          paymentResult === "success" &&
+          Number.isInteger(paidDeliveryId) &&
+          paidDeliveryId > 0 &&
+          Number.isInteger(returnedPaymentId) &&
+          returnedPaymentId > 0
+        ) {
+          // In live mode this endpoint safely refuses the request and the ITN
+          // remains authoritative. In sandbox it reconciles a missed test ITN.
+          await fetch("/api/payments/sandbox-confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              delivery_id: paidDeliveryId,
+              payment_id: returnedPaymentId,
+            }),
+          });
+        }
+
+        const response = await fetch("/api/deliveries", { cache: "no-store" });
+        if (!response.ok) throw new Error("Failed to load deliveries");
+        const result = await response.json();
+        if (!cancelled) setDeliveries(result.data ?? []);
+      } catch {
+        if (!cancelled) setError("Failed to load deliveries. Please refresh.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadDeliveries();
+    return () => {
+      cancelled = true;
+    };
+  }, [paidDeliveryId, paymentResult, returnedPaymentId]);
 
   if (loading) {
     return (
@@ -96,6 +175,13 @@ export default function DashboardPage() {
     );
   }
 
+  const activeDeliveries = deliveries.filter(
+    (delivery) => !PAST_STATUSES.includes(delivery.status)
+  );
+  const pastDeliveries = deliveries.filter((delivery) =>
+    PAST_STATUSES.includes(delivery.status)
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -107,6 +193,63 @@ export default function DashboardPage() {
           New Delivery
         </Link>
       </div>
+
+      {paymentResult === "success" && (
+        <div
+          className="flex items-start gap-3 p-4 rounded-xl text-sm font-semibold"
+          style={{
+            backgroundColor: "rgb(16 185 129 / 0.1)",
+            color: "var(--color-success)",
+            border: "1px solid rgb(16 185 129 / 0.2)",
+          }}
+        >
+          <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p>Payment completed successfully.</p>
+            <p className="font-normal opacity-80 mt-0.5">
+              {Number.isInteger(paidDeliveryId) && paidDeliveryId > 0
+                ? "Your paid delivery appears below with your other current deliveries."
+                : "Your delivery has been updated and appears below."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isNewCustomer && (
+        <div
+          className="flex items-start gap-3 p-4 rounded-xl text-sm font-semibold"
+          style={{
+            backgroundColor: "rgb(59 130 246 / 0.1)",
+            color: "var(--color-info)",
+            border: "1px solid rgb(59 130 246 / 0.2)",
+          }}
+        >
+          <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p>Welcome to EzyGo!</p>
+            <p className="font-normal opacity-80 mt-0.5">
+              Your account is verified. You can view your deliveries here or create a new one.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {paymentResult === "cancelled" && (
+        <div
+          className="p-4 rounded-xl text-sm font-semibold"
+          style={{
+            backgroundColor: "rgb(245 158 11 / 0.1)",
+            color: "var(--color-warning)",
+            border: "1px solid rgb(245 158 11 / 0.2)",
+          }}
+        >
+          Payment was cancelled. Your delivery is still saved and you can open it below to try again.
+        </div>
+      )}
 
       {error && (
         <div className="p-4 rounded-xl text-sm font-medium" style={{ backgroundColor: "rgb(239 68 68 / 0.08)", color: "var(--color-error)" }}>
@@ -128,8 +271,17 @@ export default function DashboardPage() {
           <Link href="/dashboard/deliveries/new" className="btn-accent inline-flex">Book a delivery</Link>
         </div>
       ) : (
-        <div className="space-y-3">
-          {deliveries.map((d) => <DeliveryRow key={d.id} delivery={d} />)}
+        <div className="space-y-8">
+          <DeliverySection
+            title="Current Deliveries"
+            description="Bookings awaiting payment, collection, or delivery."
+            deliveries={activeDeliveries}
+          />
+          <DeliverySection
+            title="Delivery History"
+            description="Completed, cancelled, and unsuccessful deliveries."
+            deliveries={pastDeliveries}
+          />
         </div>
       )}
     </div>

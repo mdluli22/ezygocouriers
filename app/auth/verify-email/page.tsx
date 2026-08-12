@@ -50,7 +50,7 @@ function VerifyEmailForm() {
       return;
     }
 
-    router.replace("/auth/login?verified=1");
+    router.replace("/dashboard?welcome=1");
   }
 
   async function handleResend() {
