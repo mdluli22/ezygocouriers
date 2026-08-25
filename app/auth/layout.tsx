@@ -68,7 +68,7 @@ export default function AuthLayout({
             </h2>
             <p className="mt-4 text-lg opacity-75 text-white leading-relaxed max-w-sm">
               Fast, reliable courier delivery across South Africa. Flat R99 for
-              every delivery — no surprises.
+              every delivery, no surprises.
             </p>
           </div>
 
@@ -77,8 +77,8 @@ export default function AuthLayout({
             {[
               { value: "R99", label: "Flat delivery fee" },
               { value: "Real-time", label: "Live tracking" },
-              { value: "3 roles", label: "Customer · Driver · Admin" },
-              { value: "Secure", label: "Better Auth + Google" },
+              // { value: "3 roles", label: "Customer · Driver · Admin" },
+              // { value: "Secure", label: "Better Auth + Google" },
             ].map((stat) => (
               <div
                 key={stat.label}

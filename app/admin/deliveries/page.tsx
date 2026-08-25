@@ -25,10 +25,9 @@ interface Delivery {
 interface Driver {
   id: number;
   full_name: string;
-  vehicle_make: string;
-  vehicle_model: string;
-  vehicle_registration: string;
-  is_active: boolean;
+  vehicle_type: string;
+  vehicle_reg: string;
+  status: "active" | "inactive" | "suspended";
 }
 
 export default function AdminDeliveriesPage() {
@@ -49,7 +48,7 @@ export default function AdminDeliveriesPage() {
     const dData  = await dRes.json();
     const drData = await drRes.json();
     setDeliveries(dData.data ?? []);
-    setDrivers((drData.data ?? []).filter((d: Driver) => d.is_active));
+    setDrivers((drData.data ?? []).filter((d: Driver) => d.status === "active"));
     setLoading(false);
   }
 
@@ -155,7 +154,7 @@ export default function AdminDeliveriesPage() {
                     <option value="">Select a driver…</option>
                     {drivers.map((dr) => (
                       <option key={dr.id} value={dr.id}>
-                        {dr.full_name} — {dr.vehicle_make} {dr.vehicle_model} ({dr.vehicle_registration})
+                        {dr.full_name} — {dr.vehicle_type} ({dr.vehicle_reg})
                       </option>
                     ))}
                   </select>

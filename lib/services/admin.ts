@@ -138,7 +138,7 @@ export async function getAdminDrivers() {
 export async function createDriver(data: {
   full_name: string;
   email: string;
-  phone?: string;
+  phone: string;
   password_hash: string;
   license_number: string;
   vehicle_type: string;
@@ -152,7 +152,7 @@ export async function createDriver(data: {
       `INSERT INTO users (full_name, email, phone, password_hash, auth_provider, role)
        VALUES ($1, $2, $3, $4, 'email', 'driver')
        RETURNING id`,
-      [data.full_name, data.email, data.phone || null, data.password_hash]
+      [data.full_name, data.email, data.phone, data.password_hash]
     );
     const userId = userResult.rows[0].id;
 

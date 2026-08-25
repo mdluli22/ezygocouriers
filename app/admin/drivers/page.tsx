@@ -9,10 +9,9 @@ interface Driver {
   email: string;
   phone: string | null;
   license_number: string;
-  vehicle_make: string;
-  vehicle_model: string;
-  vehicle_registration: string;
-  is_active: boolean;
+  vehicle_type: string;
+  vehicle_reg: string;
+  status: "active" | "inactive" | "suspended";
   total_deliveries: number;
   completed_deliveries: number;
   created_at: string;
@@ -20,7 +19,7 @@ interface Driver {
 
 const EMPTY_FORM = {
   full_name: "", email: "", phone: "", password: "",
-  license_number: "", vehicle_make: "", vehicle_model: "", vehicle_registration: "",
+  license_number: "", vehicle_type: "", vehicle_reg: "",
 };
 
 export default function AdminDriversPage() {
@@ -126,16 +125,16 @@ export default function AdminDriversPage() {
                 <span
                   className="text-xs font-bold px-2 py-0.5 rounded-full"
                   style={{
-                    backgroundColor: dr.is_active ? "rgb(16 185 129 / 0.1)" : "rgb(239 68 68 / 0.08)",
-                    color: dr.is_active ? "var(--color-success)" : "var(--color-error)",
+                    backgroundColor: dr.status === "active" ? "rgb(16 185 129 / 0.1)" : "rgb(239 68 68 / 0.08)",
+                    color: dr.status === "active" ? "var(--color-success)" : "var(--color-error)",
                   }}
                 >
-                  {dr.is_active ? "Active" : "Inactive"}
+                  {dr.status === "active" ? "Active" : "Inactive"}
                 </span>
               </div>
 
               <div className="text-xs space-y-1" style={{ color: "var(--color-text-secondary)" }}>
-                <p> {dr.vehicle_make} {dr.vehicle_model} · {dr.vehicle_registration}</p>
+                <p>{dr.vehicle_type} · {dr.vehicle_reg}</p>
                 <p> {dr.license_number}</p>
                 {dr.phone && <p>{dr.phone}</p>}
               </div>
@@ -153,7 +152,7 @@ export default function AdminDriversPage() {
                 className="btn-outline text-xs py-1.5 w-full"
                 onClick={() => handleToggle(dr.id)}
               >
-                {dr.is_active ? "Deactivate" : "Activate"}
+                {dr.status === "active" ? "Deactivate" : "Activate"}
               </button>
             </div>
           ))}
@@ -173,12 +172,11 @@ export default function AdminDriversPage() {
               {[
                 { name: "full_name",             label: "Full Name",            type: "text" },
                 { name: "email",                  label: "Email",                type: "email" },
-                { name: "phone",                  label: "Phone (optional)",     type: "tel" },
+                { name: "phone",                  label: "Phone",                type: "tel" },
                 { name: "password",               label: "Password",             type: "password" },
                 { name: "license_number",         label: "License Number",       type: "text" },
-                { name: "vehicle_make",           label: "Vehicle Make",         type: "text" },
-                { name: "vehicle_model",          label: "Vehicle Model",        type: "text" },
-                { name: "vehicle_registration",   label: "Vehicle Registration", type: "text" },
+                { name: "vehicle_type",           label: "Vehicle Type",         type: "text" },
+                { name: "vehicle_reg",            label: "Vehicle Registration", type: "text" },
               ].map(({ name, label, type }) => (
                 <div key={name}>
                   <label className="block text-sm font-semibold mb-1" style={{ color: "var(--color-text-secondary)" }}>
@@ -189,7 +187,7 @@ export default function AdminDriversPage() {
                     className="input"
                     value={form[name as keyof typeof form]}
                     onChange={(e) => setForm((p) => ({ ...p, [name]: e.target.value }))}
-                    required={name !== "phone"}
+                    required
                   />
                 </div>
               ))}

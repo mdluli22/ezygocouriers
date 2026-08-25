@@ -38,23 +38,37 @@ export async function POST(req: NextRequest) {
       license_number, vehicle_type, vehicle_reg,
     } = body;
 
-    if (!full_name || !email || !password || !license_number || !vehicle_type || !vehicle_reg) {
+    const requiredFields = {
+      full_name, email, phone, password,
+      license_number, vehicle_type, vehicle_reg,
+    };
+    const hasMissingField = Object.values(requiredFields).some(
+      (value) => typeof value !== "string" || value.trim() === ""
+    );
+
+    if (hasMissingField) {
       return errorResponse("All fields are required.", undefined, 422);
     }
 
+    const normalizedEmail = email.trim();
     const password_hash = await hashPassword(password);
     const result = await createDriver({
-      full_name, email, phone, password_hash,
-      license_number, vehicle_type, vehicle_reg,
+      full_name: full_name.trim(),
+      email: normalizedEmail,
+      phone: phone.trim(),
+      password_hash,
+      license_number: license_number.trim(),
+      vehicle_type: vehicle_type.trim(),
+      vehicle_reg: vehicle_reg.trim(),
     });
 
     let verificationEmailSent = true;
     try {
       const otp = await auth.api.createVerificationOTP({
-        body: { email, type: "email-verification" },
+        body: { email: normalizedEmail, type: "email-verification" },
         headers: req.headers,
       });
-      await sendAuthOtp({ to: email, otp, type: "email-verification" });
+      await sendAuthOtp({ to: normalizedEmail, otp, type: "email-verification" });
     } catch (emailError) {
       verificationEmailSent = false;
       console.error("[Driver verification email]", emailError);
