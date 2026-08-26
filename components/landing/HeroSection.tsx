@@ -129,7 +129,7 @@ export default function HeroSection() {
             }}
           >
             Deliver anything.<br />
-            <span style={{ color: "#F59E0B" }}>Anywhere.</span>
+            <span style={{ color: "#F59E0B" }}>Across Cape Town.</span>
           </h1>
 
           {/* Sub-copy */}
@@ -137,7 +137,7 @@ export default function HeroSection() {
             className="text-center lg:text-left max-w-lg mb-10 leading-relaxed"
             style={{ fontSize: "clamp(1rem, 1.6vw, 1.15rem)", color: textSecondary }}
           >
-            Fast, reliable courier delivery with real-time tracking.
+            Fast, reliable courier delivery across Cape Town with real-time tracking.
             One flat fee — no surprises, no calculations. Just send it.
           </p>
 
@@ -171,7 +171,7 @@ export default function HeroSection() {
                   onPlaceSelect={(p) => { setPickupPlace(p); setPickup(p.address); }}
                   onFocus={() => setFocused("pickup")}
                   onBlur={() => setFocused(null)}
-                  placeholder="Pickup address"
+                  placeholder="Cape Town pickup address"
                   inputStyle={{
                     width: "100%",
                     paddingLeft: "2.25rem",
@@ -220,7 +220,7 @@ export default function HeroSection() {
                   onPlaceSelect={(p) => { setDropoffPlace(p); setDropoff(p.address); }}
                   onFocus={() => setFocused("dropoff")}
                   onBlur={() => setFocused(null)}
-                  placeholder="Drop-off address"
+                  placeholder="Cape Town drop-off address"
                   inputStyle={{
                     width: "100%",
                     paddingLeft: "2.25rem",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CAPE_TOWN_SERVICE_BOUNDS } from "@/lib/constants/service-area";
 
 export interface PlaceResult {
   address: string;
@@ -61,11 +62,13 @@ export default function AddressAutocomplete({
 
     const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: "za" },
+      bounds: CAPE_TOWN_SERVICE_BOUNDS,
+      strictBounds: true,
       fields: ["formatted_address", "geometry", "place_id", "name"],
     });
 
     autocompleteRef.current = ac;
-    setReady(true);
+    const readyTimer = window.setTimeout(() => setReady(true), 0);
 
     const listener = ac.addListener("place_changed", () => {
       const place = ac.getPlace();
@@ -87,6 +90,7 @@ export default function AddressAutocomplete({
     });
 
     return () => {
+      window.clearTimeout(readyTimer);
       listener.remove();
       autocompleteRef.current = null;
       setReady(false);

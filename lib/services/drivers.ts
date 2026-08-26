@@ -3,6 +3,7 @@ import {
   DeliveryStatus,
   isValidTransition,
 } from "@/lib/constants/delivery-status";
+import { autoAssignNextPaidDeliveryToDriver } from "./driver-assignment";
 
 /**
  * Get all deliveries assigned to a driver (via their user ID).
@@ -99,8 +100,8 @@ export async function updateDeliveryStatus(
   note?: string
 ): Promise<void> {
   // 1. Verify driver owns this delivery
-  const check = await query<{ status: string; id: number }>(
-    `SELECT d.id, d.status
+  const check = await query<{ status: string; id: number; driver_id: number }>(
+    `SELECT d.id, d.status, dr.id AS driver_id
      FROM deliveries d
      JOIN drivers dr ON dr.id = d.assigned_driver_id
      WHERE d.id = $1 AND dr.user_id = $2
@@ -134,6 +135,18 @@ export async function updateDeliveryStatus(
     );
 
     await client.query("COMMIT");
+
+    if (["delivered", "failed", "cancelled"].includes(newStatus)) {
+      try {
+        await autoAssignNextPaidDeliveryToDriver(delivery.driver_id);
+      } catch (error) {
+        // The status update is complete; location heartbeats retry the queue.
+        console.error("[Automatic delivery queue assignment]", {
+          driverId: delivery.driver_id,
+          error,
+        });
+      }
+    }
   } catch (e) {
     await client.query("ROLLBACK");
     throw e;

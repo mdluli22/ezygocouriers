@@ -1,4 +1,15 @@
 import { query, getClient } from "@/lib/db/server";
+import { autoAssignDelivery } from "./driver-assignment";
+
+async function tryAutoAssignDelivery(deliveryId: number): Promise<void> {
+  try {
+    await autoAssignDelivery(deliveryId);
+  } catch (error) {
+    // A successful payment must never be rolled back because dispatching is
+    // temporarily unavailable. Location heartbeats retry waiting deliveries.
+    console.error("[Automatic driver assignment]", { deliveryId, error });
+  }
+}
 
 /**
  * Create a pending payment record linked to a delivery and quote.
@@ -85,6 +96,7 @@ export async function completePayment(params: {
       }
 
       await client.query("COMMIT");
+      await tryAutoAssignDelivery(params.deliveryId);
       return;
     }
 
@@ -126,6 +138,7 @@ export async function completePayment(params: {
     );
 
     await client.query("COMMIT");
+    await tryAutoAssignDelivery(params.deliveryId);
   } catch (e) {
     await client.query("ROLLBACK");
     throw e;

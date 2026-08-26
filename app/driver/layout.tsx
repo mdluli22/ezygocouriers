@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getSession } from "@/lib/auth/session";
 import DriverNav from "@/components/driver/DriverNav";
+import DriverLocationTracker from "@/components/driver/DriverLocationTracker";
 
 export const metadata: Metadata = { title: "Driver Portal" };
 
@@ -22,6 +23,7 @@ export default async function DriverLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--color-surface)" }}>
+      <DriverLocationTracker />
       <header
         className="sticky top-0 z-30 border-b"
         style={{ backgroundColor: "var(--color-bg)", borderColor: "var(--color-border)" }}

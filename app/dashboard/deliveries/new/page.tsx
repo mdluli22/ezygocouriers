@@ -308,7 +308,7 @@ export default function NewDeliveryPage() {
             {step === 1 ? "Where to?" : step === 2 ? "Parcel details" : "Confirm & pay"}
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-            {step === 1 ? "Enter pickup and dropoff addresses" : step === 2 ? "Tell us about what you're sending" : "Review your order below"}
+            {step === 1 ? "Cape Town pickup and drop-off addresses only" : step === 2 ? "Tell us about what you're sending" : "Review your order below"}
           </p>
         </div>
 
@@ -329,7 +329,7 @@ export default function NewDeliveryPage() {
                   value={pickupText}
                   onChange={setPickupText}
                   onPlaceSelect={handlePickupSelect}
-                  placeholder="Search pickup address…"
+                  placeholder="Search Cape Town pickup address…"
                   className="w-full"
                   inputStyle={{
                     width: "100%", padding: "10px 14px", fontSize: "15px", fontWeight: 500, outline: "none",
@@ -354,7 +354,7 @@ export default function NewDeliveryPage() {
                   value={dropoffText}
                   onChange={setDropoffText}
                   onPlaceSelect={handleDropoffSelect}
-                  placeholder="Search dropoff address…"
+                  placeholder="Search Cape Town drop-off address…"
                   className="w-full"
                   inputStyle={{
                     width: "100%", padding: "10px 14px", fontSize: "15px", fontWeight: 500, outline: "none",

@@ -113,6 +113,25 @@ docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
   < scripts/sql/004_payment_attempt_integrity.sql
 ```
 
+## Automatic driver assignment
+
+Apply the driver-location migration to existing database volumes:
+
+```bash
+docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
+  < scripts/sql/005_driver_location_auto_assignment.sql
+```
+
+Drivers share location while signed into the driver portal. After payment, the
+closest active driver who has no assigned, picked-up, or in-transit delivery is
+assigned automatically. The default pickup radius is 25 km and a driver
+location remains eligible for 15 minutes. Configure these limits with
+`AUTO_ASSIGNMENT_RADIUS_KM` and `DRIVER_LOCATION_MAX_AGE_MINUTES`.
+
+The booking flow currently accepts only pickup and drop-off addresses inside
+the Cape Town service area. This restriction is enforced in both Google Places
+autocomplete and server-side delivery validation.
+
 ## PayFast sandbox testing
 
 Set `PAYFAST_SANDBOX=true`. You can provide credentials from your own PayFast

@@ -74,6 +74,9 @@ CREATE TABLE drivers (
   vehicle_reg        VARCHAR(50),
   license_number     VARCHAR(100),
   status             driver_status       NOT NULL DEFAULT 'active',
+  current_latitude   DECIMAL(10, 8),
+  current_longitude  DECIMAL(11, 8),
+  location_updated_at TIMESTAMPTZ,
   notes              TEXT,                           -- Admin notes about the driver
   created_at         TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
   updated_at         TIMESTAMPTZ         NOT NULL DEFAULT NOW()
@@ -81,6 +84,9 @@ CREATE TABLE drivers (
 
 CREATE INDEX idx_drivers_user_id    ON drivers (user_id);
 CREATE INDEX idx_drivers_status     ON drivers (status);
+CREATE INDEX idx_drivers_location_updated_at
+  ON drivers (location_updated_at)
+  WHERE current_latitude IS NOT NULL AND current_longitude IS NOT NULL;
 
 -- =============================================================================
 -- ADDRESSES

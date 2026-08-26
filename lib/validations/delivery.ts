@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isInCapeTownServiceArea } from "@/lib/constants/service-area";
 
 const saPhone = z
   .string()
@@ -16,8 +17,8 @@ const addressSchema = z.object({
   province: z.string().max(100).optional().or(z.literal("")),
   postal_code: z.string().max(20).optional().or(z.literal("")),
   country: z.string().max(100).optional().or(z.literal("")),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
   // Extras
   building_or_business: z.string().max(255).optional().or(z.literal("")),
   apt_suite: z.string().max(100).optional().or(z.literal("")),
@@ -26,6 +27,14 @@ const addressSchema = z.object({
     .optional()
     .nullable(),
   notes: z.string().max(500).optional().or(z.literal("")),
+}).superRefine((address, context) => {
+  if (!isInCapeTownServiceArea(address)) {
+    context.addIssue({
+      code: "custom",
+      path: ["formatted_address"],
+      message: "This address is outside our Cape Town delivery area",
+    });
+  }
 });
 
 export const createDeliverySchema = z.object({
