@@ -68,8 +68,21 @@ Google accounts use the provider's verified-email status.
 Start PostgreSQL and the app with Docker:
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 ```
+
+This uses the production-style image for the current branch and exposes it only
+on [http://localhost:3000](http://localhost:3000). To run it in the background,
+add `-d`. View its logs and stop it with:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f app
+docker compose -f docker-compose.yml -f docker-compose.local.yml down
+```
+
+The PostgreSQL data is kept in the `postgres_data` Docker volume between runs.
+Use `down -v` only when you intentionally want a clean local database; it
+deletes that volume and all of its local data.
 
 Or run the development server directly:
 

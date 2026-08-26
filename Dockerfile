@@ -1,7 +1,7 @@
 # ─── Stage 1: Dependencies ───────────────────────────────────────────────────
 # Pin to linux/amd64 so Next.js uses native SWC binaries (not WASM).
 # This is needed when building on Apple Silicon (arm64) hosts.
-FROM --platform=linux/amd64 node:20-alpine AS deps
+FROM --platform=linux/amd64 node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 # ─── Stage 2: Builder ────────────────────────────────────────────────────────
-FROM --platform=linux/amd64 node:20-alpine AS builder
+FROM --platform=linux/amd64 node:22-alpine AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -22,10 +22,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-RUN npm run build
+# Better Auth is initialized while Next.js collects page data and requires a
+# non-default secret. This placeholder exists only in the discarded builder
+# stage; the runner receives the real secret from the Compose env_file.
+RUN BETTER_AUTH_SECRET="docker-build-only-secret-not-used-at-runtime" npm run build
 
 # ─── Stage 3: Runner (Production) ────────────────────────────────────────────
-FROM --platform=linux/amd64 node:20-alpine AS runner
+FROM --platform=linux/amd64 node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
