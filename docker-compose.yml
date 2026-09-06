@@ -14,6 +14,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - ezygo_network
 
@@ -37,6 +39,37 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ezygo_network
+
+  migrate:
+    image: postgres:16-alpine
+    container_name: ezygo_migrate
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./scripts/sql:/migrations:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - sh
+      - -ec
+      - |
+        for migration in \
+          /migrations/002_better_auth.sql \
+          /migrations/003_delivery_checkout_details.sql \
+          /migrations/004_payment_attempt_integrity.sql \
+          /migrations/005_driver_location_auto_assignment.sql \
+          /migrations/006_delivery_recipient_pin.sql \
+          /migrations/007_delivery_completion_email.sql
+        do
+          echo "Applying $${migration}"
+          psql -v ON_ERROR_STOP=1 -h db -U "$${DB_USER}" -d "$${DB_NAME}" -f "$${migration}"
+        done
     networks:
       - ezygo_network
 

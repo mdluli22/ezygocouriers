@@ -94,8 +94,9 @@ Open [http://localhost:3000](http://localhost:3000) in a browser.
 
 ## Better Auth database migration
 
-New Docker database volumes run the SQL scripts automatically. For an existing
-database, apply the migration once before deploying the new application code:
+New Docker database volumes run the SQL scripts automatically. Existing Docker
+database volumes are migrated automatically by the `migrate` service before the
+application starts. To apply an individual migration manually, use:
 
 ```bash
 docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
