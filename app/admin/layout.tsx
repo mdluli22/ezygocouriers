@@ -26,9 +26,9 @@ export default async function AdminLayout({
   if (session.role !== "admin") redirect("/dashboard");
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+    <div className="admin-portal-shell">
       <AdminSidebar dashboardHref={dashboardHref} />
-      <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+      <main className="admin-portal-main">
         {children}
       </main>
     </div>

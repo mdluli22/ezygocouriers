@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import BrandLogo from "@/components/BrandLogo";
 
 interface FieldErrors {
   email?: string;
@@ -99,15 +100,12 @@ function AdminLoginForm() {
           />
         </div>
 
-        <Link href="/" className="relative z-10 flex items-center gap-3 group">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-lg transition-transform group-hover:scale-105"
-            style={{ backgroundColor: "var(--color-accent)", color: "var(--color-primary)" }}
-          >
-            E
-          </div>
-          <span className="text-white font-bold text-xl tracking-tight">EzyGo</span>
-        </Link>
+        <BrandLogo
+          className="relative z-10"
+          variant="dark"
+          size="lg"
+          priority
+        />
 
         <div className="relative z-10 space-y-8">
           <div>
@@ -148,15 +146,7 @@ function AdminLoginForm() {
       >
         <div className="w-full max-w-md space-y-8">
           {/* Mobile logo */}
-          <Link href="/" className="lg:hidden flex items-center gap-2.5 group w-fit">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shadow"
-              style={{ backgroundColor: "var(--color-primary)", color: "var(--color-accent)" }}
-            >
-              E
-            </div>
-            <span className="font-bold text-lg" style={{ color: "var(--color-primary)" }}>EzyGo</span>
-          </Link>
+          <BrandLogo className="lg:hidden" size="sm" priority />
 
           {/* Header */}
           <div>

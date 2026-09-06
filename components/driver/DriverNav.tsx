@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogOut, Truck } from "lucide-react";
 
 export default function DriverNav() {
   const router = useRouter();
   const [name, setName]         = useState("");
   const [loggingOut, setLogout] = useState(false);
   const [assignedCount, setAssignedCount] = useState(0);
-  const [lastSeenCount, setLastSeenCount] = useState(0);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -24,8 +24,8 @@ export default function DriverNav() {
         const res = await fetch("/api/driver/deliveries");
         const data = await res.json();
         if (!res.ok || !data) return;
-        const rows = Array.isArray(data.data) ? data.data : (data.data ?? []);
-        const assigned = rows.filter((r: any) => r.status === "assigned").length;
+        const rows: Array<{ status?: string }> = Array.isArray(data.data) ? data.data : [];
+        const assigned = rows.filter((row) => row.status === "assigned").length;
         if (!mounted) return;
         // notify if count increased
         if (assigned > assignedCount) {
@@ -38,7 +38,7 @@ export default function DriverNav() {
           }
         }
         setAssignedCount(assigned);
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
@@ -63,29 +63,25 @@ export default function DriverNav() {
   const initial   = firstName.charAt(0).toUpperCase();
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="portal-header-actions">
       {/* assigned deliveries badge */}
       {assignedCount > 0 && (
         <button
           title={`${assignedCount} assigned delivery(ies)`}
           onClick={() => router.push('/driver')}
-          className="relative inline-flex items-center px-3 py-1 rounded-full font-semibold text-sm"
-          style={{ backgroundColor: 'rgba(245,158,11,0.12)', color: 'var(--color-warning)' }}
+          className="driver-assignment-pill"
         >
-          🚚
-          <span className="ml-2 text-xs">{assignedCount}</span>
-          <span className="absolute -top-2 -right-2 w-3 h-3 rounded-full bg-red-500" />
+          <Truck size={16} />
+          <span>{assignedCount}</span>
+          <i />
         </button>
       )}
       {name && (
-        <div className="hidden sm:flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm"
-            style={{ backgroundColor: "#F59E0B", color: "#111" }}
-          >
+        <div className="driver-user-pill">
+          <div className="portal-avatar portal-avatar-accent">
             {initial}
           </div>
-          <span className="text-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>
+          <span className="hidden sm:inline">
             {firstName}
           </span>
         </div>
@@ -93,12 +89,8 @@ export default function DriverNav() {
       <button
         onClick={logout}
         disabled={loggingOut}
-        className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-xl transition-all hover:opacity-80 disabled:opacity-50"
-        style={{
-          backgroundColor: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          color: "var(--color-text-secondary)",
-        }}
+        className="portal-icon-button"
+        aria-label="Sign out"
       >
         {loggingOut ? (
           <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
@@ -106,11 +98,9 @@ export default function DriverNav() {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
         ) : (
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
-          </svg>
+          <LogOut size={17} />
         )}
-        <span className="hidden sm:inline">{loggingOut ? "Signing out…" : "Sign out"}</span>
+        <span className="hidden md:inline">{loggingOut ? "Signing out…" : "Sign out"}</span>
       </button>
     </div>
   );

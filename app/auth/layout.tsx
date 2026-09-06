@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import BrandLogo from "@/components/BrandLogo";
 
 export const metadata: Metadata = {
   title: "Authentication",
@@ -43,20 +43,12 @@ export default function AuthLayout({
         </div>
 
         {/* Logo */}
-        <Link href="/" className="relative z-10 flex items-center gap-3 group">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-lg transition-transform group-hover:scale-105"
-            style={{
-              backgroundColor: "var(--color-accent)",
-              color: "var(--color-primary)",
-            }}
-          >
-            E
-          </div>
-          <span className="text-white font-bold text-xl tracking-tight">
-            EzyGo
-          </span>
-        </Link>
+        <BrandLogo
+          className="relative z-10"
+          variant="dark"
+          size="lg"
+          priority
+        />
 
         {/* Brand copy */}
         <div className="relative z-10 space-y-8">
@@ -112,20 +104,7 @@ export default function AuthLayout({
       >
         {/* Mobile logo */}
         <div className="lg:hidden flex items-center justify-between p-6 border-b" style={{ borderColor: "var(--color-border)" }}>
-          <Link href="/" className="flex items-center gap-2.5">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-base shadow"
-              style={{
-                backgroundColor: "var(--color-primary)",
-                color: "var(--color-accent)",
-              }}
-            >
-              E
-            </div>
-            <span className="font-bold text-lg" style={{ color: "var(--color-primary)" }}>
-              EzyGo
-            </span>
-          </Link>
+          <BrandLogo size="sm" priority />
         </div>
 
         {/* Form area */}

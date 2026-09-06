@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronDown, Moon, Sun, UserRound } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -29,7 +30,9 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
     <nav className={`landing-nav ${scrolled ? "is-scrolled" : ""}`} aria-label="Main navigation">
       <div className="landing-shell nav-inner">
         <Link href="/" className="brand-lockup" aria-label="EzyGo home">
-          <span className="brand-mark">GO</span>
+          <span className="brand-logo-surface">
+            <Image src="/GoLogo.png" alt="" width={92} height={25} priority />
+          </span>
           <span className="brand-name">EzyGo</span>
         </Link>
 

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getSession } from "@/lib/auth/session";
+import BrandLogo from "@/components/BrandLogo";
 import DriverNav from "@/components/driver/DriverNav";
 import DriverLocationTracker from "@/components/driver/DriverLocationTracker";
 
@@ -22,33 +22,21 @@ export default async function DriverLayout({ children }: { children: React.React
   if (session.role !== "driver") redirect("/dashboard");
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--color-surface)" }}>
+    <div className="portal-shell portal-shell-driver">
       <DriverLocationTracker />
-      <header
-        className="sticky top-0 z-30 border-b"
-        style={{ backgroundColor: "var(--color-bg)", borderColor: "var(--color-border)" }}
-      >
-        <div className="container flex items-center justify-between h-16">
-          <Link href="/driver" className="flex items-center gap-2.5 group">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shadow transition-transform group-hover:scale-105"
-              style={{ backgroundColor: "var(--color-primary)", color: "var(--color-accent)" }}
-            >
-              E
-            </div>
-            <div>
-              <span className="font-bold text-sm block leading-none" style={{ color: "var(--color-primary)" }}>
-                EzyGo
-              </span>
-              <span className="text-xs leading-none" style={{ color: "var(--color-text-muted)" }}>
-                Driver Portal
-              </span>
-            </div>
-          </Link>
+      <header className="portal-topbar">
+        <div className="portal-nav-inner">
+          <BrandLogo
+            href="/driver"
+            size="md"
+            subtitle="Driver Portal"
+            ariaLabel="EzyGo driver portal"
+            priority
+          />
           <DriverNav />
         </div>
       </header>
-      <main className="flex-1 container py-8">{children}</main>
+      <main className="portal-main">{children}</main>
     </div>
   );
 }

@@ -4,6 +4,19 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Clock3,
+  History,
+  MapPin,
+  Package,
+  PackageOpen,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import {
   STATUS_LABELS,
   STATUS_COLORS,
   DeliveryStatus,
@@ -24,6 +37,8 @@ interface Delivery {
   created_at: string;
 }
 
+const PAST_STATUSES: DeliveryStatus[] = ["delivered", "failed", "cancelled"];
+
 function DeliveryRow({ delivery }: { delivery: Delivery }) {
   const date = new Date(delivery.created_at).toLocaleDateString("en-ZA", {
     day: "numeric",
@@ -32,68 +47,56 @@ function DeliveryRow({ delivery }: { delivery: Delivery }) {
   });
 
   return (
-    <Link href={`/dashboard/tracking/${delivery.id}`} className="block group">
-      <div
-        className="flex items-center justify-between p-4 rounded-2xl border transition-all duration-150 hover:shadow-md"
-        style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-surface)" }}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-            style={{ backgroundColor: "var(--color-primary)", opacity: 0.12 }}
-          >
-            <svg className="w-5 h-5" style={{ color: "var(--color-primary)", opacity: 10 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
-            </svg>
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-sm" style={{ color: "var(--color-primary)" }}>{delivery.tracking_number}</span>
-              <span className={`badge ${STATUS_COLORS[delivery.status]}`}>{STATUS_LABELS[delivery.status]}</span>
-            </div>
-            <p className="text-xs mt-0.5 truncate" style={{ color: "var(--color-text-secondary)" }}>
-              {delivery.pickup_city} → {delivery.dropoff_city}
-            </p>
-            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{date}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 shrink-0 ml-4">
-          <span className="text-sm font-bold hidden sm:block" style={{ color: "var(--color-primary)" }}>
-            {delivery.quote_currency} {parseFloat(delivery.quote_amount).toFixed(2)}
+    <Link href={`/dashboard/tracking/${delivery.id}`} className="delivery-list-card group">
+      <span className="delivery-list-icon"><Package size={20} /></span>
+      <span className="delivery-list-copy">
+        <span className="delivery-list-topline">
+          <strong>{delivery.tracking_number}</strong>
+          <span className={`badge ${STATUS_COLORS[delivery.status]}`}>
+            {STATUS_LABELS[delivery.status]}
           </span>
-          <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" style={{ color: "var(--color-text-muted)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </div>
-      </div>
+        </span>
+        <span className="delivery-list-route">
+          <MapPin size={13} /> {delivery.pickup_city}
+          <ArrowRight size={12} /> {delivery.dropoff_city}
+        </span>
+        <small>{date} · {delivery.recipient_name}</small>
+      </span>
+      <span className="delivery-list-price">
+        <strong>{delivery.quote_currency} {parseFloat(delivery.quote_amount).toFixed(2)}</strong>
+        <ArrowRight size={17} />
+      </span>
     </Link>
   );
 }
-
-const PAST_STATUSES: DeliveryStatus[] = ["delivered", "failed", "cancelled"];
 
 function DeliverySection({
   title,
   description,
   deliveries,
+  history = false,
 }: {
   title: string;
   description: string;
   deliveries: Delivery[];
+  history?: boolean;
 }) {
   if (deliveries.length === 0) return null;
 
   return (
-    <section className="space-y-3">
-      <div>
-        <h2 className="text-base font-black" style={{ color: "var(--color-primary)" }}>
-          {title}
-        </h2>
-        <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-          {description}
-        </p>
+    <section className="portal-list-section">
+      <div className="portal-section-heading">
+        <div>
+          <span className="portal-section-kicker">
+            {history ? <History size={13} /> : <Clock3 size={13} />}
+            {history ? "Archive" : "In motion"}
+          </span>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </div>
+        <span className="portal-count-badge">{deliveries.length}</span>
       </div>
-      <div className="space-y-3">
+      <div className="delivery-list-stack">
         {deliveries.map((delivery) => (
           <DeliveryRow key={delivery.id} delivery={delivery} />
         ))}
@@ -132,8 +135,6 @@ function DashboardContent() {
           Number.isInteger(returnedPaymentId) &&
           returnedPaymentId > 0
         ) {
-          // In live mode this endpoint safely refuses the request and the ITN
-          // remains authoritative. In sandbox it reconciles a missed test ITN.
           await fetch("/api/payments/sandbox-confirm", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -163,14 +164,10 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-primary)" }} viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-          </svg>
-          <span className="text-sm font-medium" style={{ color: "var(--color-text-muted)" }}>Loading deliveries…</span>
-        </div>
+      <div className="portal-loading-state">
+        <span><Package size={25} /></span>
+        <strong>Gathering your deliveries</strong>
+        <p>One moment while we bring everything into view.</p>
       </div>
     );
   }
@@ -181,109 +178,107 @@ function DashboardContent() {
   const pastDeliveries = deliveries.filter((delivery) =>
     PAST_STATUSES.includes(delivery.status)
   );
+  const completedDeliveries = deliveries.filter((delivery) => delivery.status === "delivered");
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-black" style={{ color: "var(--color-primary)" }}>My Deliveries</h1>
-        <Link href="/dashboard/deliveries/new" className="btn-accent">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          New Delivery
-        </Link>
+    <div className="portal-dashboard">
+      <section className="portal-hero-card customer-portal-hero">
+        <div className="portal-hero-grid" aria-hidden="true" />
+        <div className="portal-hero-orb" aria-hidden="true" />
+        <div className="portal-hero-copy">
+          <span className="portal-eyebrow"><Sparkles size={14} /> Customer hub</span>
+          <h1>Your deliveries,<br /><em>all in one place.</em></h1>
+          <p>Book, pay and follow every parcel from one calm, simple dashboard.</p>
+          <Link href="/dashboard/deliveries/new" className="portal-hero-action">
+            Book a delivery <Plus size={17} />
+          </Link>
+        </div>
+        <div className="portal-pulse-card">
+          <span className="portal-pulse-label"><i /> Live overview</span>
+          <div className="portal-pulse-stats">
+            <div><strong>{activeDeliveries.length}</strong><span>Active</span></div>
+            <div><strong>{completedDeliveries.length}</strong><span>Delivered</span></div>
+            <div><strong>{deliveries.length}</strong><span>Total</span></div>
+          </div>
+          <div className="portal-pulse-route">
+            <span><i /></span><b /><span><i /></span><b /><span><Check size={12} /></span>
+          </div>
+          <small>From booking to their door, without the guesswork.</small>
+        </div>
+      </section>
+
+      {(paymentResult || isNewCustomer || error) && (
+        <div className="portal-notices">
+          {paymentResult === "success" && (
+            <div className="portal-notice is-success">
+              <CheckCircle2 size={19} />
+              <span><strong>Payment completed.</strong> Your delivery is ready for the next step.</span>
+            </div>
+          )}
+          {isNewCustomer && (
+            <div className="portal-notice is-info">
+              <Sparkles size={19} />
+              <span><strong>Welcome to EzyGo.</strong> Your account is verified and ready to go.</span>
+            </div>
+          )}
+          {paymentResult === "cancelled" && (
+            <div className="portal-notice is-warning">
+              <Clock3 size={19} />
+              <span><strong>Payment paused.</strong> Your booking is safe—open it below to try again.</span>
+            </div>
+          )}
+          {error && <div className="portal-notice is-error">{error}</div>}
+        </div>
+      )}
+
+      <div className="portal-content-grid">
+        <div className="portal-primary-column">
+          {deliveries.length === 0 ? (
+            <div className="portal-empty-state">
+              <span className="portal-empty-icon"><PackageOpen size={30} /></span>
+              <span className="portal-section-kicker"><Sparkles size={13} /> Fresh start</span>
+              <h2>Your first delivery starts here.</h2>
+              <p>Tell us where it needs to go. We’ll handle the route, updates and delivery.</p>
+              <Link href="/dashboard/deliveries/new" className="portal-primary-button">
+                Book your first delivery <ArrowRight size={17} />
+              </Link>
+            </div>
+          ) : (
+            <>
+              <DeliverySection
+                title="Current deliveries"
+                description="Bookings awaiting payment, collection or delivery."
+                deliveries={activeDeliveries}
+              />
+              <DeliverySection
+                title="Delivery history"
+                description="Completed, cancelled and unsuccessful deliveries."
+                deliveries={pastDeliveries}
+                history
+              />
+            </>
+          )}
+        </div>
+
+        <aside className="portal-side-column">
+          <div className="portal-side-card portal-side-card-accent">
+            <span className="portal-side-icon"><ShieldCheck size={20} /></span>
+            <span className="portal-section-kicker">EzyGo promise</span>
+            <h3>Simple from start to finish.</h3>
+            <ul>
+              <li><Check size={14} /> One transparent flat fee</li>
+              <li><Check size={14} /> Live status updates</li>
+              <li><Check size={14} /> Secure online payment</li>
+            </ul>
+          </div>
+          <div className="portal-side-card portal-flat-fee-card">
+            <span>Flat delivery fee</span>
+            <strong>R99</strong>
+            <p>One clear price for every standard Cape Town delivery.</p>
+            <Link href="/dashboard/deliveries/new">Start a booking <ArrowRight size={15} /></Link>
+          </div>
+        </aside>
       </div>
-
-      {paymentResult === "success" && (
-        <div
-          className="flex items-start gap-3 p-4 rounded-xl text-sm font-semibold"
-          style={{
-            backgroundColor: "rgb(16 185 129 / 0.1)",
-            color: "var(--color-success)",
-            border: "1px solid rgb(16 185 129 / 0.2)",
-          }}
-        >
-          <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p>Payment completed successfully.</p>
-            <p className="font-normal opacity-80 mt-0.5">
-              {Number.isInteger(paidDeliveryId) && paidDeliveryId > 0
-                ? "Your paid delivery appears below with your other current deliveries."
-                : "Your delivery has been updated and appears below."}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {isNewCustomer && (
-        <div
-          className="flex items-start gap-3 p-4 rounded-xl text-sm font-semibold"
-          style={{
-            backgroundColor: "rgb(59 130 246 / 0.1)",
-            color: "var(--color-info)",
-            border: "1px solid rgb(59 130 246 / 0.2)",
-          }}
-        >
-          <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p>Welcome to EzyGo!</p>
-            <p className="font-normal opacity-80 mt-0.5">
-              Your account is verified. You can view your deliveries here or create a new one.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {paymentResult === "cancelled" && (
-        <div
-          className="p-4 rounded-xl text-sm font-semibold"
-          style={{
-            backgroundColor: "rgb(245 158 11 / 0.1)",
-            color: "var(--color-warning)",
-            border: "1px solid rgb(245 158 11 / 0.2)",
-          }}
-        >
-          Payment was cancelled. Your delivery is still saved and you can open it below to try again.
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 rounded-xl text-sm font-medium" style={{ backgroundColor: "rgb(239 68 68 / 0.08)", color: "var(--color-error)" }}>
-          {error}
-        </div>
-      )}
-
-      {deliveries.length === 0 ? (
-        <div className="card text-center py-20 space-y-5" style={{ borderStyle: "dashed", borderWidth: 2 }}>
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto" style={{ backgroundColor: "var(--color-surface-raised)" }}>
-            <svg className="w-8 h-8" style={{ color: "var(--color-text-muted)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
-            </svg>
-          </div>
-          <div>
-            <p className="font-bold text-lg" style={{ color: "var(--color-primary)" }}>No deliveries yet</p>
-            <p className="text-sm mt-1" style={{ color: "var(--color-text-muted)" }}>Book your first delivery in under a minute.</p>
-          </div>
-          <Link href="/dashboard/deliveries/new" className="btn-accent inline-flex">Book a delivery</Link>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          <DeliverySection
-            title="Current Deliveries"
-            description="Bookings awaiting payment, collection, or delivery."
-            deliveries={activeDeliveries}
-          />
-          <DeliverySection
-            title="Delivery History"
-            description="Completed, cancelled, and unsuccessful deliveries."
-            deliveries={pastDeliveries}
-          />
-        </div>
-      )}
     </div>
   );
 }

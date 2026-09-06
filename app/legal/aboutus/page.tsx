@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import BrandLogo from "@/components/BrandLogo";
 import ScrollToTop from "@/components/scrollToTop";
 
 export const metadata: Metadata = {
@@ -87,8 +88,9 @@ export default function AboutPage() {
       style={{ fontFamily: "'DM Sans', sans-serif" }}
       className="bg-[#F5F3EF] text-[#1A1714] overflow-x-hidden"
     >
-      {/* ── BACK HOME BUTTON ── */}
-      <div className="bg-[#1A1714] px-10 pt-6">
+      {/* ── BRAND BAR ── */}
+      <div className="flex items-center justify-between bg-[#1A1714] px-6 pt-6 sm:px-10">
+        <BrandLogo variant="dark" size="sm" priority />
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-[12px] font-medium text-white/50 hover:text-white transition-colors group"
