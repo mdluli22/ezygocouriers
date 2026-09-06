@@ -26,6 +26,12 @@ jobs:
 
             docker compose down
 
-            docker compose up -d --build
+            # Existing Postgres volumes do not re-run /docker-entrypoint-initdb.d.
+            # Run the idempotent migrations explicitly and fail the deployment
+            # before starting the app if any schema change cannot be applied.
+            docker compose up -d db
+            docker compose run --rm migrate
+
+            docker compose up -d --build --no-deps app
 
             docker image prune -f
