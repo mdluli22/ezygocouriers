@@ -1,9 +1,9 @@
 -- =============================================================================
--- TEST SEED: Admin & Driver accounts for development / testing
+-- TEST SEED: Admin, driver & customer accounts for development / testing
 -- =============================================================================
 -- Admin  → admin@ezygo.co.za   / Admin@1234
 -- Driver → driver@ezygo.co.za  / Driver@1234
--- Customer -> customer@ezygo.co.za / Driver@1234
+-- Customer → customer@ezygo.co.za / Customer@1234
 --
 -- Run via:
 --   docker exec -i ezygo_db psql -U $DB_USER -d $DB_NAME < scripts/sql/seed_test_users.sql
@@ -31,6 +31,28 @@ ON CONFLICT (email) DO UPDATE
       full_name      = EXCLUDED.full_name,
       is_active      = TRUE,
       email_verified = TRUE;
+
+-- ── Upsert test customer ──────────────────────────────────────────────────────
+INSERT INTO users (full_name, email, phone, password_hash, auth_provider, role, is_active, email_verified)
+VALUES (
+  'Test Customer',
+  'customer@ezygo.co.za',
+  '+27600000003',
+  '$2b$12$y.FN8MpCDJaHW86AMCHwzejVjK.MNMEcmvO5mKqh3Za5DdSlC9A7u',
+  'email',
+  'customer',
+  TRUE,
+  TRUE
+)
+ON CONFLICT (email) DO UPDATE
+  SET password_hash  = EXCLUDED.password_hash,
+      full_name      = EXCLUDED.full_name,
+      phone          = EXCLUDED.phone,
+      auth_provider  = 'email',
+      role           = 'customer',
+      is_active      = TRUE,
+      email_verified = TRUE,
+      updated_at     = NOW();
 
 -- ── Upsert test driver user ───────────────────────────────────────────────────
 INSERT INTO users (full_name, email, phone, password_hash, auth_provider, role, is_active, email_verified)
@@ -80,7 +102,7 @@ SELECT
   created_at,
   updated_at
 FROM users
-WHERE email IN ('admin@ezygo.co.za', 'driver@ezygo.co.za')
+WHERE email IN ('admin@ezygo.co.za', 'driver@ezygo.co.za', 'customer@ezygo.co.za')
   AND password_hash IS NOT NULL
 ON CONFLICT (provider_id, account_id) DO UPDATE
   SET password   = EXCLUDED.password,
@@ -89,5 +111,5 @@ ON CONFLICT (provider_id, account_id) DO UPDATE
 -- ── Confirm ───────────────────────────────────────────────────────────────────
 SELECT id, full_name, email, role, is_active
 FROM   users
-WHERE  email IN ('admin@ezygo.co.za', 'driver@ezygo.co.za')
+WHERE  email IN ('admin@ezygo.co.za', 'driver@ezygo.co.za', 'customer@ezygo.co.za')
 ORDER  BY role;

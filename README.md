@@ -142,10 +142,19 @@ docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
   < scripts/sql/006_delivery_recipient_pin.sql
 ```
 
+Apply the delivery-success email migration to existing database volumes:
+
+```bash
+docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
+  < scripts/sql/007_delivery_completion_email.sql
+```
+
 Drivers share location while signed into the driver portal. After payment, the
-closest active driver who has no assigned, picked-up, or in-transit delivery is
-assigned automatically. The default pickup radius is 25 km and a driver
-location remains eligible for 15 minutes. Configure these limits with
+closest recently located active driver who has no assigned, picked-up, or
+in-transit delivery is preferred. If no free driver has a fresh location, the
+delivery falls back to the least-recently assigned active driver instead of
+remaining unassigned. When a driver finishes a trip, they receive the oldest
+waiting paid delivery. Configure proximity preference with
 `AUTO_ASSIGNMENT_RADIUS_KM` and `DRIVER_LOCATION_MAX_AGE_MINUTES`.
 
 The booking flow currently accepts only pickup and drop-off addresses inside

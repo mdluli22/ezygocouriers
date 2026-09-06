@@ -7,26 +7,44 @@ const DEFAULT_LOCATION_MAX_AGE_MINUTES = 15;
 const ASSIGNMENT_ADVISORY_LOCK_ID = 584_701_219;
 
 const distanceFromPickupSql = `
-  2 * 6371 * ASIN(
-    SQRT(
-      LEAST(
-        1.0,
-        GREATEST(
-          0.0,
-          POWER(
-            SIN(RADIANS((pa.latitude::double precision - dr.current_latitude::double precision) / 2)),
-            2
-          ) +
-          COS(RADIANS(dr.current_latitude::double precision)) *
-          COS(RADIANS(pa.latitude::double precision)) *
-          POWER(
-            SIN(RADIANS((pa.longitude::double precision - dr.current_longitude::double precision) / 2)),
-            2
+  CASE
+    WHEN pa.latitude IS NULL
+      OR pa.longitude IS NULL
+      OR dr.current_latitude IS NULL
+      OR dr.current_longitude IS NULL
+    THEN NULL
+    ELSE 2 * 6371 * ASIN(
+      SQRT(
+        LEAST(
+          1.0,
+          GREATEST(
+            0.0,
+            POWER(
+              SIN(RADIANS((pa.latitude::double precision - dr.current_latitude::double precision) / 2)),
+              2
+            ) +
+            COS(RADIANS(dr.current_latitude::double precision)) *
+            COS(RADIANS(pa.latitude::double precision)) *
+            POWER(
+              SIN(RADIANS((pa.longitude::double precision - dr.current_longitude::double precision) / 2)),
+              2
+            )
           )
         )
       )
     )
-  )
+  END
+`;
+
+const preferredDriverLocationSql = `
+  pa.latitude IS NOT NULL
+  AND pa.longitude IS NOT NULL
+  AND dr.current_latitude IS NOT NULL
+  AND dr.current_longitude IS NOT NULL
+  AND dr.location_updated_at >= NOW() - make_interval(mins => $2::integer)
+  AND dr.current_latitude BETWEEN $4 AND $5
+  AND dr.current_longitude BETWEEN $6 AND $7
+  AND (${distanceFromPickupSql}) <= $3
 `;
 
 function positiveNumber(value: string | undefined, fallback: number): number {
@@ -64,7 +82,13 @@ async function lockAssignments(client: PoolClient): Promise<void> {
 export interface AutomaticAssignment {
   deliveryId: number;
   driverId: number;
-  distanceKm: number;
+  distanceKm: number | null;
+}
+
+function assignmentLogNote(distanceKm: number | null): string {
+  return distanceKm === null
+    ? "Automatically assigned to the next available driver"
+    : `Automatically assigned to the nearest available driver (${distanceKm.toFixed(1)} km from pickup)`;
 }
 
 /** Run delivery assignment in its own transaction (safe after payment commit). */
@@ -85,7 +109,13 @@ export async function autoAssignDelivery(
   }
 }
 
-/** Assign the closest recently-located, active and free driver to one paid delivery. */
+/**
+ * Assign one paid delivery to an active free driver.
+ *
+ * A recently located driver inside the pickup radius is preferred by distance.
+ * If no such driver is available, fall back to the least-recently assigned free
+ * driver so a missing GPS heartbeat never leaves a paid delivery stranded.
+ */
 export async function assignDriverToDelivery(
   client: PoolClient,
   deliveryId: number
@@ -94,11 +124,20 @@ export async function assignDriverToDelivery(
 
   const candidate = await client.query<{
     driver_id: number;
-    distance_km: number;
+    distance_km: number | null;
   }>(
     `SELECT
        dr.id AS driver_id,
-       ${distanceFromPickupSql} AS distance_km
+       CASE
+         WHEN ${preferredDriverLocationSql}
+         THEN ${distanceFromPickupSql}
+         ELSE NULL
+       END AS distance_km,
+       CASE
+         WHEN ${preferredDriverLocationSql}
+         THEN 0
+         ELSE 1
+       END AS proximity_rank
      FROM deliveries delivery
      JOIN addresses pa ON pa.id = delivery.pickup_address_id
      JOIN drivers dr ON TRUE
@@ -106,23 +145,23 @@ export async function assignDriverToDelivery(
      WHERE delivery.id = $1
        AND delivery.status = 'paid'
        AND delivery.assigned_driver_id IS NULL
-       AND pa.latitude IS NOT NULL
-       AND pa.longitude IS NOT NULL
        AND dr.status = 'active'
        AND driver_user.is_active = TRUE
-       AND dr.current_latitude IS NOT NULL
-       AND dr.current_longitude IS NOT NULL
-       AND dr.location_updated_at >= NOW() - make_interval(mins => $2::integer)
-       AND (${distanceFromPickupSql}) <= $3
-       AND dr.current_latitude BETWEEN $4 AND $5
-       AND dr.current_longitude BETWEEN $6 AND $7
        AND NOT EXISTS (
          SELECT 1
          FROM deliveries busy_delivery
          WHERE busy_delivery.assigned_driver_id = dr.id
            AND busy_delivery.status IN ('assigned', 'picked_up', 'in_transit')
        )
-     ORDER BY distance_km ASC, dr.id ASC
+     ORDER BY
+       proximity_rank ASC,
+       distance_km ASC NULLS LAST,
+       (
+         SELECT MAX(previous_delivery.updated_at)
+         FROM deliveries previous_delivery
+         WHERE previous_delivery.assigned_driver_id = dr.id
+       ) ASC NULLS FIRST,
+       dr.id ASC
      LIMIT 1
      FOR UPDATE OF delivery, dr SKIP LOCKED`,
     [
@@ -147,20 +186,22 @@ export async function assignDriverToDelivery(
   );
   if (updated.rowCount !== 1) return null;
 
-  const distanceKm = Number(selected.distance_km);
+  const distanceKm = selected.distance_km === null
+    ? null
+    : Number(selected.distance_km);
   await client.query(
     `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)
      VALUES ($1, 'assigned', $2, NULL)`,
     [
       deliveryId,
-      `Automatically assigned to the nearest available driver (${distanceKm.toFixed(1)} km from pickup)`,
+      assignmentLogNote(distanceKm),
     ]
   );
 
   return { deliveryId, driverId: selected.driver_id, distanceKm };
 }
 
-/** Give one free driver the closest waiting paid delivery within the service radius. */
+/** Give one free driver the oldest waiting paid delivery. */
 export async function assignNextPaidDeliveryToDriver(
   client: PoolClient,
   driverId: number
@@ -174,11 +215,6 @@ export async function assignNextPaidDeliveryToDriver(
      WHERE dr.id = $1
        AND dr.status = 'active'
        AND driver_user.is_active = TRUE
-       AND dr.current_latitude IS NOT NULL
-       AND dr.current_longitude IS NOT NULL
-       AND dr.location_updated_at >= NOW() - make_interval(mins => $2::integer)
-       AND dr.current_latitude BETWEEN $3 AND $4
-       AND dr.current_longitude BETWEEN $5 AND $6
        AND NOT EXISTS (
          SELECT 1
          FROM deliveries busy_delivery
@@ -187,20 +223,13 @@ export async function assignNextPaidDeliveryToDriver(
        )
      LIMIT 1
      FOR UPDATE OF dr`,
-    [
-      driverId,
-      locationMaxAgeMinutes(),
-      CAPE_TOWN_SERVICE_BOUNDS.south,
-      CAPE_TOWN_SERVICE_BOUNDS.north,
-      CAPE_TOWN_SERVICE_BOUNDS.west,
-      CAPE_TOWN_SERVICE_BOUNDS.east,
-    ]
+    [driverId]
   );
   if (!driver.rows[0]) return null;
 
   const candidate = await client.query<{
     delivery_id: number;
-    distance_km: number;
+    distance_km: number | null;
   }>(
     `SELECT
        delivery.id AS delivery_id,
@@ -212,11 +241,10 @@ export async function assignNextPaidDeliveryToDriver(
        AND delivery.assigned_driver_id IS NULL
        AND pa.latitude IS NOT NULL
        AND pa.longitude IS NOT NULL
-       AND (${distanceFromPickupSql}) <= $2
-     ORDER BY distance_km ASC, delivery.created_at ASC, delivery.id ASC
+     ORDER BY delivery.created_at ASC, delivery.id ASC
      LIMIT 1
      FOR UPDATE OF delivery SKIP LOCKED`,
-    [driverId, assignmentRadiusKm()]
+    [driverId]
   );
 
   const selected = candidate.rows[0];
@@ -230,13 +258,15 @@ export async function assignNextPaidDeliveryToDriver(
   );
   if (updated.rowCount !== 1) return null;
 
-  const distanceKm = Number(selected.distance_km);
+  const distanceKm = selected.distance_km === null
+    ? null
+    : Number(selected.distance_km);
   await client.query(
     `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)
      VALUES ($1, 'assigned', $2, NULL)`,
     [
       selected.delivery_id,
-      `Automatically assigned to the nearest available driver (${distanceKm.toFixed(1)} km from pickup)`,
+      assignmentLogNote(distanceKm),
     ]
   );
 

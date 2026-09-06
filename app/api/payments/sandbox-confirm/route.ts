@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     if (!session) return unauthorizedResponse();
     if (session.role !== "customer") return forbiddenResponse();
 
-    if (!getPayFastConfig().sandbox || !isLocalPayFastDemo()) {
+    if (!getPayFastConfig().sandbox || !isLocalPayFastDemo(request.url)) {
       return errorResponse("Local demo confirmation is not available for this PayFast configuration.", undefined, 403);
     }
 

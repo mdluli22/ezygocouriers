@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     return successResponse("Payment initialised.", {
       payfast_url: `${PAYFAST_HOST}/eng/process`,
       form_data:   formData,
-      demo_mode: isLocalPayFastDemo(),
+      demo_mode: isLocalPayFastDemo(req.url),
       payment_id: paymentId,
       delivery_id: delivery.id,
     });

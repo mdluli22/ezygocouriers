@@ -16,6 +16,7 @@ interface User {
 type Step = 1 | 2 | 3;
 type MeetingDropoff = "curb" | "meet" | "leave";
 type AuthTab = "login" | "signup";
+const SA_PHONE_PATTERN = /^(\+27|0)[6-8][0-9]{8}$/;
 
 interface AddressGeo {
   formatted_address: string;
@@ -238,7 +239,15 @@ export default function NewDeliveryPage() {
 
   function goToStep3() {
     const errs: Record<string, string> = {};
-    if (!parcelDescription.trim()) 
+    if (!(pickupContactName || user?.full_name || "").trim())
+      errs["pickup_contact_name"] = "Pickup contact name is required";
+    if (!SA_PHONE_PATTERN.test(pickupPhone.trim()))
+      errs["pickup_contact_phone"] = "Enter a valid South African phone number";
+    if (recipientName.trim().length < 2)
+      errs["recipient_name"] = "Recipient name is required";
+    if (!SA_PHONE_PATTERN.test(recipientPhone.trim()))
+      errs["recipient_phone"] = "Enter a valid South African phone number";
+    if (!parcelDescription.trim())
       errs["parcel_description"] = "Please select what you're sending";
     if (requirePin && !/^\S+@\S+\.\S+$/.test(recipientEmail.trim()))
       errs["recipient_email"] = "Enter the recipient email that should receive the PIN";
@@ -271,8 +280,15 @@ export default function NewDeliveryPage() {
       const res = await fetch("/api/deliveries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) {
-        if (data.errors) setFieldErrors(data.errors);
-        else setError(data.message || "Failed to create delivery.");
+        if (data.errors && Object.keys(data.errors).length > 0) {
+          setFieldErrors(data.errors);
+          setError(data.message || "Please correct the highlighted details.");
+          const errorFields = Object.keys(data.errors);
+          setStep(errorFields.some((field) => field.startsWith("pickup_address") || field.startsWith("dropoff_address")) ? 1 : 2);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          setError(data.message || "Failed to create delivery.");
+        }
         return;
       }
       if (data.data.payfast.demo_mode) {
@@ -291,8 +307,10 @@ export default function NewDeliveryPage() {
   }
 
   function handleAuthSuccess(loggedInUser: User) {
-    void loggedInUser;
-    window.location.assign("/dashboard");
+    setUser(loggedInUser);
+    setPickupContactName((current) => current || loggedInUser.full_name);
+    setShowAuth(false);
+    setStep(3);
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -669,9 +687,8 @@ export default function NewDeliveryPage() {
             <button
               type="button"
               onClick={doSubmit}
-              disabled={isProcessing || !user}
+              disabled={isProcessing}
               className="btn-primary w-full py-4 text-base font-bold rounded-2xl"
-              style={!user ? { opacity: 0.5, cursor: "not-allowed" } : {}}
             >
               {isProcessing ? (
                 <span className="flex items-center justify-center gap-2">

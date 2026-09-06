@@ -5,6 +5,7 @@ import {
 } from "@/lib/constants/delivery-status";
 import { autoAssignNextPaidDeliveryToDriver } from "./driver-assignment";
 import { isDeliveryPinFormat, verifyDeliveryPin } from "@/lib/delivery-pin";
+import { sendDeliveryCompleted } from "@/lib/email/smtp";
 
 /**
  * Get all deliveries assigned to a driver (via their user ID).
@@ -111,10 +112,17 @@ export async function updateDeliveryStatus(
       driver_id: number;
       require_pin: boolean;
       delivery_pin_hash: string | null;
+      tracking_number: string;
+      recipient_name: string;
+      customer_email: string;
+      customer_name: string;
     }>(
-      `SELECT d.id, d.status, d.require_pin, d.delivery_pin_hash, dr.id AS driver_id
+      `SELECT d.id, d.status, d.require_pin, d.delivery_pin_hash,
+              d.tracking_number, d.recipient_name, dr.id AS driver_id,
+              cu.email AS customer_email, cu.full_name AS customer_name
        FROM deliveries d
        JOIN drivers dr ON dr.id = d.assigned_driver_id
+       JOIN users cu ON cu.id = d.customer_id
        WHERE d.id = $1 AND dr.user_id = $2
        FOR UPDATE`,
       [deliveryId, driverUserId]
@@ -154,6 +162,30 @@ export async function updateDeliveryStatus(
     );
 
     await client.query("COMMIT");
+
+    if (newStatus === "delivered") {
+      try {
+        await sendDeliveryCompleted({
+          to: delivery.customer_email,
+          customerName: delivery.customer_name,
+          trackingNumber: delivery.tracking_number,
+          recipientName: delivery.recipient_name,
+        });
+        await query(
+          `UPDATE deliveries
+           SET delivery_completed_email_sent_at = NOW(), updated_at = NOW()
+           WHERE id = $1 AND delivery_completed_email_sent_at IS NULL`,
+          [deliveryId]
+        );
+      } catch (error) {
+        // Delivery completion remains authoritative even if the notification
+        // provider is temporarily unavailable.
+        console.error("[Delivery completed email] Delivery failed", {
+          deliveryId,
+          error,
+        });
+      }
+    }
 
     if (["delivered", "failed", "cancelled"].includes(newStatus)) {
       try {

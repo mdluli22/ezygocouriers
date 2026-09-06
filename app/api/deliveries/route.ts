@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         payfast: {
           url:       `${PAYFAST_HOST}/eng/process`,
           form_data: payfastData,
-          demo_mode: isLocalPayFastDemo(),
+          demo_mode: isLocalPayFastDemo(req.url),
           payment_id: paymentId,
         },
       },

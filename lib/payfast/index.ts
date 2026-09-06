@@ -99,9 +99,27 @@ function isPublicCallbackUrl(value: string): boolean {
 }
 
 /** Local sandbox checkouts cannot receive PayFast redirects or ITNs. */
-export function isLocalPayFastDemo(): boolean {
+export function isLocalPayFastDemo(requestUrl?: string | URL): boolean {
   const config = getPayFastConfig();
-  return config.sandbox && !Boolean(config.appUrl && isPublicCallbackUrl(config.appUrl));
+  if (!config.sandbox) return false;
+
+  if (requestUrl) {
+    try {
+      const hostname = new URL(requestUrl).hostname.toLowerCase();
+      if (
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname === "::1" ||
+        hostname.endsWith(".local")
+      ) {
+        return true;
+      }
+    } catch {
+      // Fall through to configuration-based detection.
+    }
+  }
+
+  return !Boolean(config.appUrl && isPublicCallbackUrl(config.appUrl));
 }
 
 /** PHP-compatible urlencode used by PayFast's custom integration signatures. */

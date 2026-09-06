@@ -235,3 +235,47 @@ export async function sendDeliveryPin({
     `,
   });
 }
+
+export async function sendDeliveryCompleted({
+  to,
+  customerName,
+  trackingNumber,
+  recipientName,
+}: {
+  to: string;
+  customerName: string;
+  trackingNumber: string;
+  recipientName: string;
+}): Promise<void> {
+  const from = process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER;
+  if (!from) throw new Error("[Email] Missing SMTP_FROM or SMTP_USER.");
+
+  const safeCustomerName = escapeHtml(customerName);
+  const safeTrackingNumber = escapeHtml(trackingNumber);
+  const safeRecipientName = escapeHtml(recipientName);
+
+  await getTransporter().sendMail({
+    from,
+    to,
+    subject: `Delivered successfully: ${trackingNumber}`,
+    text: [
+      `Hi ${customerName},`,
+      "",
+      `Your EzyGo delivery ${trackingNumber} has been delivered successfully to ${recipientName}.`,
+      "",
+      "Thank you for choosing EzyGo Couriers.",
+    ].join("\n"),
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#172033">
+        <div style="display:inline-block;padding:7px 12px;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase">Delivered successfully</div>
+        <h1 style="font-size:26px;margin:20px 0 12px;color:#173d38">Your delivery has arrived</h1>
+        <p style="line-height:1.7">Hi ${safeCustomerName}, your EzyGo delivery <strong>${safeTrackingNumber}</strong> has been handed over successfully to <strong>${safeRecipientName}</strong>.</p>
+        <div style="margin:24px 0;padding:18px 20px;border-radius:14px;background:#f4f7f5;border-left:4px solid #16a34a">
+          <div style="font-size:12px;color:#667085;text-transform:uppercase;letter-spacing:1px;font-weight:700">Tracking number</div>
+          <div style="font-size:20px;font-weight:800;margin-top:5px;color:#173d38">${safeTrackingNumber}</div>
+        </div>
+        <p style="font-size:14px;color:#667085;line-height:1.6">Thank you for choosing EzyGo Couriers.</p>
+      </div>
+    `,
+  });
+}
