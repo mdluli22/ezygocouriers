@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Activity,
   BadgeDollarSign,
@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
+import { signOutAndRedirect } from "@/lib/auth/navigation";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -28,11 +29,9 @@ export default function AdminSidebar({
   dashboardHref?: string;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
 
   async function handleSignOut() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/admin/login");
+    await signOutAndRedirect("/admin/login");
   }
 
   return (

@@ -2,8 +2,9 @@
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
+import { replaceAfterAuth } from "@/lib/auth/navigation";
 
 export default function VerifyEmailPage() {
   return (
@@ -14,7 +15,6 @@ export default function VerifyEmailPage() {
 }
 
 function VerifyEmailForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email")?.trim() ?? "";
 
@@ -50,7 +50,7 @@ function VerifyEmailForm() {
       return;
     }
 
-    router.replace("/dashboard?welcome=1");
+    replaceAfterAuth("/dashboard?welcome=1");
   }
 
   async function handleResend() {

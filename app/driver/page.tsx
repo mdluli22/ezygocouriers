@@ -162,7 +162,7 @@ export default function DriverDashboardPage() {
   const [tab, setTab] = useState<"active" | "all">("active");
 
   useEffect(() => {
-    fetch("/api/auth/me").then((response) => response.json()).then((data) => {
+    fetch("/api/auth/me", { cache: "no-store" }).then((response) => response.json()).then((data) => {
       if (data.success) setDriverName(data.data.full_name.split(" ")[0]);
     });
     fetch("/api/driver/deliveries")

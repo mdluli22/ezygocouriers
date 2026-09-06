@@ -4,6 +4,11 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
+import {
+  replaceAfterAuth,
+  safeInternalRedirect,
+  signOutSession,
+} from "@/lib/auth/navigation";
 
 interface FieldErrors {
   email?: string;
@@ -67,12 +72,12 @@ function DriverLoginForm() {
       // Only allow driver role
       if (data.data?.role !== "driver") {
         setServerError("This portal is for drivers only. Please use the correct login page.");
-        await fetch("/api/auth/logout", { method: "POST" });
+        await signOutSession();
         return;
       }
 
       const redirect = searchParams.get("redirect");
-      router.push(redirect || "/driver");
+      replaceAfterAuth(safeInternalRedirect(redirect, "/driver"));
     } catch {
       setServerError("Something went wrong. Please check your connection.");
     } finally {

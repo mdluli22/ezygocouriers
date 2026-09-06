@@ -4,6 +4,11 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
+import {
+  replaceAfterAuth,
+  safeInternalRedirect,
+  signOutSession,
+} from "@/lib/auth/navigation";
 
 interface FieldErrors {
   email?: string;
@@ -66,14 +71,17 @@ function AdminLoginForm() {
       // Only allow admin role
       if (data.data?.role !== "admin") {
         setServerError("This portal is for administrators only.");
-        await fetch("/api/auth/logout", { method: "POST" });
+        await signOutSession();
         return;
       }
 
       const redirect = searchParams.get("redirect");
       const adminHome =
         window.location.hostname === "admin.ezygocouriers.co.za" ? "/" : "/admin";
-      router.push(!redirect || redirect === "/admin" ? adminHome : redirect);
+      const destination = !redirect || redirect === "/admin"
+        ? adminHome
+        : safeInternalRedirect(redirect, adminHome);
+      replaceAfterAuth(destination);
     } catch {
       setServerError("Something went wrong. Please check your connection.");
     } finally {

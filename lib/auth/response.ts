@@ -12,6 +12,8 @@ export function applyAuthCookies(
   for (const cookie of authHeaders.getSetCookie()) {
     response.headers.append("set-cookie", cookie);
   }
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  response.headers.set("Pragma", "no-cache");
   return response;
 }
 

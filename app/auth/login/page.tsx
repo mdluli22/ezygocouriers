@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
+import { replaceAfterAuth, safeInternalRedirect } from "@/lib/auth/navigation";
 
 interface FieldErrors {
   email?: string;
@@ -85,7 +86,8 @@ function LoginForm() {
         driver:   "/driver",
         admin:    "/admin",
       };
-      router.push(redirect || roleDashboard[data.data?.role] || "/dashboard");
+      const roleHome = roleDashboard[data.data?.role] || "/dashboard";
+      replaceAfterAuth(safeInternalRedirect(redirect, roleHome));
     } catch {
       setServerError("Something went wrong. Please check your connection.");
     } finally {

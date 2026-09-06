@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ChevronDown, LogOut, Package, Plus } from "lucide-react";
+import { signOutAndRedirect } from "@/lib/auth/navigation";
 
 interface User {
   full_name: string;
@@ -13,14 +13,13 @@ interface User {
 }
 
 export default function DashboardNav() {
-  const router = useRouter();
   const [user, setUser]       = useState<User | null>(null);
   const [open, setOpen]       = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    fetch("/api/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => { if (d.success) setUser(d.data); })
       .catch(() => {});
@@ -39,8 +38,11 @@ export default function DashboardNav() {
 
   async function handleLogout() {
     setLoggingOut(true);
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/auth/login");
+    try {
+      await signOutAndRedirect("/auth/login");
+    } catch {
+      setLoggingOut(false);
+    }
   }
 
   const initials = user?.full_name

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import AddressAutocomplete, { PlaceResult } from "@/components/ui/AddressAutocomplete";
+import { signOutAndRedirect } from "@/lib/auth/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ function AuthModal({ onSuccess, onClose }: { onSuccess: (user: User) => void; on
       const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
       const data = await res.json();
       if (!res.ok) { setError(data.message || "Login failed."); return; }
-      const me = await (await fetch("/api/auth/me")).json();
+      const me = await (await fetch("/api/auth/me", { cache: "no-store" })).json();
       if (me.success) onSuccess({ id: me.data.id, full_name: me.data.full_name, email: me.data.email });
     } catch { setError("Something went wrong."); }
     finally { setLoading(false); }
@@ -191,7 +192,7 @@ export default function NewDeliveryPage() {
   const isProcessing = loading || Boolean(payfastData);
 
   useEffect(() => {
-    fetch("/api/auth/me").then(r => r.json()).then(d => {
+    fetch("/api/auth/me", { cache: "no-store" }).then(r => r.json()).then(d => {
       if (d.success) {
         const u = { id: d.data.id, full_name: d.data.full_name, email: d.data.email };
         setUser(u);
@@ -603,7 +604,7 @@ export default function NewDeliveryPage() {
               <div className="flex items-center gap-3 p-4 rounded-2xl" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
                 <button
                   type="button"
-                  onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); setUser(null); setStep(1); }}
+                  onClick={() => signOutAndRedirect("/auth/login?redirect=/dashboard/deliveries/new")}
                   className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-opacity hover:opacity-70"
                   title="Log out"
                   style={{ backgroundColor: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}

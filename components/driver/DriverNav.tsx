@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Truck } from "lucide-react";
+import { signOutAndRedirect } from "@/lib/auth/navigation";
 
 export default function DriverNav() {
   const router = useRouter();
@@ -11,7 +12,7 @@ export default function DriverNav() {
   const [assignedCount, setAssignedCount] = useState(0);
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    fetch("/api/auth/me", { cache: "no-store" })
       .then(r => r.json())
       .then(d => { if (d.success) setName(d.data.full_name); });
   }, []);
@@ -55,8 +56,11 @@ export default function DriverNav() {
 
   async function logout() {
     setLogout(true);
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/driver/login");
+    try {
+      await signOutAndRedirect("/driver/login");
+    } catch {
+      setLogout(false);
+    }
   }
 
   const firstName = name.split(" ")[0];
