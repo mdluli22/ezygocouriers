@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   STATUS_LABELS,
   STATUS_COLORS,
-  DELIVERY_STATUSES,
   DeliveryStatus,
 } from "@/lib/constants/delivery-status";
 
@@ -28,6 +27,9 @@ interface Delivery {
   pickup_contact_phone: string;
   parcel_description: string;
   special_instructions: string;
+  fragile: boolean;
+  require_pin: boolean;
+  delivery_pin_sent_at: string | null;
   pickup_street: string;
   pickup_suburb: string;
   pickup_city: string;
@@ -132,8 +134,6 @@ function StatusTimeline({
           const log        = logMap.get(step);
           const isComplete = !isTerminal && currentIndex > i;
           const isCurrent  = !isTerminal && current === step;
-          const isPending  = isTerminal || currentIndex < i;
-
           return (
             <div key={step} className="flex gap-4">
               {/* Dot + line */}
@@ -366,6 +366,13 @@ function TrackingContent() {
       <InfoCard title="Parcel Details">
         <InfoRow label="Description"         value={delivery.parcel_description} />
         <InfoRow label="Special instructions" value={delivery.special_instructions} />
+        {delivery.fragile && <InfoRow label="Handling" value="Fragile · handle with care" />}
+        {delivery.require_pin && (
+          <InfoRow
+            label="Handover security"
+            value={delivery.delivery_pin_sent_at ? "PIN sent to recipient" : "PIN will be sent after payment"}
+          />
+        )}
       </InfoCard>
 
       {/* Driver (only if assigned) */}

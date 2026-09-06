@@ -4,6 +4,7 @@ import {
   isValidTransition,
 } from "@/lib/constants/delivery-status";
 import { autoAssignNextPaidDeliveryToDriver } from "./driver-assignment";
+import { isDeliveryPinFormat, verifyDeliveryPin } from "@/lib/delivery-pin";
 
 /**
  * Get all deliveries assigned to a driver (via their user ID).
@@ -97,35 +98,53 @@ export async function updateDeliveryStatus(
   deliveryId: number,
   driverUserId: number,
   newStatus: DeliveryStatus,
-  note?: string
+  note?: string,
+  pin?: string
 ): Promise<void> {
-  // 1. Verify driver owns this delivery
-  const check = await query<{ status: string; id: number; driver_id: number }>(
-    `SELECT d.id, d.status, dr.id AS driver_id
-     FROM deliveries d
-     JOIN drivers dr ON dr.id = d.assigned_driver_id
-     WHERE d.id = $1 AND dr.user_id = $2
-     LIMIT 1`,
-    [deliveryId, driverUserId]
-  );
-
-  const delivery = check.rows[0];
-  if (!delivery) throw new Error("Delivery not found or not assigned to you.");
-
-  // 2. Validate transition
-  if (!isValidTransition(delivery.status as DeliveryStatus, newStatus)) {
-    throw new Error(
-      `Cannot transition from '${delivery.status}' to '${newStatus}'.`
-    );
-  }
-
   const client = await getClient();
   try {
     await client.query("BEGIN");
 
+    const check = await client.query<{
+      status: string;
+      id: number;
+      driver_id: number;
+      require_pin: boolean;
+      delivery_pin_hash: string | null;
+    }>(
+      `SELECT d.id, d.status, d.require_pin, d.delivery_pin_hash, dr.id AS driver_id
+       FROM deliveries d
+       JOIN drivers dr ON dr.id = d.assigned_driver_id
+       WHERE d.id = $1 AND dr.user_id = $2
+       FOR UPDATE`,
+      [deliveryId, driverUserId]
+    );
+
+    const delivery = check.rows[0];
+    if (!delivery) throw new Error("Delivery not found or not assigned to you.");
+    if (!isValidTransition(delivery.status as DeliveryStatus, newStatus)) {
+      throw new Error(`Cannot transition from '${delivery.status}' to '${newStatus}'.`);
+    }
+
+    let pinVerified = false;
+    if (newStatus === "delivered" && delivery.require_pin) {
+      if (!delivery.delivery_pin_hash) {
+        throw new Error("Delivery PIN has not been issued to the recipient yet.");
+      }
+      if (!pin || !isDeliveryPinFormat(pin)) {
+        throw new Error("Enter the recipient's six-digit delivery PIN.");
+      }
+      pinVerified = await verifyDeliveryPin(pin, delivery.delivery_pin_hash);
+      if (!pinVerified) throw new Error("Incorrect delivery PIN. Ask the recipient to check their email.");
+    }
+
     await client.query(
-      `UPDATE deliveries SET status = $1, updated_at = NOW() WHERE id = $2`,
-      [newStatus, deliveryId]
+      `UPDATE deliveries
+       SET status = $1,
+           pin_verified_at = CASE WHEN $3 THEN NOW() ELSE pin_verified_at END,
+           updated_at = NOW()
+       WHERE id = $2`,
+      [newStatus, deliveryId, pinVerified]
     );
 
     await client.query(

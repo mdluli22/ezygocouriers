@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
-import { buildPaymentData, PAYFAST_HOST } from "@/lib/payfast";
+import { buildPaymentData, PAYFAST_HOST, isLocalPayFastDemo } from "@/lib/payfast";
 import { createPaymentRecord } from "@/lib/services/payments";
 import {
   successResponse,
@@ -90,6 +90,9 @@ export async function POST(req: NextRequest) {
     return successResponse("Payment initialised.", {
       payfast_url: `${PAYFAST_HOST}/eng/process`,
       form_data:   formData,
+      demo_mode: isLocalPayFastDemo(),
+      payment_id: paymentId,
+      delivery_id: delivery.id,
     });
   } catch (error) {
     console.error("[POST /api/payments/create]", error);

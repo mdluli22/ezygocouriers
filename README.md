@@ -135,6 +135,13 @@ docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
   < scripts/sql/005_driver_location_auto_assignment.sql
 ```
 
+Apply the recipient PIN migration to existing database volumes:
+
+```bash
+docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
+  < scripts/sql/006_delivery_recipient_pin.sql
+```
+
 Drivers share location while signed into the driver portal. After payment, the
 closest active driver who has no assigned, picked-up, or in-transit delivery is
 assigned automatically. The default pickup radius is 25 km and a driver
@@ -152,9 +159,10 @@ sandbox account, or leave `PAYFAST_MERCHANT_ID` and `PAYFAST_MERCHANT_KEY` blank
 to use PayFast's published shared test credentials.
 
 For end-to-end ITN testing, `PAYFAST_APP_URL` (or `NEXT_PUBLIC_APP_URL`) must be
-a public HTTPS origin. PayFast rejects localhost callback URLs. Local form-only
-testing still works, but payment notifications cannot reach a local server
-unless it is exposed through a public HTTPS tunnel.
+a public HTTPS origin. PayFast rejects localhost callback URLs. Without one,
+the app uses an explicit no-money local demo confirmation screen. With a public
+HTTPS origin, checkout is sent to PayFast and its verified ITN remains the
+source of truth.
 
 ## Admin subdomain
 

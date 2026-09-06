@@ -28,6 +28,8 @@ interface Delivery {
   dropoff_street: string;
   dropoff_city: string;
   parcel_description: string;
+  fragile: boolean;
+  require_pin: boolean;
   updated_at: string;
 }
 
@@ -105,6 +107,12 @@ function ActiveTripCard({ delivery }: { delivery: Delivery }) {
         </span>
         <span className="driver-view-link">View trip <ArrowRight size={16} /></span>
       </div>
+      {(delivery.fragile || delivery.require_pin) && (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {delivery.fragile && <span className="badge" style={{ backgroundColor: "rgb(245 158 11 / 0.16)", color: "#fbbf24" }}>Fragile · handle with care</span>}
+          {delivery.require_pin && <span className="badge" style={{ backgroundColor: "rgb(16 185 129 / 0.16)", color: "#34d399" }}>PIN handover</span>}
+        </div>
+      )}
     </Link>
   );
 }
@@ -127,7 +135,11 @@ function TripRow({ delivery }: { delivery: Delivery }) {
           <strong>{delivery.dropoff_street}, {delivery.dropoff_city}</strong>
           <i className={`badge ${STATUS_COLORS[delivery.status]}`}>{STATUS_LABELS[delivery.status]}</i>
         </span>
-        <small>{delivery.tracking_number} · {delivery.recipient_name}</small>
+        <small>
+          {delivery.tracking_number} · {delivery.recipient_name}
+          {delivery.fragile ? " · Fragile" : ""}
+          {delivery.require_pin ? " · PIN required" : ""}
+        </small>
       </span>
       <ArrowRight size={16} className="driver-trip-arrow" />
     </Link>

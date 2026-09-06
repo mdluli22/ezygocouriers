@@ -172,6 +172,7 @@ export default function NewDeliveryPage() {
   const [pickupNote, setPickupNote] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
+  const [recipientEmail, setRecipientEmail] = useState("");
   const [dropoffNote, setDropoffNote] = useState("");
   const [parcelDescription, setParcelDescription] = useState("");
   const [packageType, setPackageType] = useState("small");
@@ -239,6 +240,8 @@ export default function NewDeliveryPage() {
     const errs: Record<string, string> = {};
     if (!parcelDescription.trim()) 
       errs["parcel_description"] = "Please select what you're sending";
+    if (requirePin && !/^\S+@\S+\.\S+$/.test(recipientEmail.trim()))
+      errs["recipient_email"] = "Enter the recipient email that should receive the PIN";
     if (Object.keys(errs).length) { setFieldErrors(errs); return; }
     setFieldErrors({});
     if (!user) { setShowAuth(true); return; }
@@ -257,6 +260,7 @@ export default function NewDeliveryPage() {
       dropoff_address: { ...dropoffGeo, building_or_business: "", apt_suite: "", meeting_option: mapDropoffMeeting(dropoffMeeting), notes: dropoffNote },
       recipient_name: recipientName,
       recipient_phone: recipientPhone,
+      recipient_email: recipientEmail,
       parcel_description: parcelDescription,
       package_type: packageType,
       fragile,
@@ -269,6 +273,12 @@ export default function NewDeliveryPage() {
       if (!res.ok) {
         if (data.errors) setFieldErrors(data.errors);
         else setError(data.message || "Failed to create delivery.");
+        return;
+      }
+      if (data.data.payfast.demo_mode) {
+        window.location.assign(
+          `/dashboard/payment-demo?delivery=${data.data.id}&payment_id=${data.data.payfast.payment_id}`
+        );
         return;
       }
       setPayfastUrl(data.data.payfast.url);
@@ -466,14 +476,14 @@ export default function NewDeliveryPage() {
               <div className="space-y-2">
                 {[
                   { key: "fragile", checked: fragile, toggle: () => setFragile(v => !v), label: "Fragile", sub: "Handle with care" },
-                  { key: "pin", checked: requirePin, toggle: () => setRequirePin(v => !v), label: "Require PIN", sub: "Recipient confirms with a PIN" },
+                  { key: "pin", checked: requirePin, toggle: () => setRequirePin(v => !v), label: "Require PIN", sub: "PIN is emailed to the recipient after payment" },
                 ].map((t) => (
                   <div key={t.key} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
                     <div>
                       <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>{t.label}</p>
                       <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{t.sub}</p>
                     </div>
-                    <button type="button" onClick={t.toggle} aria-pressed={t.checked}
+                    <button type="button" onClick={t.toggle} role="switch" aria-checked={t.checked} aria-label={`${t.label}: ${t.checked ? "on" : "off"}`}
                       className="w-11 h-6 rounded-full p-0.5 transition-colors flex items-center shrink-0"
                       style={{ backgroundColor: t.checked ? "var(--color-primary)" : "var(--color-border)" }}
                     >
@@ -501,6 +511,15 @@ export default function NewDeliveryPage() {
               {fieldErrors.recipient_name && <p className="error-text">{fieldErrors.recipient_name}</p>}
               <input type="tel" placeholder="Recipient phone number" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} className={`input ${fieldErrors.recipient_phone ? "input-error" : ""}`} />
               {fieldErrors.recipient_phone && <p className="error-text">{fieldErrors.recipient_phone}</p>}
+              {requirePin && (
+                <>
+                  <input type="email" placeholder="Recipient email for delivery PIN" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} className={`input ${fieldErrors.recipient_email ? "input-error" : ""}`} required />
+                  {fieldErrors.recipient_email && <p className="error-text">{fieldErrors.recipient_email}</p>}
+                  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                    We send the six-digit handover PIN directly to this address once payment is confirmed.
+                  </p>
+                </>
+              )}
 
               <div>
                 <p className="text-[11px] font-bold tracking-widest mb-2" style={{ color: "var(--color-text-muted)" }}>DELIVERY PREFERENCE</p>

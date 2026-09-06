@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth/session";
 import { createDeliverySchema } from "@/lib/validations/delivery";
 import { createDelivery, confirmDelivery } from "@/lib/services/deliveries";
 import { createPaymentRecord } from "@/lib/services/payments";
-import { buildPaymentData, PAYFAST_HOST } from "@/lib/payfast";
+import { buildPaymentData, PAYFAST_HOST, isLocalPayFastDemo } from "@/lib/payfast";
 import { query } from "@/lib/db/server";
 import {
   successResponse,
@@ -77,6 +77,8 @@ export async function POST(req: NextRequest) {
         payfast: {
           url:       `${PAYFAST_HOST}/eng/process`,
           form_data: payfastData,
+          demo_mode: isLocalPayFastDemo(),
+          payment_id: paymentId,
         },
       },
       201
@@ -87,7 +89,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();

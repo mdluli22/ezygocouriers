@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   STATUS_LABELS,
@@ -20,6 +20,9 @@ interface Delivery {
   pickup_contact_phone: string;
   parcel_description: string;
   special_instructions: string | null;
+  fragile: boolean;
+  require_pin: boolean;
+  pin_verified_at: string | null;
   pickup_street: string;
   pickup_suburb: string | null;
   pickup_city: string;
@@ -49,7 +52,6 @@ const ACTION_LABELS: Partial<Record<DeliveryStatus, { label: string; emoji: stri
 
 export default function DriverDeliveryDetailPage() {
   const params = useParams();
-  const router = useRouter();
 
   const [delivery, setDelivery]     = useState<Delivery | null>(null);
   const [loading, setLoading]       = useState(true);
@@ -58,8 +60,9 @@ export default function DriverDeliveryDetailPage() {
   const [note, setNote]             = useState("");
   const [updateError, setUpdateError] = useState("");
   const [showNote, setShowNote]     = useState(false);
+  const [deliveryPin, setDeliveryPin] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const res  = await fetch(`/api/driver/deliveries/${params.id}`);
@@ -71,9 +74,9 @@ export default function DriverDeliveryDetailPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [params.id]);
 
-  useEffect(() => { load(); }, [params.id]);
+  useEffect(() => { void load(); }, [load]);
 
   async function handleStatusUpdate(newStatus: DeliveryStatus) {
     if (!delivery) return;
@@ -83,11 +86,17 @@ export default function DriverDeliveryDetailPage() {
       const res = await fetch("/api/driver/status", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ delivery_id: delivery.id, status: newStatus, note: note || undefined }),
+        body: JSON.stringify({
+          delivery_id: delivery.id,
+          status: newStatus,
+          note: note || undefined,
+          pin: newStatus === "delivered" && delivery.require_pin ? deliveryPin : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setUpdateError(data.message || "Update failed."); return; }
       setNote("");
+      setDeliveryPin("");
       setShowNote(false);
       await load();
     } catch {
@@ -208,10 +217,32 @@ export default function DriverDeliveryDetailPage() {
                 style={{ backgroundColor: "rgba(255,255,255,0.08)", color: "white", borderColor: "rgba(255,255,255,0.15)" }} />
             )}
 
+            {primaryNext === "delivered" && delivery.require_pin && (
+              <div className="rounded-2xl p-4 space-y-2" style={{ backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.13)" }}>
+                <label htmlFor="delivery-pin" className="block text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.65)" }}>
+                  Recipient handover PIN
+                </label>
+                <input
+                  id="delivery-pin"
+                  value={deliveryPin}
+                  onChange={(event) => setDeliveryPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="Enter 6-digit PIN"
+                  aria-describedby="delivery-pin-help"
+                  className="input text-center text-xl font-black tracking-[0.35em] w-full"
+                  style={{ backgroundColor: "white", color: "#1A2F2F", borderColor: "transparent" }}
+                />
+                <p id="delivery-pin-help" className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
+                  Ask the recipient for the PIN emailed to them. Complete delivery only after handover.
+                </p>
+              </div>
+            )}
+
             {/* Primary action */}
             {primaryNext && (
               <button onClick={() => handleStatusUpdate(primaryNext)}
-                disabled={updating !== null}
+                disabled={updating !== null || (primaryNext === "delivered" && delivery.require_pin && deliveryPin.length !== 6)}
                 className="w-full py-3.5 rounded-2xl font-black text-base transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 style={{ backgroundColor: "#F59E0B", color: "#111" }}>
                 {updating === primaryNext ? (
@@ -323,6 +354,18 @@ export default function DriverDeliveryDetailPage() {
           <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Parcel</h3>
         </div>
         <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>{delivery.parcel_description}</p>
+        <div className="flex flex-wrap gap-2">
+          {delivery.fragile && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full" style={{ backgroundColor: "rgb(245 158 11 / 0.13)", color: "var(--color-warning)" }}>
+              Fragile · handle with care
+            </span>
+          )}
+          {delivery.require_pin && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full" style={{ backgroundColor: "rgb(16 185 129 / 0.12)", color: "var(--color-success)" }}>
+              PIN required at handover
+            </span>
+          )}
+        </div>
         {delivery.special_instructions && (
           <p className="text-xs p-3 rounded-xl" style={{ backgroundColor: "rgba(245,158,11,0.08)", color: "var(--color-warning)" }}>
             {delivery.special_instructions}

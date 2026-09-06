@@ -47,6 +47,7 @@ export const createDeliverySchema = z.object({
   dropoff_address: addressSchema,
   recipient_name: z.string().min(2, "Recipient name is required").max(255),
   recipient_phone: saPhone,
+  recipient_email: z.string().email("Please enter a valid recipient email").max(320).optional().or(z.literal("")),
 
   // Parcel
   parcel_description: z.string().min(3, "Please describe the parcel").max(1000),
@@ -60,6 +61,14 @@ export const createDeliverySchema = z.object({
   // Delivery options
   require_pin: z.boolean().optional(),
   scheduled_time: z.iso.datetime({ offset: true }).optional().nullable(),
+}).superRefine((delivery, context) => {
+  if (delivery.require_pin && !delivery.recipient_email) {
+    context.addIssue({
+      code: "custom",
+      path: ["recipient_email"],
+      message: "Recipient email is required when delivery PIN is enabled",
+    });
+  }
 });
 
 export type CreateDeliveryInput = z.infer<typeof createDeliverySchema>;

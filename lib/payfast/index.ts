@@ -2,7 +2,9 @@ import crypto from "crypto";
 
 const SANDBOX_MERCHANT_ID = "10000100";
 const SANDBOX_MERCHANT_KEY = "46f0cd694581a";
-const SANDBOX_PASSPHRASE = "jt7NOE43FZPn";
+// PayFast's shared 10000100 sandbox account is the no-passphrase credential
+// set. Mixing it with a passphrase produces an invalid form signature.
+const SANDBOX_PASSPHRASE = "";
 
 const PAYFAST_SANDBOX = process.env.PAYFAST_SANDBOX !== "false";
 
@@ -94,6 +96,12 @@ function isPublicCallbackUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** Local sandbox checkouts cannot receive PayFast redirects or ITNs. */
+export function isLocalPayFastDemo(): boolean {
+  const config = getPayFastConfig();
+  return config.sandbox && !Boolean(config.appUrl && isPublicCallbackUrl(config.appUrl));
 }
 
 /** PHP-compatible urlencode used by PayFast's custom integration signatures. */

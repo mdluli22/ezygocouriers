@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
-import { getPayFastConfig } from "@/lib/payfast";
+import { getPayFastConfig, isLocalPayFastDemo } from "@/lib/payfast";
 import { completePayment } from "@/lib/services/payments";
 import {
   errorResponse,
@@ -25,11 +25,12 @@ interface SandboxPayment {
 }
 
 /**
- * Sandbox-only fallback for PayFast's one-shot ITN.
+ * Explicit local PayFast demo confirmation.
  *
  * This endpoint is deliberately disabled in live mode. It lets an authenticated
- * customer reconcile the exact payment attempt PayFast returned from when a
- * local proxy or test deployment prevented the sandbox ITN from arriving.
+ * customer complete the exact no-money payment attempt when localhost cannot
+ * receive PayFast's redirect or ITN. Public sandbox and live payments continue
+ * to rely on PayFast's verified ITN callback.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -37,8 +38,8 @@ export async function POST(request: NextRequest) {
     if (!session) return unauthorizedResponse();
     if (session.role !== "customer") return forbiddenResponse();
 
-    if (!getPayFastConfig().sandbox) {
-      return errorResponse("Sandbox confirmation is disabled in live mode.", undefined, 403);
+    if (!getPayFastConfig().sandbox || !isLocalPayFastDemo()) {
+      return errorResponse("Local demo confirmation is not available for this PayFast configuration.", undefined, 403);
     }
 
     const parsed = sandboxConfirmationSchema.safeParse(await request.json());

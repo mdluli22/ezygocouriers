@@ -120,31 +120,12 @@ function DashboardContent() {
   const [error, setError] = useState("");
   const paymentResult = searchParams.get("payment");
   const isNewCustomer = searchParams.get("welcome") === "1";
-  const paidDeliveryId = Number(searchParams.get("delivery"));
-  const returnedPaymentId = Number(searchParams.get("payment_id"));
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadDeliveries() {
       try {
-        if (
-          paymentResult === "success" &&
-          Number.isInteger(paidDeliveryId) &&
-          paidDeliveryId > 0 &&
-          Number.isInteger(returnedPaymentId) &&
-          returnedPaymentId > 0
-        ) {
-          await fetch("/api/payments/sandbox-confirm", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              delivery_id: paidDeliveryId,
-              payment_id: returnedPaymentId,
-            }),
-          });
-        }
-
         const response = await fetch("/api/deliveries", { cache: "no-store" });
         if (!response.ok) throw new Error("Failed to load deliveries");
         const result = await response.json();
@@ -160,7 +141,7 @@ function DashboardContent() {
     return () => {
       cancelled = true;
     };
-  }, [paidDeliveryId, paymentResult, returnedPaymentId]);
+  }, [paymentResult]);
 
   if (loading) {
     return (

@@ -108,10 +108,10 @@ export async function createDelivery(
       `INSERT INTO deliveries (
          customer_id, pickup_address_id, dropoff_address_id, quote_id,
          pickup_contact_name, pickup_contact_phone,
-         recipient_name, recipient_phone,
+         recipient_name, recipient_phone, recipient_email,
          parcel_description, special_instructions, package_type,
          package_category, fragile, require_pin, scheduled_time, status
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'quoted')
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'quoted')
        RETURNING id, tracking_number, status`,
       [
         customerId,
@@ -122,6 +122,7 @@ export async function createDelivery(
         input.pickup_contact_phone,
         input.recipient_name,
         input.recipient_phone,
+        input.recipient_email || null,
         input.parcel_description,
         input.special_instructions || null,
         input.package_type || null,

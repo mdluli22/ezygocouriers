@@ -17,6 +17,7 @@ const statusUpdateSchema = z.object({
     error: () => ({ message: "Invalid delivery status." }),
   }),
   note: z.string().max(500).optional(),
+  pin: z.string().regex(/^\d{6}$/, "Enter the six-digit delivery PIN.").optional(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -35,9 +36,9 @@ export async function PATCH(req: NextRequest) {
       return errorResponse("Invalid request.", errors, 422);
     }
 
-    const { delivery_id, status, note } = result.data;
+    const { delivery_id, status, note, pin } = result.data;
 
-    await updateDeliveryStatus(delivery_id, session.userId, status, note);
+    await updateDeliveryStatus(delivery_id, session.userId, status, note, pin);
 
     return successResponse(`Delivery status updated to '${status}'.`);
   } catch (error: unknown) {
@@ -45,7 +46,8 @@ export async function PATCH(req: NextRequest) {
       if (
         error.message.includes("not assigned") ||
         error.message.includes("Cannot transition") ||
-        error.message.includes("not found")
+        error.message.includes("not found") ||
+        error.message.includes("PIN")
       ) {
         return errorResponse(error.message, undefined, 400);
       }

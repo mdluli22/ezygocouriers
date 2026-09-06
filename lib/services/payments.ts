@@ -1,5 +1,42 @@
 import { query, getClient } from "@/lib/db/server";
 import { autoAssignDelivery } from "./driver-assignment";
+import { generateDeliveryPin, hashDeliveryPin } from "@/lib/delivery-pin";
+import { sendDeliveryPin } from "@/lib/email/smtp";
+
+interface PinNotification {
+  deliveryId: number;
+  email: string;
+  recipientName: string;
+  trackingNumber: string;
+  pin: string;
+  pinHash: string;
+}
+
+async function deliverRecipientPin(notification: PinNotification | null): Promise<void> {
+  if (!notification) return;
+
+  try {
+    await sendDeliveryPin({
+      to: notification.email,
+      recipientName: notification.recipientName,
+      trackingNumber: notification.trackingNumber,
+      pin: notification.pin,
+    });
+    await query(
+      `UPDATE deliveries
+       SET delivery_pin_sent_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND delivery_pin_hash = $2 AND delivery_pin_sent_at IS NULL`,
+      [notification.deliveryId, notification.pinHash]
+    );
+  } catch (error) {
+    // Payment remains complete. A repeated verified ITN or local demo
+    // reconciliation retries the notification with a freshly generated PIN.
+    console.error("[Delivery PIN email] Delivery failed", {
+      deliveryId: notification.deliveryId,
+      error,
+    });
+  }
+}
 
 async function tryAutoAssignDelivery(deliveryId: number): Promise<void> {
   try {
@@ -49,6 +86,7 @@ export async function completePayment(params: {
   deliveryId:    number;
 }): Promise<void> {
   const client = await getClient();
+  let pinNotification: PinNotification | null = null;
   try {
     await client.query("BEGIN");
 
@@ -66,6 +104,44 @@ export async function completePayment(params: {
 
     if (!payment || payment.delivery_id !== params.deliveryId) {
       throw new Error("Payment does not belong to this delivery.");
+    }
+
+    const deliveryDetailsResult = await client.query<{
+      require_pin: boolean;
+      delivery_pin_sent_at: Date | null;
+      recipient_email: string | null;
+      recipient_name: string;
+      tracking_number: string;
+    }>(
+      `SELECT require_pin, delivery_pin_sent_at, recipient_email, recipient_name, tracking_number
+       FROM deliveries
+       WHERE id = $1
+       FOR UPDATE`,
+      [params.deliveryId]
+    );
+    const deliveryDetails = deliveryDetailsResult.rows[0];
+    if (!deliveryDetails) throw new Error("Delivery not found for payment.");
+
+    if (deliveryDetails.require_pin && !deliveryDetails.delivery_pin_sent_at) {
+      if (!deliveryDetails.recipient_email) {
+        throw new Error("Recipient email is required for a PIN-protected delivery.");
+      }
+      const pin = generateDeliveryPin();
+      const pinHash = await hashDeliveryPin(pin);
+      await client.query(
+        `UPDATE deliveries
+         SET delivery_pin_hash = $1, pin_verified_at = NULL, updated_at = NOW()
+         WHERE id = $2`,
+        [pinHash, params.deliveryId]
+      );
+      pinNotification = {
+        deliveryId: params.deliveryId,
+        email: deliveryDetails.recipient_email,
+        recipientName: deliveryDetails.recipient_name,
+        trackingNumber: deliveryDetails.tracking_number,
+        pin,
+        pinHash,
+      };
     }
 
     // Repair a partially completed historical transaction if necessary, while
@@ -96,6 +172,7 @@ export async function completePayment(params: {
       }
 
       await client.query("COMMIT");
+      await deliverRecipientPin(pinNotification);
       await tryAutoAssignDelivery(params.deliveryId);
       return;
     }
@@ -138,6 +215,7 @@ export async function completePayment(params: {
     );
 
     await client.query("COMMIT");
+    await deliverRecipientPin(pinNotification);
     await tryAutoAssignDelivery(params.deliveryId);
   } catch (e) {
     await client.query("ROLLBACK");

@@ -7,6 +7,9 @@ import { useEffect, useRef, useState } from "react";
 interface PaymentRedirect {
   payfast_url: string;
   form_data: Record<string, string>;
+  demo_mode: boolean;
+  payment_id: number;
+  delivery_id: number;
 }
 
 export default function PayDeliveryPage() {
@@ -31,7 +34,13 @@ export default function PayDeliveryPage() {
           throw new Error(result.message || "Unable to initialise payment.");
         }
 
-        if (!cancelled) setRedirect(result.data);
+        if (!cancelled) {
+          if (result.data.demo_mode) {
+            window.location.assign(`/dashboard/payment-demo?delivery=${result.data.delivery_id}&payment_id=${result.data.payment_id}`);
+            return;
+          }
+          setRedirect(result.data);
+        }
       } catch (paymentError) {
         if (!cancelled) {
           setError(
@@ -97,4 +106,3 @@ export default function PayDeliveryPage() {
     </div>
   );
 }
-

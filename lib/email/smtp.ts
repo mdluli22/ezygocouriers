@@ -185,3 +185,53 @@ export async function sendAuthOtp({
     throw error;
   }
 }
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;",
+  })[character] ?? character);
+}
+
+export async function sendDeliveryPin({
+  to,
+  recipientName,
+  trackingNumber,
+  pin,
+}: {
+  to: string;
+  recipientName: string;
+  trackingNumber: string;
+  pin: string;
+}): Promise<void> {
+  const from = process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER;
+  if (!from) throw new Error("[Email] Missing SMTP_FROM or SMTP_USER.");
+
+  const safeName = escapeHtml(recipientName);
+  const safeTrackingNumber = escapeHtml(trackingNumber);
+
+  await getTransporter().sendMail({
+    from,
+    to,
+    subject: `${pin} is your EzyGo delivery PIN`,
+    text: [
+      `Hi ${recipientName},`,
+      "",
+      `Your delivery PIN for ${trackingNumber} is ${pin}.`,
+      "",
+      "Give this PIN to the EzyGo driver only when the parcel is handed to you. EzyGo staff will never ask for it before delivery.",
+    ].join("\n"),
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px;color:#172033">
+        <p style="color:#0f766e;font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px">EzyGo secure handover</p>
+        <h1 style="font-size:24px;margin:0 0 12px">Your parcel is protected by a PIN</h1>
+        <p style="line-height:1.6">Hi ${safeName}, use this code when your EzyGo driver hands over delivery <strong>${safeTrackingNumber}</strong>.</p>
+        <div style="font-size:36px;font-weight:800;letter-spacing:10px;padding:20px 24px;margin:24px 0;background:#f4f6f8;border-radius:12px;text-align:center">${pin}</div>
+        <p style="font-size:14px;color:#667085;line-height:1.6">Only share this PIN once the parcel is physically with you. EzyGo staff will never ask for it before delivery.</p>
+      </div>
+    `,
+  });
+}
