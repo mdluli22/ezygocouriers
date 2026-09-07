@@ -2,9 +2,9 @@ import crypto from "crypto";
 
 const SANDBOX_MERCHANT_ID = "10000100";
 const SANDBOX_MERCHANT_KEY = "46f0cd694581a";
-// PayFast's shared 10000100 sandbox account is the no-passphrase credential
-// set. Mixing it with a passphrase produces an invalid form signature.
-const SANDBOX_PASSPHRASE = "";
+// Keep PayFast's published shared sandbox credentials together. A signature
+// made with these merchant details must use their matching passphrase.
+const SANDBOX_PASSPHRASE = "jt7NOE43FZPn";
 
 const PAYFAST_SANDBOX = process.env.PAYFAST_SANDBOX !== "false";
 

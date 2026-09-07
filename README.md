@@ -166,7 +166,9 @@ autocomplete and server-side delivery validation.
 
 Set `PAYFAST_SANDBOX=true`. You can provide credentials from your own PayFast
 sandbox account, or leave `PAYFAST_MERCHANT_ID` and `PAYFAST_MERCHANT_KEY` blank
-to use PayFast's published shared test credentials.
+to use PayFast's complete published shared test credential set. When using your
+own credentials, `PAYFAST_PASSPHRASE` must exactly match the passphrase on that
+sandbox account.
 
 For end-to-end ITN testing, `PAYFAST_APP_URL` (or `NEXT_PUBLIC_APP_URL`) must be
 a public HTTPS origin. PayFast rejects localhost callback URLs. Without one,
