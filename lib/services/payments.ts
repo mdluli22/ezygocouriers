@@ -58,12 +58,18 @@ export async function createPaymentRecord(params: {
   customerId: number;
   amount:     number;
   currency:   string;
+  provider:   "payfast" | "yoco";
 }): Promise<number> {
   const result = await query<{ id: number }>(
-    `INSERT INTO payments (delivery_id, quote_id, customer_id, amount, currency, status)
-     VALUES ($1, $2, $3, $4, $5, 'pending')
+    `INSERT INTO payments (delivery_id, quote_id, customer_id, amount, currency, status, provider)
+     VALUES ($1, $2, $3, $4, $5, 'pending', $6)
      ON CONFLICT (delivery_id) WHERE status = 'pending'
-     DO UPDATE SET delivery_id = EXCLUDED.delivery_id
+     DO UPDATE SET provider = EXCLUDED.provider,
+                   provider_checkout_id = NULL,
+                   provider_payment_id = NULL,
+                   payfast_pf_payment_id = NULL,
+                   failure_reason = NULL,
+                   updated_at = NOW()
      RETURNING id`,
     [
       params.deliveryId,
@@ -71,6 +77,7 @@ export async function createPaymentRecord(params: {
       params.customerId,
       params.amount,
       params.currency,
+      params.provider,
     ]
   );
   return result.rows[0].id;
@@ -82,8 +89,9 @@ export async function createPaymentRecord(params: {
  */
 export async function completePayment(params: {
   paymentId:     number;
-  pfPaymentId:   string; // PayFast's pf_payment_id
   deliveryId:    number;
+  provider:      "payfast" | "yoco";
+  providerPaymentId: string;
 }): Promise<void> {
   const client = await getClient();
   let pinNotification: PinNotification | null = null;
@@ -93,8 +101,9 @@ export async function completePayment(params: {
     const paymentResult = await client.query<{
       delivery_id: number;
       status: string;
+      provider: string;
     }>(
-      `SELECT delivery_id, status
+      `SELECT delivery_id, status, provider
        FROM payments
        WHERE id = $1
        FOR UPDATE`,
@@ -104,6 +113,9 @@ export async function completePayment(params: {
 
     if (!payment || payment.delivery_id !== params.deliveryId) {
       throw new Error("Payment does not belong to this delivery.");
+    }
+    if (payment.provider !== params.provider) {
+      throw new Error("Payment provider does not match this payment attempt.");
     }
 
     const deliveryDetailsResult = await client.query<{
@@ -145,16 +157,16 @@ export async function completePayment(params: {
     }
 
     // Repair a partially completed historical transaction if necessary, while
-    // keeping repeated PayFast ITNs idempotent.
+    // keeping repeated provider callbacks idempotent.
     if (payment.status === "complete") {
-      if (!params.pfPaymentId.startsWith("sandbox-return-")) {
-        await client.query(
-          `UPDATE payments
-           SET payfast_pf_payment_id = $1, updated_at = NOW()
-           WHERE id = $2`,
-          [params.pfPaymentId, params.paymentId]
-        );
-      }
+      await client.query(
+        `UPDATE payments
+         SET provider_payment_id = $1,
+             payfast_pf_payment_id = CASE WHEN $2 = 'payfast' THEN $1 ELSE payfast_pf_payment_id END,
+             updated_at = NOW()
+         WHERE id = $3`,
+        [params.providerPaymentId, params.provider, params.paymentId]
+      );
 
       const repairedDelivery = await client.query(
         `UPDATE deliveries
@@ -183,9 +195,13 @@ export async function completePayment(params: {
 
     await client.query(
       `UPDATE payments
-       SET status = 'complete', payfast_pf_payment_id = $1, paid_at = NOW(), updated_at = NOW()
-       WHERE id = $2`,
-      [params.pfPaymentId, params.paymentId]
+       SET status = 'complete',
+           provider_payment_id = $1,
+           payfast_pf_payment_id = CASE WHEN $2 = 'payfast' THEN $1 ELSE payfast_pf_payment_id END,
+           paid_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $3`,
+      [params.providerPaymentId, params.provider, params.paymentId]
     );
 
     const deliveryResult = await client.query(
@@ -210,8 +226,8 @@ export async function completePayment(params: {
 
     await client.query(
       `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)
-       VALUES ($1, 'paid', 'Payment completed via PayFast', NULL)`,
-      [params.deliveryId]
+       VALUES ($1, 'paid', $2, NULL)`,
+      [params.deliveryId, `Payment completed via ${params.provider === "yoco" ? "Yoco" : "PayFast"}`]
     );
 
     await client.query("COMMIT");
@@ -235,12 +251,12 @@ export async function failPayment(
   await query(
     `UPDATE payments
      SET status = 'failed', failure_reason = $1, updated_at = NOW()
-     WHERE id = $2`,
+     WHERE id = $2 AND status = 'pending'`,
     [reason ?? null, paymentId]
   );
 }
 
-/** Mark a pending PayFast payment as cancelled. */
+/** Mark a pending payment attempt as cancelled. */
 export async function cancelPayment(
   paymentId: number,
   reason?: string

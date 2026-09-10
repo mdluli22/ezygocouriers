@@ -8,6 +8,7 @@ interface PaymentForNotification {
   delivery_id: number;
   amount: string;
   status: "pending" | "complete" | "failed" | "cancelled";
+  provider: string;
 }
 
 function getSourceIp(request: NextRequest): string {
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await query<PaymentForNotification>(
-      `SELECT id, delivery_id, amount, status
+      `SELECT id, delivery_id, amount, status, provider
        FROM payments
        WHERE id = $1
        LIMIT 1`,
@@ -47,6 +48,9 @@ export async function POST(request: NextRequest) {
     if (!payment) {
       console.error("[PayFast ITN] Payment not found", paymentId);
       return new NextResponse("Payment not found", { status: 404 });
+    }
+    if (payment.provider !== "payfast") {
+      return new NextResponse("Payment provider mismatch", { status: 409 });
     }
 
     if (
@@ -79,7 +83,8 @@ export async function POST(request: NextRequest) {
       await completePayment({
         paymentId,
         deliveryId: payment.delivery_id,
-        pfPaymentId: itnData.pf_payment_id,
+        provider: "payfast",
+        providerPaymentId: itnData.pf_payment_id,
       });
     } else if (itnData.payment_status === "CANCELLED") {
       await cancelPayment(paymentId, "Payment cancelled through PayFast");

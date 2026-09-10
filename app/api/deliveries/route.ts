@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { createDeliverySchema } from "@/lib/validations/delivery";
 import { createDelivery, confirmDelivery } from "@/lib/services/deliveries";
-import { createPaymentRecord } from "@/lib/services/payments";
-import { buildPaymentData, PAYFAST_HOST, isLocalPayFastDemo } from "@/lib/payfast";
+import { initialisePaymentCheckout, PaymentProvider } from "@/lib/services/payment-checkout";
+import { getYocoConfig } from "@/lib/yoco";
 import { query } from "@/lib/db/server";
 import {
   successResponse,
@@ -23,6 +23,17 @@ export async function POST(req: NextRequest) {
 
     // 2. Validate input
     const body = await req.json();
+    const paymentMethod = body.payment_method;
+    if (paymentMethod !== "payfast" && paymentMethod !== "yoco") {
+      return errorResponse("Select PayFast or Yoco as the payment method.", undefined, 422);
+    }
+    if (paymentMethod === "yoco") {
+      try {
+        getYocoConfig();
+      } catch {
+        return errorResponse("Yoco sandbox is not configured yet. Please choose PayFast.", undefined, 503);
+      }
+    }
     const result = createDeliverySchema.safeParse(body);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -39,30 +50,26 @@ export async function POST(req: NextRequest) {
     // 4. Auto-confirm delivery (customer accepted at form submit)
     await confirmDelivery(delivery.id, session.userId);
 
-    // 5. Fetch user info for PayFast form
+    // 5. Fetch customer details for the selected payment provider
     const userResult = await query<{ email: string; full_name: string }>(
       `SELECT email, full_name FROM users WHERE id = $1 LIMIT 1`,
       [session.userId]
     );
     const user = userResult.rows[0];
 
-    // 6. Create pending payment record
-    const paymentId = await createPaymentRecord({
-      deliveryId: delivery.id,
-      quoteId:    delivery.quote.id,
-      customerId: session.userId,
-      amount:     delivery.quote.amount,
-      currency:   delivery.quote.currency,
-    });
-
-    // 7. Build PayFast form data
-    const payfastData = buildPaymentData({
-      paymentId,
-      deliveryId:     delivery.id,
-      trackingNumber: delivery.trackingNumber,
-      amount:         delivery.quote.amount,
-      customerName:   user?.full_name ?? "Customer",
-      customerEmail:  user?.email ?? "",
+    const payment = await initialisePaymentCheckout({
+      provider: paymentMethod as PaymentProvider,
+      requestUrl: req.url,
+      delivery: {
+        id: delivery.id,
+        quoteId: delivery.quote.id,
+        customerId: session.userId,
+        trackingNumber: delivery.trackingNumber,
+        amount: delivery.quote.amount,
+        currency: delivery.quote.currency,
+        customerName: user?.full_name ?? "Customer",
+        customerEmail: user?.email ?? "",
+      },
     });
 
     return successResponse(
@@ -74,12 +81,7 @@ export async function POST(req: NextRequest) {
           amount:   delivery.quote.amount,
           currency: delivery.quote.currency,
         },
-        payfast: {
-          url:       `${PAYFAST_HOST}/eng/process`,
-          form_data: payfastData,
-          demo_mode: isLocalPayFastDemo(req.url),
-          payment_id: paymentId,
-        },
+        payment,
       },
       201
     );

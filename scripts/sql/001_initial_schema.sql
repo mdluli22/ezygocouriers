@@ -195,6 +195,12 @@ CREATE TABLE payments (
   currency             VARCHAR(10)         NOT NULL DEFAULT 'ZAR',
   status               payment_status      NOT NULL DEFAULT 'pending',
 
+  -- Payment provider reconciliation
+  provider             VARCHAR(20)         NOT NULL DEFAULT 'payfast'
+    CHECK (provider IN ('payfast', 'yoco')),
+  provider_checkout_id VARCHAR(255),
+  provider_payment_id  VARCHAR(255),
+
   -- PayFast specific
   payfast_payment_id   VARCHAR(255),
   payfast_pf_payment_id VARCHAR(255),
@@ -208,6 +214,10 @@ CREATE TABLE payments (
 CREATE INDEX idx_payments_delivery_id         ON payments (delivery_id);
 CREATE INDEX idx_payments_status              ON payments (status);
 CREATE INDEX idx_payments_merchant_payment_id ON payments (merchant_payment_id);
+CREATE INDEX idx_payments_provider            ON payments (provider);
+CREATE UNIQUE INDEX uq_payments_provider_checkout_id
+  ON payments (provider_checkout_id)
+  WHERE provider_checkout_id IS NOT NULL;
 
 -- =============================================================================
 -- DELIVERY STATUS LOGS

@@ -171,7 +171,7 @@ export default function HeroSection() {
                 </button>
 
                 <p className="quote-footnote">
-                  <Check size={15} /> No hidden charges. Pay securely with PayFast.
+                  <Check size={15} /> No hidden charges. Pay securely with PayFast or Yoco.
                 </p>
               </form>
             </div>

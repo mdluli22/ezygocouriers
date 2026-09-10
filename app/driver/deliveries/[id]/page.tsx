@@ -80,6 +80,11 @@ export default function DriverDeliveryDetailPage() {
 
   async function handleStatusUpdate(newStatus: DeliveryStatus) {
     if (!delivery) return;
+    if (
+      newStatus === "cancelled" &&
+      !window.confirm("Cancel this trip? This cannot be undone.")
+    ) return;
+
     setUpdating(newStatus);
     setUpdateError("");
     try {

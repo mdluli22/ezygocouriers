@@ -4,6 +4,7 @@ import {
   getDeliveryById,
   getDeliveryStatusLogs,
   confirmDelivery,
+  cancelCustomerDelivery,
 } from "@/lib/services/deliveries";
 import {
   successResponse,
@@ -38,13 +39,13 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   }
 }
 
-// POST to /api/deliveries/[id] with body { action: "confirm" }
+// POST to /api/deliveries/[id] with body { action: "confirm" | "cancel" }
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
     if (session.role !== "customer") {
-      return errorResponse("Only customers can confirm deliveries.", undefined, 403);
+      return errorResponse("Only customers can update their deliveries.", undefined, 403);
     }
 
     const { id } = await params;
@@ -52,19 +53,24 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     if (isNaN(deliveryId)) return errorResponse("Invalid delivery ID.");
 
     const body = await req.json();
-    if (body?.action !== "confirm") {
-      return errorResponse("Unknown action.");
+    if (body?.action === "confirm") {
+      await confirmDelivery(deliveryId, session.userId);
+      return successResponse("Delivery confirmed. Proceed to payment.");
     }
 
-    await confirmDelivery(deliveryId, session.userId);
+    if (body?.action === "cancel") {
+      await cancelCustomerDelivery(deliveryId, session.userId);
+      return successResponse("Delivery cancelled.");
+    }
 
-    return successResponse("Delivery confirmed. Proceed to payment.");
+    return errorResponse("Unknown action.");
   } catch (error: unknown) {
     if (error instanceof Error) {
       // Business rule errors (wrong status, unauthorized)
       if (
         error.message.includes("Unauthorized") ||
         error.message.includes("Cannot confirm") ||
+        error.message.includes("Cannot cancel") ||
         error.message.includes("not found")
       ) {
         return errorResponse(error.message, undefined, 400);

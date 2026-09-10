@@ -217,6 +217,44 @@ function TrackingContent() {
   const [logs, setLogs]         = useState<StatusLog[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState("");
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+
+  async function handleCancel() {
+    if (!delivery) return;
+    const confirmed = window.confirm(
+      "Cancel this delivery? This cannot be undone."
+    );
+    if (!confirmed) return;
+
+    setCancelling(true);
+    setCancelError("");
+    try {
+      const res = await fetch(`/api/deliveries/${delivery.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Cancellation failed.");
+
+      setDelivery((current) => current ? { ...current, status: "cancelled" } : current);
+      setLogs((current) => [
+        ...current,
+        {
+          id: Date.now(),
+          status: "cancelled",
+          note: "Delivery cancelled by customer",
+          created_at: new Date().toISOString(),
+          updated_by_name: "You",
+        },
+      ]);
+    } catch (e: unknown) {
+      setCancelError(e instanceof Error ? e.message : "Cancellation failed. Please try again.");
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -284,7 +322,7 @@ function TrackingContent() {
             border: "1px solid rgb(16 185 129 / 0.2)",
           }}
         >
-          Test payment completed. PayFast is confirming the transaction.
+          Checkout completed. Your payment provider is confirming the transaction.
         </div>
       )}
 
@@ -298,6 +336,19 @@ function TrackingContent() {
           }}
         >
           Payment was cancelled. You can try again when you are ready.
+        </div>
+      )}
+
+      {paymentResult === "failed" && (
+        <div
+          className="p-4 rounded-xl text-sm font-semibold"
+          style={{
+            backgroundColor: "rgb(239 68 68 / 0.1)",
+            color: "var(--color-error)",
+            border: "1px solid rgb(239 68 68 / 0.2)",
+          }}
+        >
+          Payment failed. You can try PayFast or Yoco again when you are ready.
         </div>
       )}
 
@@ -392,7 +443,7 @@ function TrackingContent() {
           <div>
             <p className="font-bold text-white">Ready to pay?</p>
             <p className="text-sm text-white opacity-70 mt-0.5">
-              Secure payment via PayFast · R{parseFloat(delivery.quote_amount).toFixed(2)}
+              Secure payment via PayFast or Yoco · R{parseFloat(delivery.quote_amount).toFixed(2)}
             </p>
           </div>
           <Link
@@ -401,6 +452,37 @@ function TrackingContent() {
           >
             Pay now →
           </Link>
+        </div>
+      )}
+
+      {(["pending", "quoted", "confirmed", "paid", "assigned"] as DeliveryStatus[]).includes(delivery.status) && (
+        <div
+          className="p-5 rounded-2xl space-y-3"
+          style={{
+            backgroundColor: "rgb(239 68 68 / 0.05)",
+            border: "1px solid rgb(239 68 68 / 0.16)",
+          }}
+        >
+          <div>
+            <p className="font-bold" style={{ color: "var(--color-text-primary)" }}>Need to cancel?</p>
+            <p className="text-sm mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
+              You can cancel this delivery until the parcel has been picked up.
+            </p>
+          </div>
+          {cancelError && (
+            <p className="text-sm font-semibold" role="alert" style={{ color: "var(--color-error)" }}>
+              {cancelError}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="px-4 py-2.5 rounded-xl text-sm font-bold transition-opacity disabled:opacity-60"
+            style={{ backgroundColor: "rgb(239 68 68 / 0.12)", color: "var(--color-error)" }}
+          >
+            {cancelling ? "Cancelling…" : "Cancel delivery"}
+          </button>
         </div>
       )}
     </div>

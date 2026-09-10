@@ -193,7 +193,7 @@ function DashboardContent() {
           {paymentResult === "success" && (
             <div className="portal-notice is-success">
               <CheckCircle2 size={19} />
-              <span><strong>Payment completed.</strong> Your delivery is ready for the next step.</span>
+              <span><strong>Payment submitted.</strong> Your provider is confirming the transaction.</span>
             </div>
           )}
           {isNewCustomer && (
@@ -206,6 +206,12 @@ function DashboardContent() {
             <div className="portal-notice is-warning">
               <Clock3 size={19} />
               <span><strong>Payment paused.</strong> Your booking is safe—open it below to try again.</span>
+            </div>
+          )}
+          {paymentResult === "failed" && (
+            <div className="portal-notice is-error">
+              <Clock3 size={19} />
+              <span><strong>Payment failed.</strong> Open your booking below to try another payment option.</span>
             </div>
           )}
           {error && <div className="portal-notice is-error">{error}</div>}

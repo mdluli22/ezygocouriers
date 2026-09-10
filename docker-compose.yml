@@ -65,7 +65,8 @@ services:
           /migrations/004_payment_attempt_integrity.sql \
           /migrations/005_driver_location_auto_assignment.sql \
           /migrations/006_delivery_recipient_pin.sql \
-          /migrations/007_delivery_completion_email.sql
+          /migrations/007_delivery_completion_email.sql \
+          /migrations/008_payment_providers.sql
         do
           echo "Applying $${migration}"
           psql -v ON_ERROR_STOP=1 -h db -U "$${DB_USER}" -d "$${DB_NAME}" -f "$${migration}"

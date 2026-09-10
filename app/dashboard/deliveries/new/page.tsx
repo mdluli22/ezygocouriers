@@ -16,6 +16,7 @@ interface User {
 type Step = 1 | 2 | 3;
 type MeetingDropoff = "curb" | "meet" | "leave";
 type AuthTab = "login" | "signup";
+type PaymentProvider = "payfast" | "yoco";
 const SA_PHONE_PATTERN = /^(\+27|0)[6-8][0-9]{8}$/;
 
 interface AddressGeo {
@@ -185,6 +186,7 @@ export default function NewDeliveryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [paymentMethod, setPaymentMethod] = useState<PaymentProvider>("payfast");
 
   // PayFast
   const payfastFormRef = useRef<HTMLFormElement>(null);
@@ -274,6 +276,7 @@ export default function NewDeliveryPage() {
       package_type: packageType,
       fragile,
       require_pin: requirePin,
+      payment_method: paymentMethod,
     };
 
     try {
@@ -291,14 +294,19 @@ export default function NewDeliveryPage() {
         }
         return;
       }
-      if (data.data.payfast.demo_mode) {
+      const payment = data.data.payment;
+      if (payment.provider === "yoco") {
+        window.location.assign(payment.redirect_url);
+        return;
+      }
+      if (payment.demo_mode) {
         window.location.assign(
-          `/dashboard/payment-demo?delivery=${data.data.id}&payment_id=${data.data.payfast.payment_id}`
+          `/dashboard/payment-demo?delivery=${data.data.id}&payment_id=${payment.payment_id}`
         );
         return;
       }
-      setPayfastUrl(data.data.payfast.url);
-      setPayfastData(data.data.payfast.form_data);
+      setPayfastUrl(payment.payfast_url);
+      setPayfastData(payment.form_data);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -637,6 +645,40 @@ export default function NewDeliveryPage() {
             </div>
 
             {/* Account status */}
+            <div className="rounded-2xl p-4" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+              <p className="text-[11px] font-bold tracking-widest mb-3" style={{ color: "var(--color-text-muted)" }}>PAYMENT METHOD</p>
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  { value: "payfast" as const, name: "PayFast", detail: "Sandbox checkout" },
+                  { value: "yoco" as const, name: "Yoco", detail: "Secure card checkout" },
+                ]).map((option) => {
+                  const selected = paymentMethod === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setPaymentMethod(option.value)}
+                      aria-pressed={selected}
+                      className="p-3 rounded-xl text-left transition-all"
+                      style={{
+                        border: selected ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
+                        backgroundColor: selected ? "color-mix(in srgb, var(--color-primary) 8%, transparent)" : "var(--color-bg)",
+                      }}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <strong className="text-sm" style={{ color: "var(--color-text-primary)" }}>{option.name}</strong>
+                        <span className="w-4 h-4 rounded-full flex items-center justify-center" style={{ border: `2px solid ${selected ? "var(--color-primary)" : "var(--color-border)"}` }}>
+                          {selected && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--color-primary)" }} />}
+                        </span>
+                      </span>
+                      <span className="block text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>{option.detail}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Account status */}
             {user ? (
               <div className="flex items-center gap-3 p-4 rounded-2xl" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
                 <button
@@ -696,9 +738,9 @@ export default function NewDeliveryPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                   </svg>
-                  {payfastData ? "Redirecting to payment…" : "Processing…"}
+                  {payfastData ? "Redirecting to PayFast…" : `Opening ${paymentMethod === "yoco" ? "Yoco" : "PayFast"}…`}
                 </span>
-              ) : user ? "Pay R99 →" : "Sign in to pay →"}
+              ) : user ? `Pay R99 with ${paymentMethod === "yoco" ? "Yoco" : "PayFast"} →` : "Sign in to pay →"}
             </button>
           </div>
         </div>

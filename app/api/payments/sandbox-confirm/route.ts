@@ -22,6 +22,7 @@ interface SandboxPayment {
   delivery_id: number;
   customer_id: number;
   status: string;
+  provider: string;
 }
 
 /**
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await query<SandboxPayment>(
-      `SELECT id, delivery_id, customer_id, status
+      `SELECT id, delivery_id, customer_id, status, provider
        FROM payments
        WHERE id = $1 AND delivery_id = $2 AND customer_id = $3
        LIMIT 1`,
@@ -59,12 +60,16 @@ export async function POST(request: NextRequest) {
     if (!payment) {
       return errorResponse("Payment attempt not found.", undefined, 404);
     }
+    if (payment.provider !== "payfast") {
+      return errorResponse("This sandbox confirmation is only available for PayFast.", undefined, 409);
+    }
 
     if (payment.status === "complete") {
       await completePayment({
         paymentId: payment.id,
         deliveryId: payment.delivery_id,
-        pfPaymentId: `sandbox-return-${payment.id}`,
+        provider: "payfast",
+        providerPaymentId: `sandbox-return-${payment.id}`,
       });
       return successResponse("Sandbox payment already confirmed.");
     }
@@ -80,7 +85,8 @@ export async function POST(request: NextRequest) {
     await completePayment({
       paymentId: payment.id,
       deliveryId: payment.delivery_id,
-      pfPaymentId: `sandbox-return-${payment.id}`,
+      provider: "payfast",
+      providerPaymentId: `sandbox-return-${payment.id}`,
     });
 
     return successResponse("Sandbox payment confirmed.");

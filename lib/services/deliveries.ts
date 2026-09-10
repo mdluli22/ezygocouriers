@@ -5,6 +5,7 @@ import {
   DeliveryStatus,
   isValidTransition,
 } from "@/lib/constants/delivery-status";
+import { autoAssignNextPaidDeliveryToDriver } from "./driver-assignment";
 
 export interface CreatedDelivery {
   id: number;
@@ -207,6 +208,96 @@ export async function confirmDelivery(
     throw e;
   } finally {
     client.release();
+  }
+}
+
+/**
+ * Cancel a delivery owned by a customer before pickup.
+ * Also closes any checkout that is still pending and releases an assigned
+ * driver back to the automatic dispatch queue.
+ */
+export async function cancelCustomerDelivery(
+  deliveryId: number,
+  customerId: number
+): Promise<void> {
+  const client = await getClient();
+  let assignedDriverId: number | null = null;
+
+  try {
+    await client.query("BEGIN");
+
+    // Payment completion locks a payment before locking its delivery. Keep the
+    // same order here so a provider callback and cancellation cannot deadlock.
+    await client.query(
+      `SELECT id
+       FROM payments
+       WHERE delivery_id = $1 AND status = 'pending'
+       FOR UPDATE`,
+      [deliveryId]
+    );
+
+    const result = await client.query<{
+      status: DeliveryStatus;
+      customer_id: number;
+      assigned_driver_id: number | null;
+    }>(
+      `SELECT status, customer_id, assigned_driver_id
+       FROM deliveries
+       WHERE id = $1
+       FOR UPDATE`,
+      [deliveryId]
+    );
+
+    const delivery = result.rows[0];
+    if (!delivery) throw new Error("Delivery not found.");
+    if (delivery.customer_id !== customerId) throw new Error("Unauthorized.");
+    if (!isValidTransition(delivery.status, "cancelled")) {
+      throw new Error(`Cannot cancel a delivery with status '${delivery.status}'.`);
+    }
+
+    assignedDriverId = delivery.assigned_driver_id;
+
+    await client.query(
+      `UPDATE deliveries
+       SET status = 'cancelled', updated_at = NOW()
+       WHERE id = $1`,
+      [deliveryId]
+    );
+
+    await client.query(
+      `UPDATE payments
+       SET status = 'cancelled',
+           failure_reason = 'Delivery cancelled by customer',
+           updated_at = NOW()
+       WHERE delivery_id = $1 AND status = 'pending'`,
+      [deliveryId]
+    );
+
+    await client.query(
+      `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)
+       VALUES ($1, 'cancelled', 'Delivery cancelled by customer', $2)`,
+      [deliveryId, customerId]
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  if (assignedDriverId) {
+    try {
+      await autoAssignNextPaidDeliveryToDriver(assignedDriverId);
+    } catch (error) {
+      // Cancellation is already committed; a later location heartbeat retries
+      // dispatching the next paid delivery.
+      console.error("[Customer cancellation queue assignment]", {
+        driverId: assignedDriverId,
+        error,
+      });
+    }
   }
 }
 

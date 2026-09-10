@@ -150,6 +150,13 @@ docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
   < scripts/sql/007_delivery_completion_email.sql
 ```
 
+Apply the multiple-payment-provider migration as well:
+
+```bash
+docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
+  < scripts/sql/008_payment_providers.sql
+```
+
 Drivers share location while signed into the driver portal. After payment, the
 closest recently located active driver who has no assigned, picked-up, or
 in-transit delivery is preferred. If no free driver has a fresh location, the
@@ -175,6 +182,19 @@ a public HTTPS origin. PayFast rejects localhost callback URLs. Without one,
 the app uses an explicit no-money local demo confirmation screen. With a public
 HTTPS origin, checkout is sent to PayFast and its verified ITN remains the
 source of truth.
+
+## Yoco sandbox testing
+
+Set `YOCO_SANDBOX=true` and add the `sk_test_...` secret key from the Yoco App
+as `YOCO_SECRET_KEY`. Set `YOCO_APP_URL` to the app origin used for checkout
+success, cancellation, and failure redirects (it defaults to
+`NEXT_PUBLIC_APP_URL`).
+
+Register `https://your-public-app.example.com/api/payments/yoco/webhook` as the
+Yoco Checkout API webhook, then save the returned `whsec_...` value as
+`YOCO_WEBHOOK_SECRET`. Payment completion is accepted only from a valid signed
+Yoco webhook whose provider, mode, currency, and amount match the pending
+payment attempt.
 
 ## Admin subdomain
 
