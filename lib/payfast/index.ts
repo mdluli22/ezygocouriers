@@ -56,8 +56,16 @@ export interface PayFastPaymentData {
  */
 export function getPayFastConfig(): PayFastConfig {
   const sandbox = process.env.PAYFAST_SANDBOX !== "false";
-  const configuredId = process.env.PAYFAST_MERCHANT_ID?.trim();
-  const configuredKey = process.env.PAYFAST_MERCHANT_KEY?.trim();
+  // Accept the legacy public-prefixed names during migration. These values
+  // belong on the server and new deployments should use PAYFAST_*.
+  const configuredId = (
+    process.env.PAYFAST_MERCHANT_ID ||
+    process.env.NEXT_PUBLIC_PAYFAST_MERCHANT_ID
+  )?.trim();
+  const configuredKey = (
+    process.env.PAYFAST_MERCHANT_KEY ||
+    process.env.NEXT_PUBLIC_PAYFAST_MERCHANT_KEY
+  )?.trim();
   const hasCustomCredentials = Boolean(configuredId && configuredKey);
 
   if (!sandbox && !hasCustomCredentials) {
@@ -150,7 +158,7 @@ export function buildPaymentData(params: {
   // PayFast rejects localhost URLs. They are optional, so omit them for local
   // form testing; a public HTTPS URL is required for redirect and ITN testing.
   if (config.appUrl && isPublicCallbackUrl(config.appUrl)) {
-    data.return_url = `${config.appUrl}/dashboard?payment=success&delivery=${params.deliveryId}&payment_id=${params.paymentId}`;
+    data.return_url = `${config.appUrl}/dashboard?payment=success&provider=payfast&delivery=${params.deliveryId}&payment_id=${params.paymentId}`;
     data.cancel_url = `${config.appUrl}/dashboard?payment=cancelled&delivery=${params.deliveryId}`;
     data.notify_url = `${config.appUrl}/api/payments/callback`;
   }

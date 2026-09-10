@@ -119,6 +119,9 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const paymentResult = searchParams.get("payment");
+  const paymentProvider = searchParams.get("provider");
+  const returnedDeliveryId = Number(searchParams.get("delivery"));
+  const returnedPaymentId = Number(searchParams.get("payment_id"));
   const isNewCustomer = searchParams.get("welcome") === "1";
 
   useEffect(() => {
@@ -126,6 +129,32 @@ function DashboardContent() {
 
     async function loadDeliveries() {
       try {
+        if (
+          paymentResult === "success" &&
+          (paymentProvider === "payfast" || !paymentProvider) &&
+          Number.isSafeInteger(returnedDeliveryId) && returnedDeliveryId > 0 &&
+          Number.isSafeInteger(returnedPaymentId) && returnedPaymentId > 0
+        ) {
+          const confirmation = await fetch("/api/payments/sandbox-confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              delivery_id: returnedDeliveryId,
+              payment_id: returnedPaymentId,
+            }),
+          });
+
+          // A 403 means this is a live checkout, where only PayFast's verified
+          // ITN may complete payment. Other errors indicate a real sandbox
+          // reconciliation problem and should be visible to the customer.
+          if (!confirmation.ok && confirmation.status !== 403) {
+            const confirmationResult = await confirmation.json();
+            throw new Error(
+              confirmationResult.message || "Payment could not be confirmed."
+            );
+          }
+        }
+
         const response = await fetch("/api/deliveries", { cache: "no-store" });
         if (!response.ok) throw new Error("Failed to load deliveries");
         const result = await response.json();
@@ -141,7 +170,7 @@ function DashboardContent() {
     return () => {
       cancelled = true;
     };
-  }, [paymentResult]);
+  }, [paymentProvider, paymentResult, returnedDeliveryId, returnedPaymentId]);
 
   if (loading) {
     return (

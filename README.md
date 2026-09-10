@@ -180,8 +180,9 @@ sandbox account.
 For end-to-end ITN testing, `PAYFAST_APP_URL` (or `NEXT_PUBLIC_APP_URL`) must be
 a public HTTPS origin. PayFast rejects localhost callback URLs. Without one,
 the app uses an explicit no-money local demo confirmation screen. With a public
-HTTPS origin, checkout is sent to PayFast and its verified ITN remains the
-source of truth.
+HTTPS origin, checkout is sent to PayFast. Sandbox success returns are
+reconciled for the authenticated customer in addition to accepting verified
+ITNs. In live mode, the verified ITN remains the sole source of truth.
 
 ## Yoco sandbox testing
 
