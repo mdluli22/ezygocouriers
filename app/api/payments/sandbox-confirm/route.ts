@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
 import { getPayFastConfig } from "@/lib/payfast";
@@ -11,11 +10,8 @@ import {
   unauthorizedResponse,
   serverErrorResponse,
 } from "@/lib/api/response";
-
-const sandboxConfirmationSchema = z.object({
-  delivery_id: z.number().int().positive(),
-  payment_id: z.number().int().positive(),
-});
+import { sandboxConfirmationSchema } from "@ezygo/contracts";
+import { parseJsonRequest } from "@/lib/api/validation";
 
 interface SandboxPayment {
   id: number;
@@ -43,10 +39,12 @@ export async function POST(request: NextRequest) {
       return errorResponse("Sandbox payment confirmation is not available in live mode.", undefined, 403);
     }
 
-    const parsed = sandboxConfirmationSchema.safeParse(await request.json());
-    if (!parsed.success) {
-      return errorResponse("Invalid sandbox payment confirmation.", undefined, 422);
-    }
+    const parsed = await parseJsonRequest(
+      request,
+      sandboxConfirmationSchema,
+      "Invalid sandbox payment confirmation."
+    );
+    if (!parsed.success) return parsed.response;
 
     const result = await query<SandboxPayment>(
       `SELECT id, delivery_id, customer_id, status, provider

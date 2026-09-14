@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import BrandLogo from "@/components/BrandLogo";
 import DashboardNav from "@/components/dashboard/DashboardNav";
+import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -26,6 +27,7 @@ export default function DashboardLayout({
       </header>
 
       <main className="portal-main">{children}</main>
+      <PwaInstallPrompt />
     </div>
   );
 }

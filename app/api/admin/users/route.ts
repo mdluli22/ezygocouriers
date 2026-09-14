@@ -8,6 +8,11 @@ import {
   serverErrorResponse,
 } from "@/lib/api/response";
 import { NextRequest } from "next/server";
+import {
+  adminToggleUserSchema,
+  adminUserQuerySchema,
+} from "@ezygo/contracts";
+import { parseJsonRequest, parseQuery } from "@/lib/api/validation";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,8 +20,10 @@ export async function GET(req: NextRequest) {
     if (!session) return unauthorizedResponse();
     if (session.role !== "admin") return forbiddenResponse();
 
-    const role = req.nextUrl.searchParams.get("role") ?? undefined;
-    const users = await getAdminUsers(role);
+    const parsed = parseQuery(req.nextUrl.searchParams, adminUserQuerySchema);
+    if (!parsed.success) return parsed.response;
+
+    const users = await getAdminUsers(parsed.data.role);
     return successResponse("Users fetched.", users);
   } catch (error) {
     console.error("[GET /api/admin/users]", error);
@@ -30,12 +37,10 @@ export async function PATCH(req: NextRequest) {
     if (!session) return unauthorizedResponse();
     if (session.role !== "admin") return forbiddenResponse();
 
-    const body = await req.json();
-    const { user_id } = body;
+    const parsed = await parseJsonRequest(req, adminToggleUserSchema);
+    if (!parsed.success) return parsed.response;
 
-    if (!user_id) return errorResponse("user_id is required.", undefined, 422);
-
-    await toggleUserStatus(Number(user_id), session.userId);
+    await toggleUserStatus(parsed.data.user_id, session.userId);
     return successResponse("User status toggled.");
   } catch (error: unknown) {
     console.error("[PATCH /api/admin/users]", error);

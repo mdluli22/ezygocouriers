@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CAPE_TOWN_SERVICE_BOUNDS } from "@/lib/constants/service-area";
+import { CAPE_TOWN_SERVICE_BOUNDS } from "@ezygo/contracts";
 
 export interface PlaceResult {
   address: string;

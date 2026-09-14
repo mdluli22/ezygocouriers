@@ -1,10 +1,10 @@
 import { query, getClient } from "@/lib/db/server";
 import { generateQuote, acceptQuote } from "./quotes";
-import { CreateDeliveryInput } from "@/lib/validations/delivery";
+import type { CreateDeliveryInput } from "@ezygo/contracts";
 import {
   DeliveryStatus,
   isValidTransition,
-} from "@/lib/constants/delivery-status";
+} from "@ezygo/contracts";
 import { autoAssignNextPaidDeliveryToDriver } from "./driver-assignment";
 
 export interface CreatedDelivery {

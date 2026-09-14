@@ -1,6 +1,6 @@
 import type { PoolClient } from "pg";
 import { getClient } from "@/lib/db/server";
-import { CAPE_TOWN_SERVICE_BOUNDS } from "@/lib/constants/service-area";
+import { CAPE_TOWN_SERVICE_BOUNDS } from "@ezygo/contracts";
 
 const DEFAULT_ASSIGNMENT_RADIUS_KM = 25;
 const DEFAULT_LOCATION_MAX_AGE_MINUTES = 15;

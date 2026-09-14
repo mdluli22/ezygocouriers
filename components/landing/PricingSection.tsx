@@ -49,7 +49,7 @@ export default function PricingSection() {
             <ul>
               <li><Check size={15} /> Collection and delivery</li>
               <li><Check size={15} /> Live status tracking</li>
-              <li><Check size={15} /> Secure PayFast or Yoco checkout</li>
+              <li><Check size={15} /> Secure Paystack checkout</li>
               <li><Check size={15} /> Clear delivery updates</li>
             </ul>
           </article>

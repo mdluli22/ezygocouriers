@@ -15,7 +15,8 @@ import {
   Truck,
   XCircle,
 } from "lucide-react";
-import { STATUS_LABELS, STATUS_COLORS, DeliveryStatus } from "@/lib/constants/delivery-status";
+import { STATUS_LABELS, type DeliveryStatus } from "@ezygo/contracts";
+import { STATUS_COLORS } from "@/lib/constants/delivery-status";
 
 interface Delivery {
   id: number;

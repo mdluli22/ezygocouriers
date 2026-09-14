@@ -1,8 +1,10 @@
-import { buildPaymentData, PAYFAST_HOST, isLocalPayFastDemo } from "@/lib/payfast";
-import { createYocoCheckout } from "@/lib/yoco";
+// PayFast and Yoco are intentionally disabled for now. Their implementations
+// remain in lib/payfast and lib/yoco so they can be restored later.
+import { createPaystackCheckout } from "@/lib/paystack";
 import { createPaymentRecord } from "./payments";
+import type { PaymentCheckout } from "@ezygo/contracts";
 
-export type PaymentProvider = "payfast" | "yoco";
+export type PaymentProvider = "paystack";
 
 interface CheckoutDelivery {
   id: number;
@@ -11,15 +13,13 @@ interface CheckoutDelivery {
   trackingNumber: string;
   amount: number;
   currency: string;
-  customerName: string;
   customerEmail: string;
 }
 
 export async function initialisePaymentCheckout(params: {
   provider: PaymentProvider;
-  requestUrl: string;
   delivery: CheckoutDelivery;
-}) {
+}): Promise<PaymentCheckout> {
   const { provider, delivery } = params;
   const paymentId = await createPaymentRecord({
     deliveryId: delivery.id,
@@ -30,37 +30,20 @@ export async function initialisePaymentCheckout(params: {
     provider,
   });
 
-  if (provider === "yoco") {
-    const checkout = await createYocoCheckout({
-      paymentId,
-      deliveryId: delivery.id,
-      trackingNumber: delivery.trackingNumber,
-      amount: delivery.amount,
-      currency: delivery.currency,
-    });
-
-    return {
-      provider,
-      redirect_url: checkout.redirectUrl,
-      checkout_id: checkout.id,
-      demo_mode: checkout.processingMode === "test",
-      payment_id: paymentId,
-      delivery_id: delivery.id,
-    };
-  }
+  const checkout = await createPaystackCheckout({
+    paymentId,
+    deliveryId: delivery.id,
+    trackingNumber: delivery.trackingNumber,
+    amount: delivery.amount,
+    currency: delivery.currency,
+    customerEmail: delivery.customerEmail,
+  });
 
   return {
     provider,
-    payfast_url: `${PAYFAST_HOST}/eng/process`,
-    form_data: buildPaymentData({
-      paymentId,
-      deliveryId: delivery.id,
-      trackingNumber: delivery.trackingNumber,
-      amount: delivery.amount,
-      customerName: delivery.customerName,
-      customerEmail: delivery.customerEmail,
-    }),
-    demo_mode: isLocalPayFastDemo(params.requestUrl),
+    redirect_url: checkout.authorizationUrl,
+    checkout_id: checkout.reference,
+    demo_mode: checkout.testMode,
     payment_id: paymentId,
     delivery_id: delivery.id,
   };

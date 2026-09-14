@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { emailOTP } from "better-auth/plugins";
+import { bearer, emailOTP } from "better-auth/plugins";
 import pool, { query } from "@/lib/db/server";
 import { comparePassword, hashPassword } from "@/lib/auth/password";
 import { sendAuthOtp } from "@/lib/email/smtp";
@@ -124,6 +124,7 @@ export const auth = betterAuth({
   session: {
     modelName: "auth_sessions",
     expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
     fields: {
       userId: "user_id",
       expiresAt: "expires_at",
@@ -131,6 +132,16 @@ export const auth = betterAuth({
       userAgent: "user_agent",
       createdAt: "created_at",
       updatedAt: "updated_at",
+    },
+  },
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 10 },
+      "/email-otp/send-verification-otp": { window: 5 * 60, max: 5 },
+      "/email-otp/verify-email": { window: 5 * 60, max: 10 },
     },
   },
   account: {
@@ -206,6 +217,9 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    // Native clients receive the signed session cookie value as a bearer token.
+    // Raw database session tokens are deliberately rejected.
+    bearer({ requireSignature: true }),
     emailOTP({
       overrideDefaultEmailVerification: true,
       sendVerificationOnSignUp: false,

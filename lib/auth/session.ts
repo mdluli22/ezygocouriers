@@ -1,7 +1,8 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth/auth";
+import type { UserRole } from "@ezygo/contracts";
 
-export type UserRole = "customer" | "driver" | "admin";
+export type { UserRole } from "@ezygo/contracts";
 
 export interface AppSession {
   userId: number;
@@ -16,6 +17,7 @@ export interface AppSession {
 export async function getSession(): Promise<AppSession | null> {
   const session = await auth.api.getSession({
     headers: await headers(),
+    query: { disableCookieCache: true },
   });
 
   if (

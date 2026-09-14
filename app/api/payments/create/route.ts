@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
-import { initialisePaymentCheckout, PaymentProvider } from "@/lib/services/payment-checkout";
-import { getYocoConfig } from "@/lib/yoco";
+import { initialisePaymentCheckout } from "@/lib/services/payment-checkout";
+import { getPaystackConfig } from "@/lib/paystack";
+import { createPaymentSchema } from "@ezygo/contracts";
+import { parseJsonRequest } from "@/lib/api/validation";
 import {
   successResponse,
   errorResponse,
@@ -15,21 +17,13 @@ export async function POST(req: NextRequest) {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
 
-    const body = await req.json();
-    const { delivery_id, payment_method } = body;
-
-    if (!delivery_id) {
-      return errorResponse("delivery_id is required.", undefined, 422);
-    }
-    if (payment_method !== "payfast" && payment_method !== "yoco") {
-      return errorResponse("Select PayFast or Yoco as the payment method.", undefined, 422);
-    }
-    if (payment_method === "yoco") {
-      try {
-        getYocoConfig();
-      } catch {
-        return errorResponse("Yoco sandbox is not configured yet. Please choose PayFast.", undefined, 503);
-      }
+    const parsed = await parseJsonRequest(req, createPaymentSchema);
+    if (!parsed.success) return parsed.response;
+    const { delivery_id, payment_method } = parsed.data;
+    try {
+      getPaystackConfig();
+    } catch {
+      return errorResponse("Paystack test checkout is not configured yet.", undefined, 503);
     }
 
     // 1. Fetch delivery — verify ownership and status
@@ -59,7 +53,7 @@ export async function POST(req: NextRequest) {
        LEFT JOIN users  u ON u.id = d.customer_id
        WHERE d.id = $1 AND d.customer_id = $2
        LIMIT 1`,
-      [Number(delivery_id), session.userId]
+      [delivery_id, session.userId]
     );
 
     const delivery = result.rows[0];
@@ -79,8 +73,7 @@ export async function POST(req: NextRequest) {
     const amount = parseFloat(delivery.quote_amount);
 
     const checkout = await initialisePaymentCheckout({
-      provider: payment_method as PaymentProvider,
-      requestUrl: req.url,
+      provider: payment_method,
       delivery: {
         id: delivery.id,
         quoteId: delivery.quote_id,
@@ -88,7 +81,6 @@ export async function POST(req: NextRequest) {
         trackingNumber: delivery.tracking_number,
         amount,
         currency: delivery.quote_currency,
-        customerName: delivery.customer_name,
         customerEmail: delivery.customer_email,
       },
     });

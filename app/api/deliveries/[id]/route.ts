@@ -13,6 +13,11 @@ import {
   notFoundResponse,
   serverErrorResponse,
 } from "@/lib/api/response";
+import {
+  customerDeliveryActionSchema,
+  deliveryIdParamSchema,
+} from "@ezygo/contracts";
+import { parseJsonRequest } from "@/lib/api/validation";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -24,8 +29,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     if (!session) return unauthorizedResponse();
 
     const { id } = await params;
-    const deliveryId = parseInt(id);
-    if (isNaN(deliveryId)) return errorResponse("Invalid delivery ID.");
+    const parsedId = deliveryIdParamSchema.safeParse(id);
+    if (!parsedId.success) return errorResponse("Invalid delivery ID.");
+    const deliveryId = parsedId.data;
 
     const delivery = await getDeliveryById(deliveryId, session.userId);
     if (!delivery) return notFoundResponse("Delivery not found.");
@@ -49,21 +55,20 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
-    const deliveryId = parseInt(id);
-    if (isNaN(deliveryId)) return errorResponse("Invalid delivery ID.");
+    const parsedId = deliveryIdParamSchema.safeParse(id);
+    if (!parsedId.success) return errorResponse("Invalid delivery ID.");
+    const deliveryId = parsedId.data;
 
-    const body = await req.json();
-    if (body?.action === "confirm") {
+    const parsed = await parseJsonRequest(req, customerDeliveryActionSchema);
+    if (!parsed.success) return parsed.response;
+
+    if (parsed.data.action === "confirm") {
       await confirmDelivery(deliveryId, session.userId);
       return successResponse("Delivery confirmed. Proceed to payment.");
     }
 
-    if (body?.action === "cancel") {
-      await cancelCustomerDelivery(deliveryId, session.userId);
-      return successResponse("Delivery cancelled.");
-    }
-
-    return errorResponse("Unknown action.");
+    await cancelCustomerDelivery(deliveryId, session.userId);
+    return successResponse("Delivery cancelled.");
   } catch (error: unknown) {
     if (error instanceof Error) {
       // Business rule errors (wrong status, unauthorized)

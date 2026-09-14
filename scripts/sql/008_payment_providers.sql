@@ -4,7 +4,7 @@
 -- =============================================================================
 
 ALTER TABLE payments
-  ADD COLUMN IF NOT EXISTS provider VARCHAR(20) NOT NULL DEFAULT 'payfast',
+  ADD COLUMN IF NOT EXISTS provider VARCHAR(20) NOT NULL DEFAULT 'paystack',
   ADD COLUMN IF NOT EXISTS provider_checkout_id VARCHAR(255),
   ADD COLUMN IF NOT EXISTS provider_payment_id VARCHAR(255);
 
@@ -25,7 +25,7 @@ BEGIN
   ) THEN
     ALTER TABLE payments
       ADD CONSTRAINT payments_provider_check
-      CHECK (provider IN ('payfast', 'yoco'));
+      CHECK (provider IN ('payfast', 'yoco', 'paystack'));
   END IF;
 END
 $$;

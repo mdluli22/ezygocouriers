@@ -58,7 +58,7 @@ export async function createPaymentRecord(params: {
   customerId: number;
   amount:     number;
   currency:   string;
-  provider:   "payfast" | "yoco";
+  provider:   "payfast" | "yoco" | "paystack";
 }): Promise<number> {
   const result = await query<{ id: number }>(
     `INSERT INTO payments (delivery_id, quote_id, customer_id, amount, currency, status, provider)
@@ -90,7 +90,7 @@ export async function createPaymentRecord(params: {
 export async function completePayment(params: {
   paymentId:     number;
   deliveryId:    number;
-  provider:      "payfast" | "yoco";
+  provider:      "payfast" | "yoco" | "paystack";
   providerPaymentId: string;
 }): Promise<void> {
   const client = await getClient();
@@ -227,7 +227,9 @@ export async function completePayment(params: {
     await client.query(
       `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)
        VALUES ($1, 'paid', $2, NULL)`,
-      [params.deliveryId, `Payment completed via ${params.provider === "yoco" ? "Yoco" : "PayFast"}`]
+      [params.deliveryId, `Payment completed via ${
+        params.provider === "paystack" ? "Paystack" : params.provider === "yoco" ? "Yoco" : "PayFast"
+      }`]
     );
 
     await client.query("COMMIT");

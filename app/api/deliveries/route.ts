@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import { createDeliverySchema } from "@/lib/validations/delivery";
 import { createDelivery, confirmDelivery } from "@/lib/services/deliveries";
-import { initialisePaymentCheckout, PaymentProvider } from "@/lib/services/payment-checkout";
-import { getYocoConfig } from "@/lib/yoco";
+import { initialisePaymentCheckout } from "@/lib/services/payment-checkout";
+import { getPaystackConfig } from "@/lib/paystack";
 import { query } from "@/lib/db/server";
+import { createDeliveryRequestSchema } from "@ezygo/contracts";
+import { parseJsonRequest } from "@/lib/api/validation";
 import {
   successResponse,
   errorResponse,
@@ -22,30 +23,17 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Validate input
-    const body = await req.json();
-    const paymentMethod = body.payment_method;
-    if (paymentMethod !== "payfast" && paymentMethod !== "yoco") {
-      return errorResponse("Select PayFast or Yoco as the payment method.", undefined, 422);
-    }
-    if (paymentMethod === "yoco") {
-      try {
-        getYocoConfig();
-      } catch {
-        return errorResponse("Yoco sandbox is not configured yet. Please choose PayFast.", undefined, 503);
-      }
-    }
-    const result = createDeliverySchema.safeParse(body);
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const path = issue.path.join(".");
-        if (!fieldErrors[path]) fieldErrors[path] = issue.message;
-      }
-      return errorResponse("Please fix the errors below.", fieldErrors, 422);
-    }
+    const parsed = await parseJsonRequest(req, createDeliveryRequestSchema);
+    if (!parsed.success) return parsed.response;
+    const { payment_method: paymentMethod, ...deliveryInput } = parsed.data;
 
+    try {
+      getPaystackConfig();
+    } catch {
+      return errorResponse("Paystack test checkout is not configured yet.", undefined, 503);
+    }
     // 3. Create delivery (quoted status)
-    const delivery = await createDelivery(session.userId, result.data);
+    const delivery = await createDelivery(session.userId, deliveryInput);
 
     // 4. Auto-confirm delivery (customer accepted at form submit)
     await confirmDelivery(delivery.id, session.userId);
@@ -58,8 +46,7 @@ export async function POST(req: NextRequest) {
     const user = userResult.rows[0];
 
     const payment = await initialisePaymentCheckout({
-      provider: paymentMethod as PaymentProvider,
-      requestUrl: req.url,
+      provider: paymentMethod,
       delivery: {
         id: delivery.id,
         quoteId: delivery.quote.id,
@@ -67,7 +54,6 @@ export async function POST(req: NextRequest) {
         trackingNumber: delivery.trackingNumber,
         amount: delivery.quote.amount,
         currency: delivery.quote.currency,
-        customerName: user?.full_name ?? "Customer",
         customerEmail: user?.email ?? "",
       },
     });

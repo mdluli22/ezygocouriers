@@ -1,4 +1,26 @@
 import { NextResponse } from "next/server";
+import {
+  API_CONTRACT_VERSION,
+  API_CONTRACT_VERSION_HEADER,
+  ApiErrorCode,
+  ApiFailure,
+  ApiSuccess,
+} from "@ezygo/contracts";
+
+function defaultErrorCode(status: number): ApiErrorCode {
+  if (status === 401) return "UNAUTHORIZED";
+  if (status === 403) return "FORBIDDEN";
+  if (status === 404) return "NOT_FOUND";
+  if (status === 409) return "CONFLICT";
+  if (status === 422) return "VALIDATION_ERROR";
+  if (status === 503) return "SERVICE_UNAVAILABLE";
+  if (status >= 500) return "INTERNAL_ERROR";
+  return "BAD_REQUEST";
+}
+
+const contractHeaders = {
+  [API_CONTRACT_VERSION_HEADER]: API_CONTRACT_VERSION,
+};
 
 /**
  * Return a consistent success JSON response.
@@ -8,9 +30,9 @@ export function successResponse<T>(
   data?: T,
   status: number = 200
 ) {
-  return NextResponse.json(
+  return NextResponse.json<ApiSuccess<T | null>>(
     { success: true, message, data: data ?? null },
-    { status }
+    { status, headers: contractHeaders }
   );
 }
 
@@ -20,11 +42,12 @@ export function successResponse<T>(
 export function errorResponse(
   message: string,
   errors?: Record<string, string>,
-  status: number = 400
+  status: number = 400,
+  code: ApiErrorCode = defaultErrorCode(status)
 ) {
-  return NextResponse.json(
-    { success: false, message, errors: errors ?? null },
-    { status }
+  return NextResponse.json<ApiFailure>(
+    { success: false, code, message, errors: errors ?? null },
+    { status, headers: contractHeaders }
   );
 }
 

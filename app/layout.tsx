@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -10,6 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  applicationName: "EzyGo Couriers",
+  manifest: "/manifest.webmanifest",
   title: {
     default: "EzyGo | Fast & Reliable Courier Delivery",
     template: "%s | EzyGo",
@@ -18,11 +21,36 @@ export const metadata: Metadata = {
     "EzyGo is a fast, reliable, and affordable courier and parcel delivery service across Cape Town.",
   keywords: ["courier", "delivery", "parcel", "Cape Town", "logistics"],
   authors: [{ name: "EzyGo" }],
+  icons: {
+    icon: "/EzyGoIcon.png",
+    apple: "/EzyGoIcon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "EzyGo",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
   openGraph: {
     title: "EzyGo — Fast & Reliable Courier Delivery",
     description: "Send parcels across Cape Town with ease.",
     type: "website",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#2f4f4f" },
+    { media: "(prefers-color-scheme: dark)", color: "#173d38" },
+  ],
 };
 
 export default function RootLayout({
@@ -39,6 +67,7 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
         </ThemeProvider>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

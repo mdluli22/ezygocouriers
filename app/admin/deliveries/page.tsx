@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { STATUS_LABELS, STATUS_COLORS, DELIVERY_STATUSES, DeliveryStatus } from "@/lib/constants/delivery-status";
+import {
+  DELIVERY_STATUSES,
+  STATUS_LABELS,
+  type DeliveryStatus,
+} from "@ezygo/contracts";
+import { STATUS_COLORS } from "@/lib/constants/delivery-status";
 
 interface Delivery {
   id: number;

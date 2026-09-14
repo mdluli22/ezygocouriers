@@ -9,6 +9,7 @@ import {
   notFoundResponse,
   serverErrorResponse,
 } from "@/lib/api/response";
+import { deliveryIdParamSchema } from "@ezygo/contracts";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -21,8 +22,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     if (session.role !== "driver") return forbiddenResponse();
 
     const { id } = await params;
-    const deliveryId = parseInt(id);
-    if (isNaN(deliveryId)) return notFoundResponse();
+    const parsedId = deliveryIdParamSchema.safeParse(id);
+    if (!parsedId.success) return notFoundResponse();
+    const deliveryId = parsedId.data;
 
     const delivery = await getDriverDeliveryById(deliveryId, session.userId);
     if (!delivery) return notFoundResponse("Delivery not found.");

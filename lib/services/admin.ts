@@ -1,5 +1,5 @@
 import { query, getClient } from "@/lib/db/server";
-import { DeliveryStatus } from "@/lib/constants/delivery-status";
+import type { DeliveryStatus, UserRole } from "@ezygo/contracts";
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 
@@ -38,7 +38,8 @@ export async function getAdminStats() {
 // ─── Deliveries ───────────────────────────────────────────────────────────────
 
 export async function getAdminDeliveries(status?: DeliveryStatus | "all") {
-  const filter = status && status !== "all" ? `WHERE d.status = '${status}'` : "";
+  const filter = status && status !== "all" ? "WHERE d.status = $1" : "";
+  const params = status && status !== "all" ? [status] : [];
 
   const result = await query(
     `SELECT
@@ -72,7 +73,8 @@ export async function getAdminDeliveries(status?: DeliveryStatus | "all") {
      LEFT JOIN drivers dr       ON dr.id = d.assigned_driver_id
      LEFT JOIN users dr_user    ON dr_user.id = dr.user_id
      ${filter}
-     ORDER BY d.created_at DESC`
+     ORDER BY d.created_at DESC`,
+    params
   );
   return result.rows;
 }
@@ -193,13 +195,15 @@ export async function toggleDriverStatus(driverId: number): Promise<void> {
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
-export async function getAdminUsers(role?: string) {
-  const filter = role ? `WHERE role = '${role}'` : "";
+export async function getAdminUsers(role?: UserRole) {
+  const filter = role ? "WHERE role = $1" : "";
+  const params = role ? [role] : [];
   const result = await query(
     `SELECT id, full_name, email, phone, role, is_active, auth_provider, created_at
      FROM users
      ${filter}
-     ORDER BY created_at DESC`
+     ORDER BY created_at DESC`,
+    params
   );
   return result.rows;
 }

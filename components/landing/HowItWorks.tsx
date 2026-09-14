@@ -70,7 +70,7 @@ export default function HowItWorks() {
             </div>
             <span className="how-card-label">Secure checkout</span>
             <h3>Confirm your price.</h3>
-            <p>Review the clear total and pay securely through PayFast or Yoco.</p>
+            <p>Review the clear total and pay securely through Paystack.</p>
             <div className="payment-preview" aria-hidden="true">
               <span>Flat delivery fee</span><strong>R99.00</strong>
             </div>

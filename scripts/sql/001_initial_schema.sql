@@ -196,8 +196,8 @@ CREATE TABLE payments (
   status               payment_status      NOT NULL DEFAULT 'pending',
 
   -- Payment provider reconciliation
-  provider             VARCHAR(20)         NOT NULL DEFAULT 'payfast'
-    CHECK (provider IN ('payfast', 'yoco')),
+  provider             VARCHAR(20)         NOT NULL DEFAULT 'paystack'
+    CHECK (provider IN ('payfast', 'yoco', 'paystack')),
   provider_checkout_id VARCHAR(255),
   provider_payment_id  VARCHAR(255),
 

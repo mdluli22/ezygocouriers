@@ -1,60 +1,12 @@
-export const DELIVERY_STATUSES = [
-  "pending",
-  "quoted",
-  "confirmed",
-  "paid",
-  "assigned",
-  "picked_up",
-  "in_transit",
-  "delivered",
-  "failed",
-  "cancelled",
-] as const;
+import type { DeliveryStatus } from "@ezygo/contracts";
 
-export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
-
-/**
- * Defines which status transitions are valid.
- * Key = current status, Value = allowed next statuses.
- */
-export const VALID_TRANSITIONS: Record<DeliveryStatus, DeliveryStatus[]> = {
-  pending:    ["quoted", "cancelled"],
-  quoted:     ["confirmed", "cancelled"],
-  confirmed:  ["paid", "cancelled"],
-  paid:       ["assigned", "cancelled"],
-  assigned:   ["picked_up", "cancelled"],
-  picked_up:  ["in_transit"],
-  in_transit: ["delivered", "failed"],
-  delivered:  [],
-  failed:     [],
-  cancelled:  [],
-};
-
-/**
- * Check whether a status transition is valid.
- */
-export function isValidTransition(
-  from: DeliveryStatus,
-  to: DeliveryStatus
-): boolean {
-  return VALID_TRANSITIONS[from]?.includes(to) ?? false;
-}
-
-/**
- * Human-readable status labels for UI display.
- */
-export const STATUS_LABELS: Record<DeliveryStatus, string> = {
-  pending:    "Pending",
-  quoted:     "Quoted",
-  confirmed:  "Confirmed",
-  paid:       "Paid",
-  assigned:   "Driver Assigned",
-  picked_up:  "Picked Up",
-  in_transit: "In Transit",
-  delivered:  "Delivered",
-  failed:     "Failed",
-  cancelled:  "Cancelled",
-};
+export {
+  DELIVERY_STATUSES,
+  STATUS_LABELS,
+  VALID_TRANSITIONS,
+  isValidTransition,
+  type DeliveryStatus,
+} from "@ezygo/contracts";
 
 /**
  * Tailwind color classes for status badges.

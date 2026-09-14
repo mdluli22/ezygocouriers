@@ -5,6 +5,17 @@ provided by [Better Auth](https://www.better-auth.com/) with email/password,
 Google OAuth, database-backed sessions, and application roles for customers,
 drivers, and administrators.
 
+The application-owned API contract is documented in
+[`docs/api-contracts.md`](docs/api-contracts.md). Shared request schemas and
+response-envelope types live in the [`@ezygo/contracts`](packages/contracts)
+workspace package.
+
+Native client authentication, secure token storage, renewal, and logout are
+documented in [`docs/mobile-authentication.md`](docs/mobile-authentication.md).
+
+The customer-first installable web-app strategy and deployment checks are
+documented in [`docs/customer-pwa.md`](docs/customer-pwa.md).
+
 ## Getting started
 
 Copy the environment template and configure the required values:
@@ -157,6 +168,13 @@ docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
   < scripts/sql/008_payment_providers.sql
 ```
 
+Apply the Paystack provider migration:
+
+```bash
+docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
+  < scripts/sql/009_paystack_provider.sql
+```
+
 Drivers share location while signed into the driver portal. After payment, the
 closest recently located active driver who has no assigned, picked-up, or
 in-transit delivery is preferred. If no free driver has a fresh location, the
@@ -169,7 +187,29 @@ The booking flow currently accepts only pickup and drop-off addresses inside
 the Cape Town service area. This restriction is enforced in both Google Places
 autocomplete and server-side delivery validation.
 
-## PayFast sandbox testing
+## Paystack test integration
+
+Paystack is currently the only payment method exposed by the checkout. PayFast
+and Yoco remain in the codebase for easy restoration, but new checkout requests
+for either provider are rejected by the API.
+
+Set `PAYSTACK_SECRET_KEY` to the `sk_test_...` key from your Paystack dashboard.
+Set `PAYSTACK_APP_URL` to the application origin used for Paystack's return
+callback (it defaults to `NEXT_PUBLIC_APP_URL`). The secret key is used only by
+server routes and must never be exposed to browser code.
+
+Register this URL as the webhook URL in the Paystack dashboard:
+
+```text
+https://your-public-app.example.com/api/payments/paystack/webhook
+```
+
+The hosted checkout redirects through `/api/payments/paystack/callback`, which
+verifies the transaction before completing the delivery. The signed
+`charge.success` webhook provides a second idempotent completion path. Both
+paths validate provider mode, reference, amount, and currency before fulfillment.
+
+## Disabled PayFast sandbox integration
 
 Set `PAYFAST_SANDBOX=true`. You can provide credentials from your own PayFast
 sandbox account, or leave `PAYFAST_MERCHANT_ID` and `PAYFAST_MERCHANT_KEY` blank
@@ -184,7 +224,7 @@ HTTPS origin, checkout is sent to PayFast. Sandbox success returns are
 reconciled for the authenticated customer in addition to accepting verified
 ITNs. In live mode, the verified ITN remains the sole source of truth.
 
-## Yoco sandbox testing
+## Disabled Yoco sandbox integration
 
 Set `YOCO_SANDBOX=true` and add the `sk_test_...` secret key from the Yoco App
 as `YOCO_SECRET_KEY`. Set `YOCO_APP_URL` to the app origin used for checkout

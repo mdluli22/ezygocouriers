@@ -2,13 +2,18 @@
   "name": "ezygocouriers",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck:contracts": "npm run typecheck --workspace @ezygo/contracts"
   },
   "dependencies": {
+    "@ezygo/contracts": "file:packages/contracts",
     "@vis.gl/react-google-maps": "^1.7.1",
     "bcryptjs": "^3.0.3",
     "better-auth": "^1.6.24",

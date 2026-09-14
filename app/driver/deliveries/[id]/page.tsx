@@ -5,10 +5,10 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   STATUS_LABELS,
-  STATUS_COLORS,
   VALID_TRANSITIONS,
-  DeliveryStatus,
-} from "@/lib/constants/delivery-status";
+  type DeliveryStatus,
+} from "@ezygo/contracts";
+import { STATUS_COLORS } from "@/lib/constants/delivery-status";
 
 interface Delivery {
   id: number;

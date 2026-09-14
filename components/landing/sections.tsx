@@ -66,7 +66,7 @@ export function WhyEzyGo() {
             <span className="value-icon"><ShieldCheck size={21} /></span>
             <span className="value-label">Protected checkout</span>
             <h3>Pay with confidence.</h3>
-            <p>Secure PayFast or Yoco payment and a clear total before you confirm.</p>
+            <p>Secure Paystack payment and a clear total before you confirm.</p>
             <span className="secure-pill"><LockKeyhole size={13} /> Secure checkout</span>
           </article>
 
@@ -155,7 +155,7 @@ export function Footer() {
 
         <div className="footer-bottom">
           <span>© {new Date().getFullYear()} EzyGo Couriers. All rights reserved.</span>
-          <span><LockKeyhole size={14} /> Secure payments by PayFast or Yoco</span>
+          <span><LockKeyhole size={14} /> Secure payments by Paystack</span>
         </div>
       </div>
     </footer>

@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
-import { APIError } from "better-auth/api";
-import { loginSchema } from "@/lib/validations/auth";
+import { loginSchema } from "@ezygo/contracts";
 import { auth } from "@/lib/auth/auth";
 import { applyAuthCookies } from "@/lib/auth/response";
 import {
@@ -8,22 +7,14 @@ import {
   errorResponse,
   serverErrorResponse,
 } from "@/lib/api/response";
+import { parseJsonRequest } from "@/lib/api/validation";
+import { normalizeSignInError } from "@/lib/auth/sign-in-error";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-
-    // 1. Validate input
-    const result = loginSchema.safeParse(body);
-    if (!result.success) {
-      const errors = result.error.flatten().fieldErrors;
-      const formatted = Object.fromEntries(
-        Object.entries(errors).map(([k, v]) => [k, v?.[0] ?? "Invalid"])
-      );
-      return errorResponse("Please fix the errors below.", formatted, 422);
-    }
-
-    const { email, password } = result.data;
+    const parsed = await parseJsonRequest(req, loginSchema);
+    if (!parsed.success) return parsed.response;
+    const { email, password } = parsed.data;
 
     const signIn = await auth.api.signInEmail({
       body: { email, password },
@@ -40,24 +31,13 @@ export async function POST(req: NextRequest) {
 
     return applyAuthCookies(response, signIn.headers);
   } catch (error) {
-    if (error instanceof APIError) {
-      const errorCode =
-        typeof error.body === "object" && error.body && "code" in error.body
-          ? String(error.body.code)
-          : "";
-      if (errorCode === "EMAIL_NOT_VERIFIED") {
-        return errorResponse(
-          "Please verify your email address before signing in.",
-          { email: "Email verification is required" },
-          403
-        );
-      }
-
-      const status = error.statusCode === 403 ? 403 : 401;
-      const message = status === 403
-        ? "Your account cannot sign in. Please contact support."
-        : "Invalid email or password.";
-      return errorResponse(message, undefined, status);
+    const signInError = normalizeSignInError(error);
+    if (signInError) {
+      return errorResponse(
+        signInError.message,
+        signInError.errors,
+        signInError.status
+      );
     }
     console.error("[POST /api/auth/login]", error);
     return serverErrorResponse("Something went wrong. Please try again.");

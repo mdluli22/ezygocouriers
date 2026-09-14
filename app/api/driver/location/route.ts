@@ -1,19 +1,14 @@
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { updateDriverLocation } from "@/lib/services/driver-assignment";
+import { driverLocationSchema } from "@ezygo/contracts";
+import { parseJsonRequest } from "@/lib/api/validation";
 import {
-  errorResponse,
   forbiddenResponse,
   serverErrorResponse,
   successResponse,
   unauthorizedResponse,
 } from "@/lib/api/response";
-
-const locationSchema = z.object({
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-});
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -21,10 +16,12 @@ export async function PATCH(request: NextRequest) {
     if (!session) return unauthorizedResponse();
     if (session.role !== "driver") return forbiddenResponse();
 
-    const parsed = locationSchema.safeParse(await request.json());
-    if (!parsed.success) {
-      return errorResponse("Invalid driver location.", undefined, 422);
-    }
+    const parsed = await parseJsonRequest(
+      request,
+      driverLocationSchema,
+      "Invalid driver location."
+    );
+    if (!parsed.success) return parsed.response;
 
     const assignment = await updateDriverLocation({
       driverUserId: session.userId,

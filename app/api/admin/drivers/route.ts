@@ -11,6 +11,11 @@ import {
   serverErrorResponse,
 } from "@/lib/api/response";
 import { NextRequest } from "next/server";
+import {
+  adminCreateDriverSchema,
+  adminToggleDriverSchema,
+} from "@ezygo/contracts";
+import { parseJsonRequest } from "@/lib/api/validation";
 
 export async function GET() {
   try {
@@ -32,34 +37,22 @@ export async function POST(req: NextRequest) {
     if (!session) return unauthorizedResponse();
     if (session.role !== "admin") return forbiddenResponse();
 
-    const body = await req.json();
+    const parsed = await parseJsonRequest(req, adminCreateDriverSchema);
+    if (!parsed.success) return parsed.response;
     const {
-      full_name, email, phone, password,
+      full_name, email: normalizedEmail, phone, password,
       license_number, vehicle_type, vehicle_reg,
-    } = body;
+    } = parsed.data;
 
-    const requiredFields = {
-      full_name, email, phone, password,
-      license_number, vehicle_type, vehicle_reg,
-    };
-    const hasMissingField = Object.values(requiredFields).some(
-      (value) => typeof value !== "string" || value.trim() === ""
-    );
-
-    if (hasMissingField) {
-      return errorResponse("All fields are required.", undefined, 422);
-    }
-
-    const normalizedEmail = email.trim();
     const password_hash = await hashPassword(password);
     const result = await createDriver({
-      full_name: full_name.trim(),
+      full_name,
       email: normalizedEmail,
-      phone: phone.trim(),
+      phone,
       password_hash,
-      license_number: license_number.trim(),
-      vehicle_type: vehicle_type.trim(),
-      vehicle_reg: vehicle_reg.trim(),
+      license_number,
+      vehicle_type,
+      vehicle_reg,
     });
 
     let verificationEmailSent = true;
@@ -96,12 +89,10 @@ export async function PATCH(req: NextRequest) {
     if (!session) return unauthorizedResponse();
     if (session.role !== "admin") return forbiddenResponse();
 
-    const body = await req.json();
-    const { driver_id } = body;
+    const parsed = await parseJsonRequest(req, adminToggleDriverSchema);
+    if (!parsed.success) return parsed.response;
 
-    if (!driver_id) return errorResponse("driver_id is required.", undefined, 422);
-
-    await toggleDriverStatus(Number(driver_id));
+    await toggleDriverStatus(parsed.data.driver_id);
     return successResponse("Driver status toggled.");
   } catch (error) {
     console.error("[PATCH /api/admin/drivers]", error);

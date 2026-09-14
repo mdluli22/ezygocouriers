@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   // Required for Docker multi-stage build
   output: "standalone",
 
+  // Compile the source-first workspace package for both web and server bundles.
+  transpilePackages: ["@ezygo/contracts"],
+
   // Explicitly expose NEXT_PUBLIC_ vars (belt-and-suspenders for Docker builds)
   env: {
     NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
@@ -18,6 +21,30 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
+  },
+
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate",
+          },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate",
+          },
+        ],
+      },
+    ];
   },
 
   // Strict mode for better development warnings

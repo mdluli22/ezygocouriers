@@ -2,7 +2,7 @@ import { query, getClient } from "@/lib/db/server";
 import {
   DeliveryStatus,
   isValidTransition,
-} from "@/lib/constants/delivery-status";
+} from "@ezygo/contracts";
 import { autoAssignNextPaidDeliveryToDriver } from "./driver-assignment";
 import { isDeliveryPinFormat, verifyDeliveryPin } from "@/lib/delivery-pin";
 import { sendDeliveryCompleted } from "@/lib/email/smtp";

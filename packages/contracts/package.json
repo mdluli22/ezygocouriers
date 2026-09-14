@@ -1,0 +1,23 @@
+{
+  "name": "@ezygo/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./constants": "./src/constants.ts",
+    "./models": "./src/models.ts",
+    "./schemas": "./src/schemas/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "zod": "^4.3.6"
+  }
+}
