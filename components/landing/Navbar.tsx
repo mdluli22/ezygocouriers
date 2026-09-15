@@ -30,9 +30,7 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
     <nav className={`landing-nav ${scrolled ? "is-scrolled" : ""}`} aria-label="Main navigation">
       <div className="landing-shell nav-inner">
         <Link href="/" className="brand-lockup" aria-label="EzyGo home">
-          <span className="brand-logo-surface">
-            <Image src="/GoLogo.png" alt="" width={92} height={25} priority />
-          </span>
+          <Image className="navbar-logo" src="/navbar-logo.png" alt="" width={1036} height={364} priority />
           <span className="brand-name">EzyGo</span>
         </Link>
 

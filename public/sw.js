@@ -1,4 +1,4 @@
-const STATIC_CACHE = "ezygo-static-v2";
+const STATIC_CACHE = "ezygo-static-v3";
 const OFFLINE_URL = "/offline";
 const PRECACHE_URLS = [OFFLINE_URL, "/EzyGoIcon.png", "/GoLogo.png"];
 

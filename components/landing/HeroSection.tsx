@@ -59,10 +59,10 @@ export default function HeroSection() {
 
         <div className="landing-shell hero-layout">
           <div className="hero-copy">
-            <div className="eyebrow-pill">
+            {/* <div className="eyebrow-pill">
               <Sparkles size={15} strokeWidth={2.4} />
               Cape Town&apos;s simple courier service
-            </div>
+            </div> */}
 
             <h1>
               From your door

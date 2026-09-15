@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   applicationName: "EzyGo Couriers",
   manifest: "/manifest.webmanifest",
   title: {
-    default: "EzyGo | Fast & Reliable Courier Delivery",
+    default: "EzyGo",
     template: "%s | EzyGo",
   },
   description:
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   keywords: ["courier", "delivery", "parcel", "Cape Town", "logistics"],
   authors: [{ name: "EzyGo" }],
   icons: {
-    icon: "/EzyGoIcon.png",
+    icon: { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
     apple: "/EzyGoIcon.png",
   },
   appleWebApp: {
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-capable": "yes",
   },
   openGraph: {
-    title: "EzyGo — Fast & Reliable Courier Delivery",
+    title: "EzyGo",
     description: "Send parcels across Cape Town with ease.",
     type: "website",
   },
