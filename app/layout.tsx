@@ -23,7 +23,9 @@ export const metadata: Metadata = {
   authors: [{ name: "EzyGo" }],
   icons: {
     icon: "/EzyGoIcon.png",
-    apple: "/EzyGoIcon.png",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   appleWebApp: {
     capable: true,
