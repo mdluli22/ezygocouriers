@@ -7,8 +7,9 @@ services:
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
     container_name: ezygo_app
     restart: unless-stopped
-    # ports:
-    #   - "127.0.0.1:3000:3000"
+    # Host Nginx forwards public and admin traffic to this loopback port.
+    ports:
+      - "127.0.0.1:3000:3000"
     env_file:
       - .env
     depends_on:
