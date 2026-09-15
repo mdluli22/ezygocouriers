@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ChevronDown, LogOut, Package, Plus } from "lucide-react";
 import { signOutAndRedirect } from "@/lib/auth/navigation";
+import PushNotificationControl from "@/components/pwa/PushNotificationControl";
 
 interface User {
   full_name: string;
@@ -55,6 +56,7 @@ export default function DashboardNav() {
 
   return (
     <div className="portal-header-actions">
+      <PushNotificationControl />
       <Link
         href="/dashboard/deliveries/new"
         className="portal-header-cta"

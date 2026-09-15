@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Truck } from "lucide-react";
 import { signOutAndRedirect } from "@/lib/auth/navigation";
+import PushNotificationControl from "@/components/pwa/PushNotificationControl";
 
 export default function DriverNav() {
   const router = useRouter();
@@ -28,31 +29,16 @@ export default function DriverNav() {
         const rows: Array<{ status?: string }> = Array.isArray(data.data) ? data.data : [];
         const assigned = rows.filter((row) => row.status === "assigned").length;
         if (!mounted) return;
-        // notify if count increased
-        if (assigned > assignedCount) {
-          // show a small in-browser notification if permitted
-          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-            new Notification("New delivery assigned", {
-              body: `You have ${assigned} assigned delivery(ies).`,
-              silent: false,
-            });
-          }
-        }
         setAssignedCount(assigned);
       } catch {
         // ignore
       }
     }
 
-    // request permission once on mount
-    if (typeof Notification !== "undefined" && Notification.permission === "default") {
-      try { Notification.requestPermission(); } catch {}
-    }
-
     load();
     const id = setInterval(load, 15000);
     return () => { mounted = false; clearInterval(id); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   async function logout() {
     setLogout(true);
@@ -68,6 +54,7 @@ export default function DriverNav() {
 
   return (
     <div className="portal-header-actions">
+      <PushNotificationControl />
       {/* assigned deliveries badge */}
       {assignedCount > 0 && (
         <button

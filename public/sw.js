@@ -1,4 +1,4 @@
-const STATIC_CACHE = "ezygo-static-v1";
+const STATIC_CACHE = "ezygo-static-v2";
 const OFFLINE_URL = "/offline";
 const PRECACHE_URLS = [OFFLINE_URL, "/EzyGoIcon.png", "/GoLogo.png"];
 
@@ -70,6 +70,51 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       });
+    })
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let message = {
+    title: "EzyGo update",
+    body: "There is an update to your delivery.",
+    url: "/dashboard",
+    tag: "ezygo-update",
+  };
+
+  try {
+    if (event.data) message = { ...message, ...event.data.json() };
+  } catch {
+    // Keep the safe default when a provider sends malformed payload data.
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(message.title, {
+      body: message.body,
+      icon: "/EzyGoIcon.png",
+      badge: "/EzyGoIcon.png",
+      tag: message.tag,
+      renotify: true,
+      data: { url: message.url },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const requestedUrl = event.notification.data?.url || "/dashboard";
+  const targetUrl = new URL(requestedUrl, self.location.origin);
+  if (targetUrl.origin !== self.location.origin) return;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ("focus" in client) {
+          void client.navigate(targetUrl.href);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(targetUrl.href);
     })
   );
 });

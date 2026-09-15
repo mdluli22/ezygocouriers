@@ -356,6 +356,60 @@ Success data:
 
 The location update may immediately assign a waiting paid delivery. Clients must tolerate `assignment: null`.
 
+Location updates are last-write-wins and may be retried by the driver client. A
+client must discard stale queued coordinates rather than presenting them as a
+current driver position.
+
+## Push Notification Endpoints
+
+Push notification endpoints accept either the first-party session cookie or a
+valid mobile Bearer session. Subscriptions are always scoped to the current
+authenticated user.
+
+### GET `/api/push/config`
+
+Access: Any authenticated role
+
+Success data:
+
+```ts
+{
+  enabled: boolean;
+  publicKey: string | null; // public VAPID application-server key
+}
+```
+
+Clients must hide push opt-in when `enabled` is false. The private VAPID key is
+never returned.
+
+### POST `/api/push/subscriptions`
+
+Access: Any authenticated role
+
+Request:
+
+```ts
+{
+  endpoint: string;
+  expirationTime?: number | null;
+  keys: { p256dh: string; auth: string };
+}
+```
+
+Success data: `null`
+
+The operation is idempotent for a browser endpoint. Clients should call it only
+after notification permission is granted in response to a user action.
+
+### DELETE `/api/push/subscriptions`
+
+Access: Any authenticated role
+
+Request: `{ endpoint: string }`
+
+Success data: `null`. Deletion is limited to a subscription owned by the
+authenticated user.
+
 ## Payment Endpoints
 
 ### POST `/api/payments/create`

@@ -61,6 +61,7 @@ export default function DriverDeliveryDetailPage() {
   const [updateError, setUpdateError] = useState("");
   const [showNote, setShowNote]     = useState(false);
   const [deliveryPin, setDeliveryPin] = useState("");
+  const [online, setOnline] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,8 +79,23 @@ export default function DriverDeliveryDetailPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+
   async function handleStatusUpdate(newStatus: DeliveryStatus) {
     if (!delivery) return;
+    if (!navigator.onLine) {
+      setUpdateError("Reconnect before changing trip status. Your note and PIN will stay on this screen.");
+      return;
+    }
     if (
       newStatus === "cancelled" &&
       !window.confirm("Cancel this trip? This cannot be undone.")
@@ -204,6 +220,11 @@ export default function DriverDeliveryDetailPage() {
             {updateError && (
               <p className="text-xs font-semibold text-center" style={{ color: "#FCA5A5" }}>{updateError}</p>
             )}
+            {!online && !updateError && (
+              <p className="text-xs font-semibold text-center" style={{ color: "#FCD34D" }}>
+                Status actions are paused until you reconnect.
+              </p>
+            )}
 
             {/* Optional note toggle */}
             <button onClick={() => setShowNote(v => !v)}
@@ -247,7 +268,7 @@ export default function DriverDeliveryDetailPage() {
             {/* Primary action */}
             {primaryNext && (
               <button onClick={() => handleStatusUpdate(primaryNext)}
-                disabled={updating !== null || (primaryNext === "delivered" && delivery.require_pin && deliveryPin.length !== 6)}
+                disabled={!online || updating !== null || (primaryNext === "delivered" && delivery.require_pin && deliveryPin.length !== 6)}
                 className="w-full py-3.5 rounded-2xl font-black text-base transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 style={{ backgroundColor: "#F59E0B", color: "#111" }}>
                 {updating === primaryNext ? (
@@ -264,7 +285,7 @@ export default function DriverDeliveryDetailPage() {
             {/* Cancel (destructive, secondary) */}
             {canCancel && (
               <button onClick={() => handleStatusUpdate("cancelled")}
-                disabled={updating !== null}
+                disabled={!online || updating !== null}
                 className="w-full py-2.5 rounded-2xl font-semibold text-sm transition-all disabled:opacity-60"
                 style={{ backgroundColor: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>
                 {updating === "cancelled" ? "Cancelling…" : "Cancel this trip"}

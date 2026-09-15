@@ -16,6 +16,10 @@ documented in [`docs/mobile-authentication.md`](docs/mobile-authentication.md).
 The customer-first installable web-app strategy and deployment checks are
 documented in [`docs/customer-pwa.md`](docs/customer-pwa.md).
 
+Customer/driver mobile workflows, push setup, offline policy, device testing,
+security gates and the Expo decision are documented in
+[`docs/mobile-experience-rollout.md`](docs/mobile-experience-rollout.md).
+
 ## Getting started
 
 Copy the environment template and configure the required values:
@@ -175,7 +179,15 @@ docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
   < scripts/sql/009_paystack_provider.sql
 ```
 
-Drivers share location while signed into the driver portal. After payment, the
+Apply the browser push-subscription migration:
+
+```bash
+docker compose exec -T db sh -c 'psql -U "$DB_USER" -d "$DB_NAME"' \
+  < scripts/sql/010_push_subscriptions.sql
+```
+
+Drivers explicitly start and stop foreground location sharing in the driver
+portal. After payment, the
 closest recently located active driver who has no assigned, picked-up, or
 in-transit delivery is preferred. If no free driver has a fresh location, the
 delivery falls back to the least-recently assigned active driver instead of

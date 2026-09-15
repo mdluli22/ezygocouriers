@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
+import { useRouter } from "next/navigation";
 import AddressAutocomplete, { PlaceResult } from "@/components/ui/AddressAutocomplete";
 import { signOutAndRedirect } from "@/lib/auth/navigation";
 
@@ -33,6 +34,7 @@ interface AddressGeo {
 // ─── Auth Bottom Sheet Modal ──────────────────────────────────────────────────
 
 function AuthModal({ onSuccess, onClose }: { onSuccess: (user: User) => void; onClose: () => void }) {
+  const router = useRouter();
   const [tab, setTab] = useState<AuthTab>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -69,7 +71,7 @@ function AuthModal({ onSuccess, onClose }: { onSuccess: (user: User) => void; on
       });
       const data = await res.json();
       if (!res.ok) { setError(data.message || "Signup failed."); return; }
-      window.location.assign(
+      router.push(
         `/auth/verify-email?email=${encodeURIComponent(data.data?.email || email)}`
       );
     } catch { setError("Something went wrong."); }
@@ -250,6 +252,10 @@ export default function NewDeliveryPage() {
 
   async function doSubmit() {
     if (!user) { setShowAuth(true); return; }
+    if (!navigator.onLine) {
+      setError("You’re offline. Reconnect before creating and paying for this delivery.");
+      return;
+    }
     setLoading(true); setError(""); setFieldErrors({});
 
     const body = {

@@ -1,5 +1,6 @@
 import { query, getClient } from "@/lib/db/server";
 import type { DeliveryStatus, UserRole } from "@ezygo/contracts";
+import { notifyAssignedDriver } from "@/lib/services/push-notifications";
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,15 @@ export async function assignDriver(
     );
 
     await client.query("COMMIT");
+    try {
+      await notifyAssignedDriver({ driverId, deliveryId });
+    } catch (error) {
+      console.error("[Admin assignment push] Delivery failed", {
+        driverId,
+        deliveryId,
+        error,
+      });
+    }
   } catch (e) {
     await client.query("ROLLBACK");
     throw e;

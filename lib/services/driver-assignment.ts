@@ -1,6 +1,7 @@
 import type { PoolClient } from "pg";
 import { getClient } from "@/lib/db/server";
 import { CAPE_TOWN_SERVICE_BOUNDS } from "@ezygo/contracts";
+import { notifyAssignedDriver } from "./push-notifications";
 
 const DEFAULT_ASSIGNMENT_RADIUS_KM = 25;
 const DEFAULT_LOCATION_MAX_AGE_MINUTES = 15;
@@ -91,22 +92,38 @@ function assignmentLogNote(distanceKm: number | null): string {
     : `Automatically assigned to the nearest available driver (${distanceKm.toFixed(1)} km from pickup)`;
 }
 
+async function notifyAssignment(assignment: AutomaticAssignment | null) {
+  if (!assignment) return;
+  try {
+    await notifyAssignedDriver(assignment);
+  } catch (error) {
+    // Assignment is authoritative; notification delivery is best effort.
+    console.error("[Assignment push] Delivery failed", {
+      deliveryId: assignment.deliveryId,
+      driverId: assignment.driverId,
+      error,
+    });
+  }
+}
+
 /** Run delivery assignment in its own transaction (safe after payment commit). */
 export async function autoAssignDelivery(
   deliveryId: number
 ): Promise<AutomaticAssignment | null> {
   const client = await getClient();
+  let assignment: AutomaticAssignment | null;
   try {
     await client.query("BEGIN");
-    const assignment = await assignDriverToDelivery(client, deliveryId);
+    assignment = await assignDriverToDelivery(client, deliveryId);
     await client.query("COMMIT");
-    return assignment;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
   }
+  await notifyAssignment(assignment);
+  return assignment;
 }
 
 /**
@@ -282,17 +299,19 @@ export async function autoAssignNextPaidDeliveryToDriver(
   driverId: number
 ): Promise<AutomaticAssignment | null> {
   const client = await getClient();
+  let assignment: AutomaticAssignment | null;
   try {
     await client.query("BEGIN");
-    const assignment = await assignNextPaidDeliveryToDriver(client, driverId);
+    assignment = await assignNextPaidDeliveryToDriver(client, driverId);
     await client.query("COMMIT");
-    return assignment;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
   }
+  await notifyAssignment(assignment);
+  return assignment;
 }
 
 /** Persist a driver's live location and immediately check the waiting queue. */

@@ -21,6 +21,10 @@ export default function PayDeliveryPage() {
   const [error, setError] = useState("");
 
   async function initialisePayment() {
+    if (!navigator.onLine) {
+      setError("You’re offline. Reconnect before opening secure checkout.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {

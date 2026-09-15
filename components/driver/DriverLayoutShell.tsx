@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
 import DriverNav from "@/components/driver/DriverNav";
 import DriverLocationTracker from "@/components/driver/DriverLocationTracker";
+import NetworkStatus from "@/components/pwa/NetworkStatus";
 
 export default function DriverLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,7 +15,6 @@ export default function DriverLayoutShell({ children }: { children: React.ReactN
 
   return (
     <div className="portal-shell portal-shell-driver">
-      <DriverLocationTracker />
       <header className="portal-topbar">
         <div className="portal-nav-inner">
           <BrandLogo
@@ -27,6 +27,8 @@ export default function DriverLayoutShell({ children }: { children: React.ReactN
           <DriverNav />
         </div>
       </header>
+      <NetworkStatus />
+      <DriverLocationTracker />
       <main className="portal-main">{children}</main>
     </div>
   );

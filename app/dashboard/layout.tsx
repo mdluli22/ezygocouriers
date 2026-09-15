@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import BrandLogo from "@/components/BrandLogo";
 import DashboardNav from "@/components/dashboard/DashboardNav";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
+import NetworkStatus from "@/components/pwa/NetworkStatus";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -25,6 +26,8 @@ export default function DashboardLayout({
           <DashboardNav />
         </div>
       </header>
+
+      <NetworkStatus />
 
       <main className="portal-main">{children}</main>
       <PwaInstallPrompt />

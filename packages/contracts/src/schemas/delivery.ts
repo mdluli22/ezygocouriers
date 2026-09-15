@@ -101,6 +101,19 @@ export const driverStatusUpdateSchema = z.object({
     .optional(),
 });
 
+export const pushSubscriptionSchema = z.object({
+  endpoint: z.url().max(2048),
+  expirationTime: z.number().int().nonnegative().nullable().optional(),
+  keys: z.object({
+    p256dh: z.string().min(1).max(512),
+    auth: z.string().min(1).max(512),
+  }),
+});
+
+export const deletePushSubscriptionSchema = z.object({
+  endpoint: z.url().max(2048),
+});
+
 export type AddressInput = z.infer<typeof addressSchema>;
 export type CreateDeliveryInput = z.infer<typeof createDeliverySchema>;
 export type CreateDeliveryRequest = z.infer<
@@ -112,4 +125,8 @@ export type CustomerDeliveryActionInput = z.infer<
 export type DriverLocationInput = z.infer<typeof driverLocationSchema>;
 export type DriverStatusUpdateInput = z.infer<
   typeof driverStatusUpdateSchema
+>;
+export type PushSubscriptionInput = z.infer<typeof pushSubscriptionSchema>;
+export type DeletePushSubscriptionInput = z.infer<
+  typeof deletePushSubscriptionSchema
 >;

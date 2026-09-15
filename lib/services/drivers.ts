@@ -1,11 +1,13 @@
 import { query, getClient } from "@/lib/db/server";
 import {
   DeliveryStatus,
+  STATUS_LABELS,
   isValidTransition,
 } from "@ezygo/contracts";
 import { autoAssignNextPaidDeliveryToDriver } from "./driver-assignment";
 import { isDeliveryPinFormat, verifyDeliveryPin } from "@/lib/delivery-pin";
 import { sendDeliveryCompleted } from "@/lib/email/smtp";
+import { sendPushToUser } from "@/lib/services/push-notifications";
 
 /**
  * Get all deliveries assigned to a driver (via their user ID).
@@ -116,10 +118,12 @@ export async function updateDeliveryStatus(
       recipient_name: string;
       customer_email: string;
       customer_name: string;
+      customer_id: number;
     }>(
       `SELECT d.id, d.status, d.require_pin, d.delivery_pin_hash,
               d.tracking_number, d.recipient_name, dr.id AS driver_id,
-              cu.email AS customer_email, cu.full_name AS customer_name
+              cu.email AS customer_email, cu.full_name AS customer_name,
+              cu.id AS customer_id
        FROM deliveries d
        JOIN drivers dr ON dr.id = d.assigned_driver_id
        JOIN users cu ON cu.id = d.customer_id
@@ -162,6 +166,20 @@ export async function updateDeliveryStatus(
     );
 
     await client.query("COMMIT");
+
+    try {
+      await sendPushToUser(delivery.customer_id, {
+        title: `Delivery ${STATUS_LABELS[newStatus].toLowerCase()}`,
+        body: `${delivery.tracking_number} is now ${STATUS_LABELS[newStatus].toLowerCase()}.`,
+        url: `/dashboard/tracking/${deliveryId}`,
+        tag: `delivery-${deliveryId}`,
+      });
+    } catch (error) {
+      console.error("[Customer status push] Delivery failed", {
+        deliveryId,
+        error,
+      });
+    }
 
     if (newStatus === "delivered") {
       try {
