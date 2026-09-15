@@ -20,11 +20,18 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ secrets.APP_DIR }}
+            set -eu
+            cd "${{ secrets.APP_DIR }}"
 
-            git pull origin main
+            git pull --ff-only origin main
+            test "$(git rev-parse HEAD)" = "${{ github.sha }}" || {
+              echo "Server checkout does not match the release commit."
+              exit 1
+            }
 
-            docker compose down
+            # Build before replacing the running app. A failed build must fail
+            # the deployment rather than restart the previous image.
+            docker compose build app
 
             # Existing Postgres volumes do not re-run /docker-entrypoint-initdb.d.
             # Run the idempotent migrations explicitly and fail the deployment
@@ -32,6 +39,6 @@ jobs:
             docker compose up -d db
             docker compose run --rm migrate
 
-            docker compose up -d --build --no-deps app
+            docker compose up -d --no-deps app
 
             docker image prune -f
