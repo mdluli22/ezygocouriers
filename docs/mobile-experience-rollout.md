@@ -1,5 +1,10 @@
 # EzyGo Mobile Experience Rollout
 
+For the native release now being defined, see the
+[release 1 product specification](mobile-product-v1.md). It requires customer
+live-map tracking at launch. The PWA implementation and earlier Expo decision
+criteria below describe the existing baseline; they do not replace that scope.
+
 EzyGo is shipping the responsive customer experience as a Progressive Web App first. The current Next.js UI, PostgreSQL services, Paystack checkout, mobile Bearer authentication and `@ezygo/contracts` package remain the source of truth. Expo is a later client, not a second backend.
 
 ## Delivery status
@@ -108,7 +113,9 @@ Also test poor connectivity, screen rotation, safe-area insets, keyboard overlap
 
 Move the driver client to Expo when the business requires reliable background GPS after the screen locks, native background tasks, stronger notification delivery guarantees, or store-managed distribution. Those capabilities cannot be guaranteed by a PWA.
 
-Before starting Expo:
+An Expo Router starter now lives in `apps/mobile`; native authentication, delivery
+workflows, background location, notifications, and store release are still future
+implementation work. Before expanding that starter into the production app:
 
 1. Confirm the PWA metrics show a real need: missed assignments, stale driver location or installation friction.
 2. Reuse `@ezygo/contracts` for models, Zod schemas and constants.

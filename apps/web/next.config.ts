@@ -1,11 +1,14 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const nextConfig: NextConfig = {
   // Required for Docker multi-stage build
   output: "standalone",
+  outputFileTracingRoot: path.resolve(__dirname, "../.."),
+  turbopack: { root: path.resolve(__dirname, "../..") },
 
   // Compile the source-first workspace package for both web and server bundles.
-  transpilePackages: ["@ezygo/contracts"],
+  transpilePackages: ["@ezygo/contracts", "@ezygo/api-client"],
 
   // Explicitly expose NEXT_PUBLIC_ vars (belt-and-suspenders for Docker builds)
   env: {

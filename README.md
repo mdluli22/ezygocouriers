@@ -20,6 +20,71 @@ Customer/driver mobile workflows, push setup, offline policy, device testing,
 security gates and the Expo decision are documented in
 [`docs/mobile-experience-rollout.md`](docs/mobile-experience-rollout.md).
 
+## Workspace structure
+
+```text
+ezygocouriers/
+├── apps/
+│   ├── web/                 # Next.js website, admin, and backend API
+│   │   ├── app/api/         # Backend HTTP endpoints
+│   │   ├── components/
+│   │   ├── lib/             # Includes server-only database/services
+│   │   └── public/
+│   └── mobile/              # Expo Router starter for iOS and Android
+│       ├── app/
+│       ├── components/
+│       ├── assets/
+│       └── lib/api.ts
+├── packages/
+│   ├── contracts/          # Shared types, schemas, constants
+│   └── api-client/         # Platform-independent HTTP client
+├── scripts/sql/            # Database migrations
+├── deploy/
+├── Dockerfile
+├── docker-compose.yml
+├── package.json
+├── package-lock.json
+└── .github/
+```
+
+`@ezygo/contracts` serves the proposed shared-package role; there is no second
+copy of its schemas. Each app and package has its own manifest, with npm
+workspaces and one lockfile at the root. Native animation/gesture overrides in
+the root manifest keep Expo and its transitive dependencies on compatible versions.
+
+Browser and native clients call the backend over HTTP. Only backend code under
+`apps/web` accesses PostgreSQL. Next.js server components may use server services
+within that same backend process. Shared packages must never import database
+clients, credentials, Next.js server modules, or files from either app.
+
+The API remains deployed with the Next.js web app. Docker Compose still runs
+from the repository root, and SQL migration paths are unchanged. The Docker
+runner starts `apps/web/server.js` from the standalone build.
+
+## Workspace commands
+
+Use Node.js 22.13 or newer and install dependencies from the repository root:
+
+```bash
+npm ci
+npm run dev             # Next.js web and API
+npm run dev:mobile      # Expo development server
+npm run build           # Production web build
+npm start               # Production web server after building
+npm run typecheck       # All apps and shared packages
+npm run lint            # Workspace lint scripts
+npm test                # Shared API client tests
+```
+
+Web scripts load `.env`, `.env.local`, and the corresponding development or
+production variants from the repository root, preserving the existing setup.
+Do not copy these files into the mobile workspace. Container runtime environment
+variables continue to come from the root Compose `env_file`.
+
+The native app is a runnable starter, not yet the full customer/driver product.
+See [mobile setup](apps/mobile/README.md) for its separate public API configuration.
+The existing web/PWA journeys remain available.
+
 ## Getting started
 
 Copy the environment template and configure the required values:

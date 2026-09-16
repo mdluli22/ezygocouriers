@@ -30,7 +30,7 @@ Open EzyGo in Safari, select **Share**, choose **Add to Home Screen**, and confi
 2. Confirm `/manifest.webmanifest` returns `200` with `application/manifest+json` or another valid manifest content type.
 3. Confirm `/sw.js` returns `200`, is not redirected, and has `Service-Worker-Allowed: /`.
 4. Keep `/EzyGoIcon.png` publicly accessible.
-5. When changing cached public assets or offline behavior, increment `STATIC_CACHE` in `public/sw.js` so old caches are removed during activation.
+5. When changing cached public assets or offline behavior, increment `STATIC_CACHE` in `apps/web/public/sw.js` so old caches are removed during activation.
 6. Test installation and offline fallback against the production build rather than `next dev`; service-worker registration is intentionally disabled in development.
 
 ## Verification Checklist

@@ -8,7 +8,7 @@ Every application-owned JSON response includes this header:
 X-EzyGo-API-Version: 1
 ```
 
-The Zod request schemas, domain constants, and TypeScript transport models are maintained in the dependency-neutral [`@ezygo/contracts`](../packages/contracts) workspace package. Route handlers must parse JSON with [`lib/api/validation.ts`](../lib/api/validation.ts) so malformed JSON returns a client error instead of an internal server error.
+The Zod request schemas, domain constants, and TypeScript transport models are maintained in the dependency-neutral [`@ezygo/contracts`](../packages/contracts) workspace package. Route handlers must parse JSON with [`lib/api/validation.ts`](../apps/web/lib/api/validation.ts) so malformed JSON returns a client error instead of an internal server error.
 
 ## Compatibility Policy
 

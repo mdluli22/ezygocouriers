@@ -3,43 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
+    "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "typecheck:contracts": "npm run typecheck --workspace @ezygo/contracts"
+    "dev": "npm run dev --workspace @ezygo/web --",
+    "dev:web": "npm run dev --workspace @ezygo/web --",
+    "dev:mobile": "npm run start --workspace @ezygo/mobile --",
+    "build": "npm run build --workspace @ezygo/web --",
+    "start": "npm run start --workspace @ezygo/web --",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck:contracts": "npm run typecheck --workspace @ezygo/contracts",
+    "test": "npm run test --workspace @ezygo/api-client"
   },
-  "dependencies": {
-    "@ezygo/contracts": "file:packages/contracts",
-    "@vis.gl/react-google-maps": "^1.7.1",
-    "bcryptjs": "^3.0.3",
-    "better-auth": "^1.6.24",
-    "lucide-react": "^1.7.0",
-    "next": "^16.3.5",
-    "nodemailer": "^10.0.10",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "web-push": "^3.6.7",
-    "zod": "^4.3.6"
+  "engines": {
+    "node": ">=22.13.0"
   },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20",
-    "@types/nodemailer": "^8.0.1",
-    "@types/pg": "^8.18.0",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/web-push": "^3.6.4",
-    "eslint": "^9",
-    "eslint-config-next": "^16.3.5",
-    "install": "^0.13.0",
-    "npm": "^11.11.0",
-    "pg": "^8.20.0",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+  "overrides": {
+    "react-native-reanimated": "4.5.1",
+    "react-native-worklets": "0.10.1",
+    "react-native-gesture-handler": "~2.32.0"
   }
 }
