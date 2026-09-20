@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/server";
 import {
@@ -24,7 +26,7 @@ function dashboardRedirect(result: "success" | "failed", deliveryId?: number) {
   return NextResponse.redirect(url);
 }
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   const reference = req.nextUrl.searchParams.get("reference");
   if (!reference) return dashboardRedirect("failed");
 
@@ -60,7 +62,9 @@ export async function GET(req: NextRequest) {
     });
     return dashboardRedirect("success", deliveryId);
   } catch (error) {
-    console.error("[Paystack callback] Processing failed", { reference, error });
+    logServerError("[Paystack callback] Processing failed", { reference, error });
     return dashboardRedirect("failed", deliveryId);
   }
 }
+
+export const GET = withApiRoute("/api/payments/paystack/callback", handleGET);

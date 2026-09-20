@@ -191,11 +191,11 @@ export const auth = betterAuth({
     session: {
       create: {
         before: async (session) => {
-          const result = await query<{ is_active: boolean }>(
-            "SELECT is_active FROM users WHERE id = $1 LIMIT 1",
+          const result = await query<{ is_active: boolean; email_verified: boolean }>(
+            "SELECT is_active, email_verified FROM users WHERE id = $1 LIMIT 1",
             [session.userId]
           );
-          return result.rows[0]?.is_active === true;
+          return result.rows[0]?.is_active === true && result.rows[0]?.email_verified === true;
         },
       },
     },

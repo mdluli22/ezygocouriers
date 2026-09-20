@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { query } from "@/lib/db/server";
+import type { PoolClient } from "pg";
 
 const PAYSTACK_API_URL = "https://api.paystack.co";
 
@@ -61,6 +62,7 @@ async function paystackRequest<T>(path: string, init?: RequestInit): Promise<T> 
       ...init?.headers,
     },
     cache: "no-store",
+    signal: AbortSignal.timeout(15000),
   });
   const body = (await response.json()) as PaystackResponse<T>;
 
@@ -77,7 +79,7 @@ export async function createPaystackCheckout(params: {
   amount: number;
   currency: string;
   customerEmail: string;
-}) {
+}, client?: PoolClient) {
   if (!Number.isFinite(params.amount) || params.amount <= 0) {
     throw new Error("Paystack checkout amount must be positive.");
   }
@@ -112,11 +114,12 @@ export async function createPaystackCheckout(params: {
     }),
   });
 
-  await query(
+  const execute = client ? client.query.bind(client) : query;
+  await execute(
     `UPDATE payments
-     SET provider_checkout_id = $1, updated_at = NOW()
+     SET provider_checkout_id = $1, provider_checkout_url = $3, updated_at = NOW()
      WHERE id = $2 AND provider = 'paystack' AND status = 'pending'`,
-    [checkout.reference, params.paymentId]
+    [checkout.reference, params.paymentId, checkout.authorization_url]
   );
 
   return {

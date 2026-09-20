@@ -1,3 +1,5 @@
+import { ApiProblem } from "@/lib/api/errors";
+import { logServerError } from "@/lib/api/context";
 import type { PoolClient } from "pg";
 import { getClient } from "@/lib/db/server";
 import { CAPE_TOWN_SERVICE_BOUNDS } from "@ezygo/contracts";
@@ -72,7 +74,7 @@ function locationMaxAgeMinutes(): number {
   );
 }
 
-async function lockAssignments(client: PoolClient): Promise<void> {
+export async function lockAssignments(client: PoolClient): Promise<void> {
   // Allocation is deliberately serialized. This prevents two simultaneous
   // payments/location heartbeats from selecting the same available driver.
   await client.query("SELECT pg_advisory_xact_lock($1)", [
@@ -98,7 +100,7 @@ async function notifyAssignment(assignment: AutomaticAssignment | null) {
     await notifyAssignedDriver(assignment);
   } catch (error) {
     // Assignment is authoritative; notification delivery is best effort.
-    console.error("[Assignment push] Delivery failed", {
+    logServerError("[Assignment push] Delivery failed", {
       deliveryId: assignment.deliveryId,
       driverId: assignment.driverId,
       error,
@@ -331,12 +333,12 @@ export async function updateDriverLocation(params: {
            current_longitude = $2,
            location_updated_at = NOW(),
            updated_at = NOW()
-       WHERE user_id = $3
+       WHERE user_id = $3 AND status = 'active'
        RETURNING id`,
       [params.latitude, params.longitude, params.driverUserId]
     );
     const driver = result.rows[0];
-    if (!driver) throw new Error("Driver profile not found.");
+    if (!driver) throw new ApiProblem("FORBIDDEN", "An active driver profile is required.", 403);
     driverId = driver.id;
 
     await client.query("COMMIT");
@@ -351,7 +353,7 @@ export async function updateDriverLocation(params: {
     return await autoAssignNextPaidDeliveryToDriver(driverId);
   } catch (error) {
     // The location heartbeat succeeded. A later heartbeat will retry dispatch.
-    console.error("[Automatic delivery queue assignment]", { driverId, error });
+    logServerError("[Automatic delivery queue assignment]", { driverId, error });
     return null;
   }
 }

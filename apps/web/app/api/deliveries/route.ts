@@ -1,3 +1,6 @@
+import { problemResponse } from "@/lib/api/response";
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { createDelivery, confirmDelivery } from "@/lib/services/deliveries";
@@ -13,7 +16,7 @@ import {
   serverErrorResponse,
 } from "@/lib/api/response";
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     // 1. Auth check
     const session = await getSession();
@@ -72,12 +75,14 @@ export async function POST(req: NextRequest) {
       201
     );
   } catch (error) {
-    console.error("[POST /api/deliveries]", error);
+    const problem = problemResponse(error);
+    if (problem) return problem;
+    logServerError("[POST /api/deliveries]", error);
     return serverErrorResponse("Failed to create delivery. Please try again.");
   }
 }
 
-export async function GET() {
+async function handleGET() {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -90,7 +95,12 @@ export async function GET() {
 
     return successResponse("Deliveries fetched.", deliveries);
   } catch (error) {
-    console.error("[GET /api/deliveries]", error);
+    const problem = problemResponse(error);
+    if (problem) return problem;
+    logServerError("[GET /api/deliveries]", error);
     return serverErrorResponse();
   }
 }
+
+export const POST = withApiRoute("/api/deliveries", handlePOST);
+export const GET = withApiRoute("/api/deliveries", handleGET);

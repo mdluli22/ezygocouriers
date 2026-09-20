@@ -47,3 +47,16 @@ export type MobileVerifyEmailInput = z.infer<typeof mobileVerifyEmailSchema>;
 export type MobileSendVerificationInput = z.infer<
   typeof mobileSendVerificationSchema
 >;
+
+
+const oauthStateSchema = z.string().regex(/^[A-Za-z0-9_-]{43,128}$/);
+export const mobileGoogleStartSchema = z.object({
+  state: oauthStateSchema,
+  code_challenge: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+});
+export const mobileGoogleExchangeSchema = z.object({
+  code: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  state: oauthStateSchema,
+  code_verifier: z.string().regex(/^[A-Za-z0-9._~-]{43,128}$/),
+});
+export const mobileGoogleRequestSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);

@@ -1,3 +1,6 @@
+import { problemResponse } from "@/lib/api/response";
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { getSession } from "@/lib/auth/session";
 import { getAdminDeliveries, assignDriver } from "@/lib/services/admin";
 import {
@@ -13,7 +16,7 @@ import {
 } from "@ezygo/contracts";
 import { parseJsonRequest, parseQuery } from "@/lib/api/validation";
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -25,12 +28,14 @@ export async function GET(req: NextRequest) {
     const deliveries = await getAdminDeliveries(parsed.data.status);
     return successResponse("Deliveries fetched.", deliveries);
   } catch (error) {
-    console.error("[GET /api/admin/deliveries]", error);
+    const problem = problemResponse(error);
+    if (problem) return problem;
+    logServerError("[GET /api/admin/deliveries]", error);
     return serverErrorResponse();
   }
 }
 
-export async function PATCH(req: NextRequest) {
+async function handlePATCH(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -43,7 +48,12 @@ export async function PATCH(req: NextRequest) {
     await assignDriver(delivery_id, driver_id);
     return successResponse("Driver assigned successfully.");
   } catch (error) {
-    console.error("[PATCH /api/admin/deliveries]", error);
+    const problem = problemResponse(error);
+    if (problem) return problem;
+    logServerError("[PATCH /api/admin/deliveries]", error);
     return serverErrorResponse();
   }
 }
+
+export const GET = withApiRoute("/api/admin/deliveries", handleGET);
+export const PATCH = withApiRoute("/api/admin/deliveries", handlePATCH);

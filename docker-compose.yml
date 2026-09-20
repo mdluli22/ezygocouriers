@@ -69,7 +69,10 @@ services:
           /migrations/007_delivery_completion_email.sql \
           /migrations/008_payment_providers.sql \
           /migrations/009_paystack_provider.sql \
-          /migrations/010_push_subscriptions.sql
+          /migrations/010_push_subscriptions.sql \
+          /migrations/011_api_rate_limits.sql \
+          /migrations/012_payment_checkout_reuse.sql \
+          /migrations/013_mobile_oauth_and_session_revocation.sql
         do
           echo "Applying $${migration}"
           psql -v ON_ERROR_STOP=1 -h db -U "$${DB_USER}" -d "$${DB_NAME}" -f "$${migration}"

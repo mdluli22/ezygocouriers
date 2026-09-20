@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { getSession } from "@/lib/auth/session";
 import { getAdminDrivers, createDriver, toggleDriverStatus } from "@/lib/services/admin";
 import { hashPassword } from "@/lib/auth/password";
@@ -17,7 +19,7 @@ import {
 } from "@ezygo/contracts";
 import { parseJsonRequest } from "@/lib/api/validation";
 
-export async function GET() {
+async function handleGET() {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -26,12 +28,12 @@ export async function GET() {
     const drivers = await getAdminDrivers();
     return successResponse("Drivers fetched.", drivers);
   } catch (error) {
-    console.error("[GET /api/admin/drivers]", error);
+    logServerError("[GET /api/admin/drivers]", error);
     return serverErrorResponse();
   }
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -64,7 +66,7 @@ export async function POST(req: NextRequest) {
       await sendAuthOtp({ to: normalizedEmail, otp, type: "email-verification" });
     } catch (emailError) {
       verificationEmailSent = false;
-      console.error("[Driver verification email]", emailError);
+      logServerError("[Driver verification email]", emailError);
     }
 
     return successResponse(
@@ -75,7 +77,7 @@ export async function POST(req: NextRequest) {
       201
     );
   } catch (error: unknown) {
-    console.error("[POST /api/admin/drivers]", error);
+    logServerError("[POST /api/admin/drivers]", error);
     if (error instanceof Error && error.message.includes("unique")) {
       return errorResponse("A user with this email already exists.", undefined, 409);
     }
@@ -83,7 +85,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function PATCH(req: NextRequest) {
+async function handlePATCH(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -95,7 +97,11 @@ export async function PATCH(req: NextRequest) {
     await toggleDriverStatus(parsed.data.driver_id);
     return successResponse("Driver status toggled.");
   } catch (error) {
-    console.error("[PATCH /api/admin/drivers]", error);
+    logServerError("[PATCH /api/admin/drivers]", error);
     return serverErrorResponse();
   }
 }
+
+export const GET = withApiRoute("/api/admin/drivers", handleGET);
+export const POST = withApiRoute("/api/admin/drivers", handlePOST);
+export const PATCH = withApiRoute("/api/admin/drivers", handlePATCH);

@@ -18,7 +18,7 @@ All mobile authentication responses send `Cache-Control: no-store`, `Pragma: no-
 
 ## Session Lifetime
 
-Sessions have a seven-day rolling lifetime. Better Auth may extend the expiry after a day of activity. The mobile client must treat the `expires_at` value returned by the server as authoritative and replace the stored token whenever a token-bearing response is received, even when its value appears unchanged.
+Sessions have a seven-day rolling lifetime. Better Auth may extend the expiry after a day of activity. The mobile client uses server-calculated `expires_in` with a monotonic clock and replaces the stored token whenever a token-bearing response is received, even when its value appears unchanged. `expires_at` is stored for metadata, not compared to the device calendar.
 
 The token is a signed representation of the server-side session token. Unsigned raw database session tokens are rejected.
 
@@ -150,15 +150,70 @@ This is rolling renewal of an opaque server-side session, not a separate long-li
 
 Call `POST /api/mobile/v1/auth/logout` with the current Bearer token. A successful request deletes the server-side session. Clear the locally stored token whether the server returns success or says the session is already unauthorized.
 
-## Suggested Client Lifecycle
+## Implemented Client Lifecycle
 
-1. Read the token from secure storage during app startup.
-2. If no token exists, show registration or login.
-3. Call the session endpoint with the token.
-4. On success, update the local user and expiry state and enter the role-appropriate application area.
-5. Attach the Bearer header through one central HTTP client interceptor.
-6. Renew shortly before expiry and atomically save the returned token data.
-7. On `401`, clear credentials and return to login. On `403`, keep the session but deny that operation.
-8. On logout, request server revocation and clear credentials locally.
+The native controller uses Expo SecureStore (Keychain / Keystore-backed storage),
+with `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` on iOS and Android backup exclusion.
+No token or user profile is persisted in ordinary storage. Store failures block
+private screens; there is no insecure fallback.
 
-Google OAuth is not part of this initial native token flow. It remains available to the web/PWA client. Native Google sign-in should be added later using an authorization-code flow with PKCE and verified app deep links rather than embedding the web cookie flow in a WebView.
+Startup and foreground transitions call `POST /refresh` before opening private
+screens. Active sessions revalidate every 60 seconds. Server `expires_in` and a
+monotonic timer determine renewal, independent of the device calendar. Network
+failure retains the secure credential but locks private screens until successful
+revalidation. Authoritative refresh 401/403 clears it. Ordinary resource 403 is a
+permission denial; resource 401 clears only the matching session.
+
+Logout clears local storage immediately and attempts remote revocation. Offline
+logout explicitly reports that server revocation could not be confirmed; the
+server session remains until expiry or administrative revocation. Late requests
+cannot restore a session after logout or clear a replacement session.
+
+## Google OAuth and email deep links
+
+Approved iOS bundle ID / Android package: `za.co.ezygocouriers.app`.
+Native scheme: `ezygo`. Use a native development/release build to validate it.
+
+1. Native generates a random state and S256 PKCE verifier in SecureStore.
+2. `POST /api/mobile/v1/auth/google` registers the challenge and returns a browser URL.
+3. `/google/start` binds the flow to a random HttpOnly browser cookie and starts
+   Better Auth Google OAuth in the system authentication browser.
+4. Google returns to the existing HTTPS `/api/auth/callback/google`; Better Auth
+   redirects to `/api/mobile/v1/auth/google/callback`.
+5. The callback checks the browser binding and active verified session, then
+   redirects to `ezygo://auth/callback?code=…&state=…`. The code expires in 60 seconds.
+6. `/google/exchange` requires the original state and verifier, consumes the code
+   atomically, rechecks eligibility, and returns the signed session over HTTPS.
+
+Session credentials never appear in deep links. Temporary database handoffs are
+AES-256-GCM encrypted using a key derived from the server auth secret. The browser
+session cookie is cleared after handoff. The app rejects unexpected callback
+origins, paths, duplicate fields, or token-bearing link parameters.
+
+Email verification messages link to `/mobile/verify`, which opens
+`ezygo://auth/verify`. The user enters their email and six-digit OTP. Neither the
+OTP nor email address is placed in the link. A web sign-in fallback is provided.
+
+## Deployment and verification
+
+- Apply migrations through `013_mobile_oauth_and_session_revocation.sql` before
+  deploying. Existing database volumes do not rerun Docker initialization SQL.
+  The migration revokes sessions on suspension/unverification and rejects session
+  insertion for ineligible accounts, including concurrent creation attempts.
+- Set server `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` to the public HTTPS origin;
+  configure `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and SMTP.
+  Keep secrets out of mobile environment variables.
+- Register `https://YOUR_ORIGIN/api/auth/callback/google` in the Google web OAuth
+  client. The custom app scheme is an internal handoff, not Google's callback URL.
+- Set mobile `EXPO_PUBLIC_API_URL` to the same public origin. Release builds require HTTPS.
+- Periodically run `DELETE FROM mobile_oauth_flows WHERE expires_at < NOW()`.
+- Automated checks: `npm run test:mobile`, disposable-database `npm run test:api`,
+  `npm run typecheck`, and `npm run export --workspace @ezygo/mobile`.
+
+Before release, verify on signed iOS/Android builds: cold/warm email links; Google
+success/cancel and app termination during handoff; Keychain/Keystore after device
+lock/restart; session expiry and administrative revocation; airplane-mode restore
+and logout; and device dates ahead/behind the server. Automated tests cover the
+controller and server behavior, but cannot certify OS integration or live Google
+configuration. No simulator or live provider end-to-end verification was available
+in this workspace during Phase 3.

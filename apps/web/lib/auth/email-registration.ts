@@ -1,3 +1,4 @@
+import { logServerError } from "@/lib/api/context";
 import { APIError } from "better-auth/api";
 import { auth } from "@/lib/auth/auth";
 import { query } from "@/lib/db/server";
@@ -36,7 +37,7 @@ export async function registerEmailUser(
   try {
     await verifySmtpConnection();
   } catch (error) {
-    console.error("[Signup SMTP verification]", error);
+    logServerError("[Signup SMTP verification]", error);
     throw new EmailRegistrationError(
       "Email verification is temporarily unavailable because the mail server could not be reached or rejected its credentials.",
       503
@@ -62,7 +63,7 @@ export async function registerEmailUser(
     });
     await sendAuthOtp({ to: email, otp, type: "email-verification" });
   } catch (error) {
-    console.error("[Signup verification email]", error);
+    logServerError("[Signup verification email]", error);
     const recipientRejected = isRecipientRejected(error);
     throw new EmailRegistrationError(
       recipientRejected

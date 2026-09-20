@@ -143,6 +143,9 @@ export async function sendAuthOtp({
     throw new Error("[Email] Missing SMTP_FROM or SMTP_USER.");
   }
 
+  const verificationLink = type === "email-verification"
+    ? new URL("/mobile/verify", process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://ezygocouriers.co.za").href
+    : null;
   const purpose =
     type === "email-verification"
       ? "verify your email address"
@@ -161,6 +164,7 @@ export async function sendAuthOtp({
         `Use this code to ${purpose}:`,
         "",
         otp,
+        ...(verificationLink ? ["", `Open EzyGo to enter your code: ${verificationLink}`] : []),
         "",
         "This code expires in 10 minutes. If you did not request it, you can ignore this email.",
       ].join("\n"),
@@ -171,6 +175,7 @@ export async function sendAuthOtp({
           <div style="font-size:36px;font-weight:800;letter-spacing:10px;padding:20px 24px;margin:24px 0;background:#f4f6f8;border-radius:12px;text-align:center">
             ${otp}
           </div>
+          ${verificationLink ? `<p><a href="${escapeHtml(verificationLink)}">Open EzyGo to enter your code</a></p>` : ""}
           <p style="font-size:14px;color:#667085;line-height:1.6">
             This code expires in 10 minutes. If you did not request it, you can ignore this email.
           </p>

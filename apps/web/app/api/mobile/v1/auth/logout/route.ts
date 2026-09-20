@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { serverErrorResponse, successResponse } from "@/lib/api/response";
@@ -9,7 +11,7 @@ import {
   secureMobileResponse,
 } from "@/lib/auth/mobile-session";
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const accessToken = readBearerToken(request.headers);
     if (!accessToken) return mobileUnauthorizedResponse();
@@ -28,7 +30,9 @@ export async function POST(request: NextRequest) {
       successResponse("Signed out successfully.")
     );
   } catch (error) {
-    console.error("[POST /api/mobile/v1/auth/logout]", error);
+    logServerError("[POST /api/mobile/v1/auth/logout]", error);
     return secureMobileResponse(serverErrorResponse("Unable to sign out."));
   }
 }
+
+export const POST = withApiRoute("/api/mobile/v1/auth/logout", handlePOST);

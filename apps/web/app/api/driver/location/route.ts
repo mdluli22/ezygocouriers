@@ -1,3 +1,6 @@
+import { problemResponse } from "@/lib/api/response";
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { updateDriverLocation } from "@/lib/services/driver-assignment";
@@ -10,7 +13,7 @@ import {
   unauthorizedResponse,
 } from "@/lib/api/response";
 
-export async function PATCH(request: NextRequest) {
+async function handlePATCH(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -35,7 +38,11 @@ export async function PATCH(request: NextRequest) {
       { assignment }
     );
   } catch (error) {
-    console.error("[PATCH /api/driver/location]", error);
+    const problem = problemResponse(error);
+    if (problem) return problem;
+    logServerError("[PATCH /api/driver/location]", error);
     return serverErrorResponse("Failed to update driver location.");
   }
 }
+
+export const PATCH = withApiRoute("/api/driver/location", handlePATCH);

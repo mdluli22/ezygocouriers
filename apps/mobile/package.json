@@ -8,16 +8,20 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
-    "export": "expo export --platform ios --platform android"
+    "export": "expo export --platform ios --platform android",
+    "test": "node --import ../web/tests/register.mjs --test tests/*.test.mjs"
   },
   "dependencies": {
     "@ezygo/api-client": "*",
     "@ezygo/contracts": "*",
     "expo": "~57.0.23",
     "expo-constants": "~57.0.18",
+    "expo-crypto": "~57.0.3",
     "expo-linking": "~57.0.10",
     "expo-router": "~57.0.21",
+    "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
+    "expo-web-browser": "~57.0.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",

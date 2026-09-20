@@ -4,13 +4,17 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code?: ApiErrorCode;
   readonly errors: Record<string, string> | null;
+  readonly requestId?: string;
+  readonly retryAfter?: number;
 
-  constructor(message: string, status: number, code?: ApiErrorCode, errors: Record<string, string> | null = null) {
+  constructor(message: string, status: number, code?: ApiErrorCode, errors: Record<string, string> | null = null, metadata: { requestId?: string; retryAfter?: number } = {}) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.errors = errors;
+    this.requestId = metadata.requestId;
+    this.retryAfter = metadata.retryAfter;
   }
 }
 
@@ -52,19 +56,26 @@ export function createApiClient(options: ApiClientOptions = {}) {
         redirect: "error",
       });
       if (response.status === 401) await options.onUnauthorized?.();
+      const retryHeader = response.headers.get("Retry-After");
+      const metadata = {
+        requestId: response.headers.get("X-Request-ID") ?? undefined,
+        retryAfter: retryHeader && /^\d+$/.test(retryHeader) ? Number(retryHeader) : undefined,
+      };
       let payload: ApiResponse<T>;
       try {
         payload = await response.json();
       } catch {
-        throw new ApiError("The server returned an invalid JSON response.", response.status);
+        throw new ApiError("The server returned an invalid JSON response.", response.status, undefined, null, metadata);
       }
       if (!payload || typeof payload !== "object" || typeof payload.success !== "boolean") {
-        throw new ApiError("The server returned an invalid API response.", response.status);
+        throw new ApiError("The server returned an invalid API response.", response.status, undefined, null, metadata);
       }
       if (!payload.success) {
-        throw new ApiError(payload.message, response.status, payload.code, payload.errors);
+        throw new ApiError(payload.message, response.status, payload.code, payload.errors, {
+          ...metadata, requestId: metadata.requestId ?? payload.request_id,
+        });
       }
-      if (!response.ok) throw new ApiError("The API request failed.", response.status);
+      if (!response.ok) throw new ApiError("The API request failed.", response.status, undefined, null, metadata);
       return payload;
     },
   };

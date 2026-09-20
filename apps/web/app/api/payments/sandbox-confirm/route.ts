@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
@@ -29,7 +31,7 @@ interface SandboxPayment {
  * them to the app. The sandbox ITN remains supported and this operation is
  * idempotent; live payments continue to rely exclusively on verified ITNs.
  */
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -89,7 +91,9 @@ export async function POST(request: NextRequest) {
 
     return successResponse("Sandbox payment confirmed.");
   } catch (error) {
-    console.error("[POST /api/payments/sandbox-confirm]", error);
+    logServerError("[POST /api/payments/sandbox-confirm]", error);
     return serverErrorResponse("Sandbox payment confirmation failed.");
   }
 }
+
+export const POST = withApiRoute("/api/payments/sandbox-confirm", handlePOST);

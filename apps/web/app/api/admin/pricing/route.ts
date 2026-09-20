@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { getSession } from "@/lib/auth/session";
 import { getPricingRules, updateFlatFee } from "@/lib/services/admin";
 import {
@@ -10,7 +12,7 @@ import { NextRequest } from "next/server";
 import { adminUpdatePricingSchema } from "@ezygo/contracts";
 import { parseJsonRequest } from "@/lib/api/validation";
 
-export async function GET() {
+async function handleGET() {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -19,12 +21,12 @@ export async function GET() {
     const rules = await getPricingRules();
     return successResponse("Pricing rules fetched.", rules);
   } catch (error) {
-    console.error("[GET /api/admin/pricing]", error);
+    logServerError("[GET /api/admin/pricing]", error);
     return serverErrorResponse();
   }
 }
 
-export async function PATCH(req: NextRequest) {
+async function handlePATCH(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -37,7 +39,10 @@ export async function PATCH(req: NextRequest) {
     await updateFlatFee(rule_id, flat_fee);
     return successResponse("Flat fee updated.");
   } catch (error) {
-    console.error("[PATCH /api/admin/pricing]", error);
+    logServerError("[PATCH /api/admin/pricing]", error);
     return serverErrorResponse();
   }
 }
+
+export const GET = withApiRoute("/api/admin/pricing", handleGET);
+export const PATCH = withApiRoute("/api/admin/pricing", handlePATCH);

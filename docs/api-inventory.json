@@ -1,0 +1,647 @@
+{
+  "version": "1",
+  "updated": "2026-09-19",
+  "global_errors": [
+    "413 PAYLOAD_TOO_LARGE: bodies exceed 32 KiB (256 KiB provider notifications)",
+    "408 BAD_REQUEST: body read exceeds 10 seconds",
+    "429 RATE_LIMITED + Retry-After on rate-protected routes",
+    "503 SERVICE_UNAVAILABLE: rate-limit store/config unavailable on protected routes"
+  ],
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/admin/deliveries",
+      "request": "Query adminDeliveryQuerySchema: status=all|DeliveryStatus; no body",
+      "response": "200 AdminDelivery[]",
+      "authorization": "Verified active administrator; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "422 VALIDATION_ERROR: invalid status",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/deliveries",
+      "request": "adminAssignDriverSchema: {delivery_id,driver_id}",
+      "response": "200 null",
+      "authorization": "Verified active administrator; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "404 NOT_FOUND: delivery missing",
+        "400 INVALID_TRANSITION: delivery not paid/assigned",
+        "409 CONFLICT: driver missing/inactive/busy",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/drivers",
+      "request": "No body",
+      "response": "200 AdminDriver[]",
+      "authorization": "Verified active administrator; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/drivers",
+      "request": "adminToggleDriverSchema: {driver_id}",
+      "response": "200 null; missing ID is currently a no-op",
+      "authorization": "Verified active administrator; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/drivers",
+      "request": "adminCreateDriverSchema: {full_name,email,phone,password,license_number,vehicle_type,vehicle_reg}",
+      "response": "201 {userId,driverId,verification_email_sent:boolean}",
+      "authorization": "Verified active administrator; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "409 CONFLICT: duplicate email; email failure instead returns verification_email_sent:false after account creation",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/pricing",
+      "request": "No body",
+      "response": "200 PricingRule[]",
+      "authorization": "Verified active administrator; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/pricing",
+      "request": "adminUpdatePricingSchema: {rule_id,flat_fee:nonnegative number}",
+      "response": "200 null; missing ID is currently a no-op",
+      "authorization": "Verified active administrator; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "request": "Query adminUserQuerySchema: role?=customer|driver|admin; no body",
+      "response": "200 AdminUser[]",
+      "authorization": "Verified active administrator; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "422 VALIDATION_ERROR: invalid role",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/users",
+      "request": "adminToggleUserSchema: {user_id}",
+      "response": "200 null; missing ID is currently a no-op",
+      "authorization": "Verified active administrator; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "403 FORBIDDEN: cannot deactivate self",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/[...all]",
+      "request": "Better Auth 1.6 managed route/query/body (session, OAuth, email OTP, password recovery); not a native v1 contract",
+      "response": "Provider JSON/redirect/Set-Cookie; SMTP preflight may return {code,message}",
+      "authorization": "Better Auth per-operation session, origin/OAuth and OTP rules; outer shared limits on POST",
+      "errors": [
+        "Provider-specific statuses/codes",
+        "POST OTP preflight: 503 SMTP_NOT_CONFIGURED or SMTP_UNAVAILABLE; 422 RECIPIENT_REJECTED; 502 EMAIL_DELIVERY_FAILED",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "provider-managed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/[...all]",
+      "request": "Better Auth 1.6 managed route/query/body (session, OAuth, email OTP, password recovery); not a native v1 contract",
+      "response": "Provider JSON/redirect/Set-Cookie; SMTP preflight may return {code,message}",
+      "authorization": "Better Auth per-operation session, origin/OAuth and OTP rules; outer shared limits on POST",
+      "errors": [
+        "Provider-specific statuses/codes",
+        "POST OTP preflight: 503 SMTP_NOT_CONFIGURED or SMTP_UNAVAILABLE; 422 RECIPIENT_REJECTED; 502 EMAIL_DELIVERY_FAILED",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "provider-managed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "request": "loginSchema: {email,password}",
+      "response": "200 {id,full_name,email,role}; Set-Cookie",
+      "authorization": "Public; network/account rate limits apply",
+      "errors": [
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "401 UNAUTHORIZED: invalid credentials",
+        "403 EMAIL_NOT_VERIFIED: verify email first",
+        "403 FORBIDDEN: account cannot sign in",
+        "429 RATE_LIMITED: account/network/provider limit",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "request": "No body",
+      "response": "200 null; revokes session; clears cookie",
+      "authorization": "Cookie/Bearer session (provider sign-out semantics)",
+      "errors": [
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "request": "No body",
+      "response": "200 {id,full_name,email,phone,role,avatar_url,auth_provider,is_active,created_at}",
+      "authorization": "Any verified active account; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing session or inactive/missing account",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/signup",
+      "request": "signupSchema: {full_name,email,phone?,password,confirm_password}",
+      "response": "201 {id,full_name,email,role,requires_verification:true}",
+      "authorization": "Public; network/account rate limits apply",
+      "errors": [
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "409 CONFLICT: duplicate email",
+        "422 VALIDATION_ERROR: recipient rejected",
+        "502 INTERNAL_ERROR: email delivery failed",
+        "503 SERVICE_UNAVAILABLE: SMTP not configured/unreachable",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/deliveries",
+      "request": "No body",
+      "response": "200 CustomerDeliverySummary[]",
+      "authorization": "Verified active customer; ownership enforced using authenticated user ID; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/deliveries",
+      "request": "createDeliveryRequestSchema: AddressInput pickup/drop-off + contacts + parcel + optional instructions/PIN/schedule + payment_method:paystack",
+      "response": "201 CreateDeliveryResponse; booking + quote + hosted checkout",
+      "authorization": "Verified active customer; ownership enforced using authenticated user ID; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "503 SERVICE_UNAVAILABLE: payment config unavailable",
+        "409 CONFLICT: checkout state changed; reconcile before retry",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/deliveries/[id]",
+      "request": "Path id: positive integer; no body",
+      "response": "200 DeliveryDetailResponse<CustomerDeliveryDetail>",
+      "authorization": "Verified active customer; ownership enforced using authenticated user ID; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 BAD_REQUEST: invalid ID",
+        "404 NOT_FOUND: missing/unowned delivery",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/deliveries/[id]",
+      "request": "Path id: positive integer; customerDeliveryActionSchema: {action:confirm|cancel}",
+      "response": "200 null",
+      "authorization": "Verified active customer; ownership enforced using authenticated user ID; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "400 BAD_REQUEST: invalid ID",
+        "400 INVALID_TRANSITION: confirm/cancel forbidden in current state",
+        "404 NOT_FOUND: missing/unowned delivery",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/driver/deliveries",
+      "request": "No body",
+      "response": "200 DriverDeliverySummary[]; only assigned trips",
+      "authorization": "Verified active driver account; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/driver/deliveries/[id]",
+      "request": "Path id: positive integer; no body",
+      "response": "200 DeliveryDetailResponse<DriverDeliveryDetail>",
+      "authorization": "Verified active driver account; cookie or signed Bearer token; only assigned driver",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "404 NOT_FOUND: invalid ID, missing trip or not assigned",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/driver/location",
+      "request": "driverLocationSchema: {latitude,longitude}",
+      "response": "200 DriverLocationResponse",
+      "authorization": "Verified active driver account; cookie or signed Bearer token; active driver profile",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "403 FORBIDDEN: inactive/missing driver profile",
+        "429 RATE_LIMITED: location update limit",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/driver/status",
+      "request": "driverStatusUpdateSchema: {delivery_id,status,note?,pin?}",
+      "response": "200 null",
+      "authorization": "Verified active driver account; cookie or signed Bearer token; active driver profile; only assigned driver",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "404 NOT_FOUND: missing/unassigned trip",
+        "400 INVALID_TRANSITION: illegal state change",
+        "400 PIN_REQUIRED: missing six-digit PIN",
+        "400 PIN_INVALID: incorrect PIN",
+        "400 PIN_NOT_ISSUED: no server hash",
+        "429 RATE_LIMITED: status/handover attempts",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile/v1/auth/google",
+      "request": "mobileGoogleStartSchema: {state,code_challenge}; S256 challenge",
+      "response": "200 {authorization_url}",
+      "authorization": "Public; rate limited",
+      "errors": [
+        "400 OAUTH_INVALID: expired, reused, mismatched or invalid handoff",
+        "422 VALIDATION_ERROR: malformed input",
+        "503 SERVICE_UNAVAILABLE: provider/config unavailable",
+        "500 INTERNAL_ERROR: unexpected server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/mobile/v1/auth/google/callback",
+      "request": "Query request; optional error; OAuth and browser cookies",
+      "response": "307 ezygo://auth/callback?state&code (or error); never a session token",
+      "authorization": "Matching HttpOnly browser nonce; verified active provider session",
+      "errors": [
+        "400 OAUTH_INVALID: expired, reused, mismatched or invalid handoff",
+        "422 VALIDATION_ERROR: malformed input",
+        "503 SERVICE_UNAVAILABLE: provider/config unavailable",
+        "500 INTERNAL_ERROR: unexpected server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile/v1/auth/google/exchange",
+      "request": "mobileGoogleExchangeSchema: {code,state,code_verifier}",
+      "response": "200 MobileAuthTokenData; consumes code atomically",
+      "authorization": "Matching state and S256 verifier, unexpired one-use code, active verified session",
+      "errors": [
+        "400 OAUTH_INVALID: expired, reused, mismatched or invalid handoff",
+        "422 VALIDATION_ERROR: malformed input",
+        "503 SERVICE_UNAVAILABLE: provider/config unavailable",
+        "500 INTERNAL_ERROR: unexpected server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/mobile/v1/auth/google/start",
+      "request": "Query request: 43-character random flow ID",
+      "response": "307 Google authorization redirect; HttpOnly browser-binding and OAuth cookies",
+      "authorization": "Unexpired flow; browser start allowed once",
+      "errors": [
+        "400 OAUTH_INVALID: expired, reused, mismatched or invalid handoff",
+        "422 VALIDATION_ERROR: malformed input",
+        "503 SERVICE_UNAVAILABLE: provider/config unavailable",
+        "500 INTERNAL_ERROR: unexpected server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile/v1/auth/login",
+      "request": "loginSchema: {email,password}",
+      "response": "200 MobileAuthTokenData",
+      "authorization": "Public; network/account rate limits apply",
+      "errors": [
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "401 UNAUTHORIZED: invalid credentials",
+        "403 EMAIL_NOT_VERIFIED: verify email first",
+        "403 FORBIDDEN: account cannot sign in",
+        "429 RATE_LIMITED: account/network/provider limit",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile/v1/auth/logout",
+      "request": "No body",
+      "response": "200 null; revokes session",
+      "authorization": "Valid signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: mobile token missing/invalid",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile/v1/auth/refresh",
+      "request": "No body",
+      "response": "200 MobileAuthTokenData",
+      "authorization": "Valid signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/inactive session",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile/v1/auth/send-verification",
+      "request": "mobileSendVerificationSchema: {email}",
+      "response": "200 null; generic result when account cannot be verified",
+      "authorization": "Public; network/account rate limits apply",
+      "errors": [
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "502 INTERNAL_ERROR: SMTP delivery failed",
+        "503 SERVICE_UNAVAILABLE: SMTP unavailable",
+        "429 RATE_LIMITED: too many sends",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/mobile/v1/auth/session",
+      "request": "No body",
+      "response": "200 MobileSessionData",
+      "authorization": "Valid signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/inactive session",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile/v1/auth/signup",
+      "request": "signupSchema: {full_name,email,phone?,password,confirm_password}",
+      "response": "201 {id,full_name,email,role,requires_verification:true}",
+      "authorization": "Public; network/account rate limits apply",
+      "errors": [
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "409 CONFLICT: duplicate email",
+        "422 VALIDATION_ERROR: recipient rejected",
+        "502 INTERNAL_ERROR: email delivery failed",
+        "503 SERVICE_UNAVAILABLE: SMTP not configured/unreachable",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile/v1/auth/verify-email",
+      "request": "mobileVerifyEmailSchema: {email,otp: six digits}",
+      "response": "200 MobileAuthTokenData",
+      "authorization": "Public; network/account rate limits apply",
+      "errors": [
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "400 OTP_INVALID: invalid/expired code",
+        "429 RATE_LIMITED: attempts exhausted",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/callback",
+      "request": "Raw form-urlencoded PayFast ITN fields including m_payment_id, payment_status, signature",
+      "response": "200 plain text OK",
+      "authorization": "PayFast ITN verification of signature, amount, source and provider validation",
+      "errors": [
+        "400 invalid ID/delivery mismatch/invalid notification",
+        "404 attempt missing",
+        "409 provider mismatch",
+        "500 processing failure",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "provider-managed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/create",
+      "request": "createPaymentSchema: {delivery_id,payment_method:paystack}",
+      "response": "200 PaymentCheckout; reuses valid pending checkout",
+      "authorization": "Verified active customer; ownership enforced using authenticated user ID; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "404 NOT_FOUND: missing/unowned delivery",
+        "409 CONFLICT: not confirmed, different pending provider or legacy checkout needs reconciliation",
+        "503 SERVICE_UNAVAILABLE: provider configuration unavailable",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/payments/paystack/callback",
+      "request": "Query reference:string (payment_id/delivery_id are not trusted)",
+      "response": "307 redirect to configured /dashboard?payment=success|failed&provider=paystack&delivery?",
+      "authorization": "Public; server verifies provider transaction reference, amount, currency and mode",
+      "errors": [
+        "Missing/unknown reference, mismatch or processing failure redirects with payment=failed",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "provider-managed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/paystack/webhook",
+      "request": "Raw JSON Paystack charge.success event; x-paystack-signature header",
+      "response": "200 plain text OK; irrelevant events acknowledged",
+      "authorization": "HMAC-SHA512 of exact raw bytes plus amount/currency/reference/mode verification",
+      "errors": [
+        "401 invalid signature",
+        "404 unknown reference",
+        "400 payment details mismatch",
+        "500 processing failure or conflicting completed transaction",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "provider-managed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/sandbox-confirm",
+      "request": "sandboxConfirmationSchema: {delivery_id,payment_id}",
+      "response": "200 null; PayFast sandbox only",
+      "authorization": "Verified active customer; ownership enforced using authenticated user ID; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing/invalid/expired/revoked session",
+        "403 FORBIDDEN: wrong role",
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "403 FORBIDDEN: live mode",
+        "404 NOT_FOUND: missing/unowned attempt",
+        "409 CONFLICT: wrong provider or non-pending/non-complete state",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/yoco/webhook",
+      "request": "Raw Yoco event JSON; webhook-id, webhook-timestamp, webhook-signature headers",
+      "response": "200 plain text OK",
+      "authorization": "Provider signature/timestamp plus provider/amount/currency/mode checks",
+      "errors": [
+        "400 signature/checkout ID/details mismatch",
+        "404 attempt missing",
+        "409 provider mismatch",
+        "500 processing failure",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "provider-managed"
+    },
+    {
+      "method": "GET",
+      "path": "/api/push/config",
+      "request": "No body",
+      "response": "200 {enabled:boolean,publicKey:string|null}",
+      "authorization": "Any verified active account; cookie or signed Bearer token",
+      "errors": [
+        "401 UNAUTHORIZED: missing session",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/push/subscriptions",
+      "request": "deletePushSubscriptionSchema: {endpoint}",
+      "response": "200 null; deletes only own endpoint",
+      "authorization": "Any verified active account; cookie or signed Bearer token",
+      "errors": [
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "401 UNAUTHORIZED: missing session",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/push/subscriptions",
+      "request": "pushSubscriptionSchema: {endpoint,expirationTime?,keys:{p256dh,auth}}",
+      "response": "200 null; upsert browser subscription",
+      "authorization": "Any verified active account; cookie or signed Bearer token",
+      "errors": [
+        "400 INVALID_JSON: malformed JSON",
+        "422 VALIDATION_ERROR: shared Zod schema rejected input",
+        "401 UNAUTHORIZED: missing session",
+        "500 INTERNAL_ERROR: unexpected dependency/server failure"
+      ],
+      "contract": "ezygo-v1"
+    }
+  ]
+}

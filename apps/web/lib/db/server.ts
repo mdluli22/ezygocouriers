@@ -1,3 +1,4 @@
+import { logEvent, logServerError } from "@/lib/api/context";
 import "server-only";
 import { Pool, QueryResultRow } from 'pg';
 
@@ -14,7 +15,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle PostgreSQL client', err);
+  logServerError('db.idle_client_error', err);
   process.exit(-1);
 });
 
@@ -25,7 +26,7 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   const start = Date.now();
   const result = await pool.query<T>(text, params);
   const duration = Date.now() - start;
-  console.log('Executed query', { text, duration, rows: result.rowCount });
+  logEvent('db.query', { duration_ms: duration, rows: result.rowCount });
   return result;
 }
 

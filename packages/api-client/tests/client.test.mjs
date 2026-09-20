@@ -49,3 +49,13 @@ test("non-JSON failures do not expose server HTML", async () => {
   const client = createApiClient({ fetch: async () => new Response("<html>upstream error</html>", { status: 502 }) });
   await assert.rejects(client.request("/api/deliveries"), (error) => error instanceof ApiError && error.status === 502 && !error.message.includes("<html>"));
 });
+
+test("rate-limit errors preserve request ID and retry delay without replaying a mutation", async () => {
+  let calls = 0;
+  const client = createApiClient({ fetch: async () => {
+    calls++;
+    return Response.json({ success: false, message: "Slow down", code: "RATE_LIMITED", errors: null, request_id: "request-123" }, { status: 429, headers: { "X-Request-ID": "request-123", "Retry-After": "42" } });
+  } });
+  await assert.rejects(client.request("/api/payments/create", { method: "POST", body: "{}" }), error => error instanceof ApiError && error.requestId === "request-123" && error.retryAfter === 42 && error.code === "RATE_LIMITED");
+  assert.equal(calls, 1);
+});

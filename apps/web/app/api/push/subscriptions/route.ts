@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import {
   deletePushSubscriptionSchema,
@@ -15,7 +17,7 @@ import {
   unauthorizedResponse,
 } from "@/lib/api/response";
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -28,12 +30,12 @@ export async function POST(request: NextRequest) {
     await savePushSubscription(session.userId, parsed.data);
     return successResponse("Notifications enabled.");
   } catch (error) {
-    console.error("[POST /api/push/subscriptions]", error);
+    logServerError("[POST /api/push/subscriptions]", error);
     return serverErrorResponse("Could not save notification preferences.");
   }
 }
 
-export async function DELETE(request: NextRequest) {
+async function handleDELETE(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -46,7 +48,10 @@ export async function DELETE(request: NextRequest) {
     await removePushSubscription(session.userId, parsed.data.endpoint);
     return successResponse("Notifications disabled.");
   } catch (error) {
-    console.error("[DELETE /api/push/subscriptions]", error);
+    logServerError("[DELETE /api/push/subscriptions]", error);
     return serverErrorResponse("Could not update notification preferences.");
   }
 }
+
+export const POST = withApiRoute("/api/push/subscriptions", handlePOST);
+export const DELETE = withApiRoute("/api/push/subscriptions", handleDELETE);

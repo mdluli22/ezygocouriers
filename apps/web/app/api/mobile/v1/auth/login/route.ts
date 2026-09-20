@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { loginSchema } from "@ezygo/contracts";
@@ -16,7 +18,7 @@ import {
 } from "@/lib/auth/mobile-session";
 import { query } from "@/lib/db/server";
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const parsed = await parseJsonRequest(request, loginSchema);
     if (!parsed.success) return secureMobileResponse(parsed.response);
@@ -60,12 +62,15 @@ export async function POST(request: NextRequest) {
         errorResponse(
           signInError.message,
           signInError.errors,
-          signInError.status
+          signInError.status,
+          signInError.code
         )
       );
     }
 
-    console.error("[POST /api/mobile/v1/auth/login]", error);
+    logServerError("[POST /api/mobile/v1/auth/login]", error);
     return secureMobileResponse(serverErrorResponse("Unable to sign in."));
   }
 }
+
+export const POST = withApiRoute("/api/mobile/v1/auth/login", handlePOST);

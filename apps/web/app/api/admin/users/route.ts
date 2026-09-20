@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { getSession } from "@/lib/auth/session";
 import { getAdminUsers, toggleUserStatus } from "@/lib/services/admin";
 import {
@@ -14,7 +16,7 @@ import {
 } from "@ezygo/contracts";
 import { parseJsonRequest, parseQuery } from "@/lib/api/validation";
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -26,12 +28,12 @@ export async function GET(req: NextRequest) {
     const users = await getAdminUsers(parsed.data.role);
     return successResponse("Users fetched.", users);
   } catch (error) {
-    console.error("[GET /api/admin/users]", error);
+    logServerError("[GET /api/admin/users]", error);
     return serverErrorResponse();
   }
 }
 
-export async function PATCH(req: NextRequest) {
+async function handlePATCH(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -43,10 +45,13 @@ export async function PATCH(req: NextRequest) {
     await toggleUserStatus(parsed.data.user_id, session.userId);
     return successResponse("User status toggled.");
   } catch (error: unknown) {
-    console.error("[PATCH /api/admin/users]", error);
+    logServerError("[PATCH /api/admin/users]", error);
     if (error instanceof Error && error.message.includes("deactivate your own")) {
       return errorResponse(error.message, undefined, 403);
     }
     return serverErrorResponse();
   }
 }
+
+export const GET = withApiRoute("/api/admin/users", handleGET);
+export const PATCH = withApiRoute("/api/admin/users", handlePATCH);

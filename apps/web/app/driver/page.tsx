@@ -1,5 +1,7 @@
 "use client";
 
+import type { DriverDeliverySummary as Delivery } from "@ezygo/contracts";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -18,21 +20,7 @@ import {
 import { STATUS_LABELS, type DeliveryStatus } from "@ezygo/contracts";
 import { STATUS_COLORS } from "@/lib/constants/delivery-status";
 
-interface Delivery {
-  id: number;
-  tracking_number: string;
-  status: DeliveryStatus;
-  recipient_name: string;
-  recipient_phone: string;
-  pickup_street: string;
-  pickup_city: string;
-  dropoff_street: string;
-  dropoff_city: string;
-  parcel_description: string;
-  fragile: boolean;
-  require_pin: boolean;
-  updated_at: string;
-}
+
 
 const ACTIVE_STATUSES: DeliveryStatus[] = ["assigned", "picked_up", "in_transit"];
 

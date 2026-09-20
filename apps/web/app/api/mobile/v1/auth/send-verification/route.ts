@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { APIError } from "better-auth/api";
 import { auth } from "@/lib/auth/auth";
@@ -14,7 +16,7 @@ import {
 } from "@/lib/email/smtp";
 import { secureMobileResponse } from "@/lib/auth/mobile-session";
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const parsed = await parseJsonRequest(
       request,
@@ -50,12 +52,15 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof APIError) {
+      if (error.statusCode === 429) return secureMobileResponse(
+        errorResponse("Too many requests. Please try again later.", undefined, 429, "RATE_LIMITED")
+      );
       return secureMobileResponse(
         successResponse("If the account can be verified, a new code was sent.")
       );
     }
 
-    console.error("[POST /api/mobile/v1/auth/send-verification]", error);
+    logServerError("[POST /api/mobile/v1/auth/send-verification]", error);
     return secureMobileResponse(
       errorResponse(
         "The verification email could not be sent.",
@@ -65,3 +70,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withApiRoute("/api/mobile/v1/auth/send-verification", handlePOST);

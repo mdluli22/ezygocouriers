@@ -1,3 +1,4 @@
+import { logServerError } from "@/lib/api/context";
 import webPush from "web-push";
 import { query } from "@/lib/db/server";
 import type { PushSubscriptionInput } from "@ezygo/contracts";
@@ -109,7 +110,7 @@ export async function sendPushToUser(
           ]);
           return;
         }
-        console.error("[Web push] Delivery failed", {
+        logServerError("[Web push] Delivery failed", {
           userId,
           statusCode,
         });

@@ -1,5 +1,7 @@
 "use client";
 
+import type { CustomerDeliveryDetail as Delivery } from "@ezygo/contracts";
+
 import { useEffect, useState, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -9,44 +11,9 @@ import {
 } from "@ezygo/contracts";
 import { STATUS_COLORS } from "@/lib/constants/delivery-status";
 
-interface StatusLog {
-  id: number;
-  status: DeliveryStatus;
-  note: string;
-  created_at: string;
-  updated_by_name: string;
-}
+type StatusLog = import("@ezygo/contracts").DeliveryStatusLog;
 
-interface Delivery {
-  id: number;
-  tracking_number: string;
-  status: DeliveryStatus;
-  recipient_name: string;
-  recipient_phone: string;
-  pickup_contact_name: string;
-  pickup_contact_phone: string;
-  parcel_description: string;
-  special_instructions: string;
-  fragile: boolean;
-  require_pin: boolean;
-  delivery_pin_sent_at: string | null;
-  pickup_street: string;
-  pickup_suburb: string;
-  pickup_city: string;
-  pickup_province: string;
-  pickup_postal_code: string;
-  dropoff_street: string;
-  dropoff_suburb: string;
-  dropoff_city: string;
-  dropoff_province: string;
-  dropoff_postal_code: string;
-  quote_amount: string;
-  quote_currency: string;
-  driver_name: string | null;
-  driver_phone: string | null;
-  created_at: string;
-  updated_at: string;
-}
+
 
 // The ordered steps shown in the timeline (excludes terminal states)
 const TIMELINE_STEPS: DeliveryStatus[] = [
@@ -385,7 +352,7 @@ function TrackingContent() {
         <div className="flex items-center justify-between">
           <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>Flat rate</span>
           <span className="text-2xl font-black" style={{ color: "var(--color-accent)" }}>
-            {delivery.quote_currency} {parseFloat(delivery.quote_amount).toFixed(2)}
+            {delivery.quote_currency} {(delivery.quote_amount === null ? "Pending quote" : parseFloat(delivery.quote_amount).toFixed(2))}
           </span>
         </div>
       </InfoCard>
@@ -443,7 +410,7 @@ function TrackingContent() {
           <div>
             <p className="font-bold text-white">Ready to pay?</p>
             <p className="text-sm text-white opacity-70 mt-0.5">
-              Secure payment via Paystack · R{parseFloat(delivery.quote_amount).toFixed(2)}
+              Secure payment via Paystack · R{(delivery.quote_amount === null ? "Pending quote" : parseFloat(delivery.quote_amount).toFixed(2))}
             </p>
           </div>
           <Link

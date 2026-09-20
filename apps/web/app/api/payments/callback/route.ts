@@ -1,3 +1,5 @@
+import { logEvent, logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/server";
 import { completePayment, cancelPayment } from "@/lib/services/payments";
@@ -22,7 +24,7 @@ function getSourceIp(request: NextRequest): string {
   return candidate.replace(/^::ffff:/, "");
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   let paymentId: number | null = null;
 
   try {
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     paymentId = Number.parseInt(itnData.m_payment_id ?? "", 10);
     if (!Number.isSafeInteger(paymentId) || paymentId <= 0) {
-      console.error("[PayFast ITN] Invalid payment ID", itnData.m_payment_id);
+      logServerError("[PayFast ITN] Invalid payment ID", itnData.m_payment_id);
       return new NextResponse("Invalid payment ID", { status: 400 });
     }
 
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     const payment = result.rows[0];
 
     if (!payment) {
-      console.error("[PayFast ITN] Payment not found", paymentId);
+      logServerError("[PayFast ITN] Payment not found", paymentId);
       return new NextResponse("Payment not found", { status: 404 });
     }
     if (payment.provider !== "payfast") {
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
       itnData.custom_str1 &&
       Number.parseInt(itnData.custom_str1, 10) !== payment.delivery_id
     ) {
-      console.error("[PayFast ITN] Delivery mismatch", {
+      logServerError("[PayFast ITN] Delivery mismatch", {
         paymentId,
         expected: payment.delivery_id,
         received: itnData.custom_str1,
@@ -72,7 +74,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!verification.valid) {
-      console.error("[PayFast ITN] Verification failed", {
+      logServerError("[PayFast ITN] Verification failed", {
         paymentId,
         reason: verification.reason,
       });
@@ -89,15 +91,14 @@ export async function POST(request: NextRequest) {
     } else if (itnData.payment_status === "CANCELLED") {
       await cancelPayment(paymentId, "Payment cancelled through PayFast");
     } else {
-      console.warn("[PayFast ITN] Ignoring unsupported status", {
-        paymentId,
-        status: itnData.payment_status,
-      });
+      logEvent("payment.notification_ignored");
     }
 
     return new NextResponse("OK", { status: 200 });
   } catch (error) {
-    console.error("[PayFast ITN] Processing failed", { paymentId, error });
+    logServerError("[PayFast ITN] Processing failed", { paymentId, error });
     return new NextResponse("Notification processing failed", { status: 500 });
   }
 }
+
+export const POST = withApiRoute("/api/payments/callback", handlePOST);

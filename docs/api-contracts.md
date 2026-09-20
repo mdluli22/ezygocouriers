@@ -2,6 +2,10 @@
 
 This document defines the current application-owned HTTP API that the EzyGo web client and future PWA or mobile clients may consume. The contract is version `1` and remains on the existing unversioned `/api` paths for backward compatibility.
 
+The [complete endpoint inventory](api-inventory.md) records all 43 route methods,
+request shapes, responses, authorization and errors. The machine-readable
+[inventory](api-inventory.json) is checked against route exports in CI.
+
 Every application-owned JSON response includes this header:
 
 ```http
@@ -11,6 +15,20 @@ X-EzyGo-API-Version: 1
 The Zod request schemas, domain constants, and TypeScript transport models are maintained in the dependency-neutral [`@ezygo/contracts`](../packages/contracts) workspace package. Route handlers must parse JSON with [`lib/api/validation.ts`](../apps/web/lib/api/validation.ts) so malformed JSON returns a client error instead of an internal server error.
 
 ## Compatibility Policy
+
+The existing application-owned `/api` routes are the supported v1 mobile data
+API. Mobile authentication remains explicitly versioned at `/api/mobile/v1/auth`.
+Keep existing v1 routes available when adding a future v2; do not repoint them to
+breaking handlers. Shared constants, schemas, wire models and the API regression
+suite form the compatibility baseline. Native clients must not depend on Better
+Auth internal routes or provider callbacks as ordinary JSON APIs.
+
+Security fixes may tighten previously unintended access or remove accidentally
+exposed secrets without preserving that behavior. This phase removes the
+undocumented `delivery_pin_hash` field from detail responses, consistently
+restricts customer endpoints to customers and returns `404` for unowned trips.
+Valid client success fields and routes remain compatible.
+
 
 The following changes are backward compatible within contract version `1`:
 
@@ -67,10 +85,24 @@ Provider callbacks and Better Auth's generated endpoints are integration contrac
 }
 ```
 
-`errors` is `null` when the error is not tied to specific fields.
+`errors` is `null` when the error is not tied to specific fields. Both success
+and failure envelopes include a server-generated `request_id`, also returned as
+`X-Request-ID`. The type is optional so clients remain compatible with older
+servers. Every wrapped route is non-cacheable. Errors are identified by `code`,
+not English messages. `@ezygo/api-client` exposes `ApiError.requestId` and
+`ApiError.retryAfter` (seconds); it never automatically replays a mutation.
 
 | Code | Default status | Meaning |
 | --- | ---: | --- |
+| `RATE_LIMITED` | 429 | Shared request/OTP/PIN quota exceeded; wait for `Retry-After`. |
+| `PAYLOAD_TOO_LARGE` | 413 | Request exceeds the body limit. |
+| `INVALID_TRANSITION` | 400 | Delivery cannot move from its current state to the requested state. |
+| `PIN_REQUIRED` | 400 | A required handover PIN was omitted. |
+| `PIN_INVALID` | 400 | The supplied six-digit PIN does not match. |
+| `PIN_NOT_ISSUED` | 400 | No server-side PIN is available yet. |
+| `EMAIL_NOT_VERIFIED` | 403 | Sign-in requires email verification. |
+| `OTP_INVALID` | 400 | Verification code is wrong or expired. |
+| `PAYMENT_MISMATCH` | 409 | Internal payment reconciliation conflict; provider routes retain their documented response format. |
 | `BAD_REQUEST` | 400 | The request cannot be applied as sent. |
 | `INVALID_JSON` | 400 | The body is not valid JSON. |
 | `VALIDATION_ERROR` | 422 | One or more request fields or query parameters are invalid. |
@@ -289,7 +321,7 @@ Path: `id` is a positive integer.
 
 Success data: `{ delivery: CustomerDeliveryDetail; logs: DeliveryStatusLog[] }`
 
-The delivery object contains the delivery table fields plus pickup and drop-off address fields, quote fields, and nullable `driver_name` and `driver_phone` fields. Clients should ignore unknown fields for forward compatibility.
+The delivery object contains the explicitly allowlisted `CustomerDeliveryDetail` fields, including pickup/drop-off addresses, quote fields, and nullable `driver_name` / `driver_phone`. It never includes `delivery_pin_hash`. Clients should ignore unknown fields for forward compatibility.
 
 ### POST `/api/deliveries/{id}`
 
@@ -315,7 +347,7 @@ Access: Assigned driver
 
 Success data: `{ delivery: DriverDeliveryDetail; logs: DeliveryStatusLog[] }`
 
-The delivery includes full pickup and drop-off details, customer contact information and all delivery fields visible to the assigned driver.
+The delivery uses the explicitly allowlisted `DriverDeliveryDetail` model, including pickup/drop-off details and customer contacts. It never includes a PIN value or hash.
 
 ### PATCH `/api/driver/status`
 
@@ -434,6 +466,13 @@ interface PaymentCheckout {
 ```
 
 The client opens `redirect_url` in a secure browser. Payment is complete only after the backend verifies the provider callback or webhook.
+
+Concurrent/repeated checkout requests reuse one pending provider checkout and
+payment record. A legacy pending reference with no saved URL returns `409` for
+reconciliation instead of silently replacing it. Delivery creation itself is not
+idempotent: reload bookings after an ambiguous booking submission. A timeout
+between provider initialization and database commit also requires provider
+reconciliation; checkout reuse is not a distributed exactly-once guarantee.
 
 ### POST `/api/payments/sandbox-confirm`
 

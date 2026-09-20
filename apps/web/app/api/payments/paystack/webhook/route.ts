@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/server";
 import {
@@ -19,7 +21,7 @@ interface PaymentForWebhook {
   currency: string;
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const rawBody = await req.text();
   try {
     if (!verifyPaystackWebhook(rawBody, req.headers.get("x-paystack-signature"))) {
@@ -57,7 +59,9 @@ export async function POST(req: NextRequest) {
     });
     return new NextResponse("OK");
   } catch (error) {
-    console.error("[Paystack webhook] Processing failed", error);
+    logServerError("[Paystack webhook] Processing failed", error);
     return new NextResponse("Webhook processing failed", { status: 500 });
   }
 }
+
+export const POST = withApiRoute("/api/payments/paystack/webhook", handlePOST);

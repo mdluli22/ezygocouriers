@@ -1,3 +1,6 @@
+import { problemResponse } from "@/lib/api/response";
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
@@ -12,10 +15,11 @@ import {
   serverErrorResponse,
 } from "@/lib/api/response";
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
+    if (session.role !== "customer") return errorResponse("Access denied.", undefined, 403);
 
     const parsed = await parseJsonRequest(req, createPaymentSchema);
     if (!parsed.success) return parsed.response;
@@ -87,7 +91,11 @@ export async function POST(req: NextRequest) {
 
     return successResponse("Payment initialised.", checkout);
   } catch (error) {
-    console.error("[POST /api/payments/create]", error);
+    const problem = problemResponse(error);
+    if (problem) return problem;
+    logServerError("[POST /api/payments/create]", error);
     return serverErrorResponse();
   }
 }
+
+export const POST = withApiRoute("/api/payments/create", handlePOST);

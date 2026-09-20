@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/server";
 import { completePayment, failPayment } from "@/lib/services/payments";
@@ -25,7 +27,7 @@ interface PaymentForWebhook {
   provider: string;
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const rawBody = await request.text();
     const webhookId = request.headers.get("webhook-id") ?? "";
@@ -78,7 +80,9 @@ export async function POST(request: NextRequest) {
 
     return new NextResponse("OK", { status: 200 });
   } catch (error) {
-    console.error("[Yoco webhook] Processing failed", error);
+    logServerError("[Yoco webhook] Processing failed", error);
     return new NextResponse("Webhook processing failed", { status: 500 });
   }
 }
+
+export const POST = withApiRoute("/api/payments/yoco/webhook", handlePOST);

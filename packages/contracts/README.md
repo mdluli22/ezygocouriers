@@ -17,7 +17,13 @@ Available entry points:
 - `@ezygo/contracts` — complete public surface;
 - `@ezygo/contracts/constants` — roles, statuses, transitions, labels, service-area values, and API version;
 - `@ezygo/contracts/schemas` — authentication, delivery, driver, payment, and administration request schemas;
-- `@ezygo/contracts/models` — API envelopes and shared response models.
+- `@ezygo/contracts/models` — API envelopes and authentication/payment response models.
+
+The root entry point also exports `Address`, `CustomerDeliverySummary`,
+`CustomerDeliveryDetail`, `DriverDeliverySummary`, `DriverDeliveryDetail`,
+`DeliveryDetailResponse`, `CreateDeliveryResponse`, and administration response
+models. Inputs remain inferred from Zod; outputs describe serialized JSON (dates
+and database decimals are strings). No transport type includes a PIN hash.
 
 Schema-inferred input types are exported next to their schemas so clients do not maintain a second handwritten request model. Changes to this package follow the compatibility policy in `docs/api-contracts.md`.
 

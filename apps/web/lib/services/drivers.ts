@@ -1,3 +1,5 @@
+import { ApiProblem } from "@/lib/api/errors";
+import { logServerError } from "@/lib/api/context";
 import { query, getClient } from "@/lib/db/server";
 import {
   DeliveryStatus,
@@ -63,7 +65,31 @@ export async function getDriverDeliveryById(
 ) {
   const result = await query(
     `SELECT
-       d.*,
+       d.id,
+       d.customer_id,
+       d.assigned_driver_id,
+       d.pickup_address_id,
+       d.dropoff_address_id,
+       d.quote_id,
+       d.pickup_contact_name,
+       d.pickup_contact_phone,
+       d.recipient_name,
+       d.recipient_phone,
+       d.recipient_email,
+       d.parcel_description,
+       d.special_instructions,
+       d.tracking_number,
+       d.status,
+       d.package_type,
+       d.package_category,
+       d.fragile,
+       d.require_pin,
+       d.pin_verified_at,
+       d.scheduled_time,
+       d.delivery_pin_sent_at,
+       d.delivery_completed_email_sent_at,
+       d.created_at,
+       d.updated_at,
        pa.street_address  AS pickup_street,
        pa.suburb          AS pickup_suburb,
        pa.city            AS pickup_city,
@@ -112,6 +138,7 @@ export async function updateDeliveryStatus(
       status: string;
       id: number;
       driver_id: number;
+      driver_status: string;
       require_pin: boolean;
       delivery_pin_hash: string | null;
       tracking_number: string;
@@ -121,7 +148,7 @@ export async function updateDeliveryStatus(
       customer_id: number;
     }>(
       `SELECT d.id, d.status, d.require_pin, d.delivery_pin_hash,
-              d.tracking_number, d.recipient_name, dr.id AS driver_id,
+              d.tracking_number, d.recipient_name, dr.id AS driver_id, dr.status AS driver_status,
               cu.email AS customer_email, cu.full_name AS customer_name,
               cu.id AS customer_id
        FROM deliveries d
@@ -133,21 +160,22 @@ export async function updateDeliveryStatus(
     );
 
     const delivery = check.rows[0];
-    if (!delivery) throw new Error("Delivery not found or not assigned to you.");
+    if (!delivery) throw new ApiProblem("NOT_FOUND", "Delivery not found or not assigned to you.", 404);
+    if (delivery.driver_status !== "active") throw new ApiProblem("FORBIDDEN", "An active driver profile is required.", 403);
     if (!isValidTransition(delivery.status as DeliveryStatus, newStatus)) {
-      throw new Error(`Cannot transition from '${delivery.status}' to '${newStatus}'.`);
+      throw new ApiProblem("INVALID_TRANSITION", `Cannot transition from '${delivery.status}' to '${newStatus}'.`);
     }
 
     let pinVerified = false;
     if (newStatus === "delivered" && delivery.require_pin) {
       if (!delivery.delivery_pin_hash) {
-        throw new Error("Delivery PIN has not been issued to the recipient yet.");
+        throw new ApiProblem("PIN_NOT_ISSUED", "Delivery PIN has not been issued to the recipient yet.");
       }
       if (!pin || !isDeliveryPinFormat(pin)) {
-        throw new Error("Enter the recipient's six-digit delivery PIN.");
+        throw new ApiProblem("PIN_REQUIRED", "Enter the recipient's six-digit delivery PIN.");
       }
       pinVerified = await verifyDeliveryPin(pin, delivery.delivery_pin_hash);
-      if (!pinVerified) throw new Error("Incorrect delivery PIN. Ask the recipient to check their email.");
+      if (!pinVerified) throw new ApiProblem("PIN_INVALID", "Incorrect delivery PIN. Ask the recipient to check their email.");
     }
 
     await client.query(
@@ -175,7 +203,7 @@ export async function updateDeliveryStatus(
         tag: `delivery-${deliveryId}`,
       });
     } catch (error) {
-      console.error("[Customer status push] Delivery failed", {
+      logServerError("[Customer status push] Delivery failed", {
         deliveryId,
         error,
       });
@@ -198,7 +226,7 @@ export async function updateDeliveryStatus(
       } catch (error) {
         // Delivery completion remains authoritative even if the notification
         // provider is temporarily unavailable.
-        console.error("[Delivery completed email] Delivery failed", {
+        logServerError("[Delivery completed email] Delivery failed", {
           deliveryId,
           error,
         });
@@ -210,7 +238,7 @@ export async function updateDeliveryStatus(
         await autoAssignNextPaidDeliveryToDriver(delivery.driver_id);
       } catch (error) {
         // The status update is complete; location heartbeats retry the queue.
-        console.error("[Automatic delivery queue assignment]", {
+        logServerError("[Automatic delivery queue assignment]", {
           driverId: delivery.driver_id,
           error,
         });

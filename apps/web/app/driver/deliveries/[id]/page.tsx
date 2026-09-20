@@ -1,5 +1,7 @@
 "use client";
 
+import type { DriverDeliveryDetail as Delivery } from "@ezygo/contracts";
+
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -10,34 +12,7 @@ import {
 } from "@ezygo/contracts";
 import { STATUS_COLORS } from "@/lib/constants/delivery-status";
 
-interface Delivery {
-  id: number;
-  tracking_number: string;
-  status: DeliveryStatus;
-  recipient_name: string;
-  recipient_phone: string;
-  pickup_contact_name: string;
-  pickup_contact_phone: string;
-  parcel_description: string;
-  special_instructions: string | null;
-  fragile: boolean;
-  require_pin: boolean;
-  pin_verified_at: string | null;
-  pickup_street: string;
-  pickup_suburb: string | null;
-  pickup_city: string;
-  pickup_province: string | null;
-  pickup_postal_code: string | null;
-  pickup_notes: string | null;
-  dropoff_street: string;
-  dropoff_suburb: string | null;
-  dropoff_city: string;
-  dropoff_province: string | null;
-  dropoff_postal_code: string | null;
-  dropoff_notes: string | null;
-  customer_name: string;
-  customer_phone: string | null;
-}
+
 
 function fmt(parts: (string | null | undefined)[]) {
   return parts.filter(Boolean).join(", ");

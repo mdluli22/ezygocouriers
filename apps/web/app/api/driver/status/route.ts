@@ -1,3 +1,6 @@
+import { problemResponse } from "@/lib/api/response";
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { updateDeliveryStatus } from "@/lib/services/drivers";
@@ -11,7 +14,7 @@ import {
   serverErrorResponse,
 } from "@/lib/api/response";
 
-export async function PATCH(req: NextRequest) {
+async function handlePATCH(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -29,6 +32,8 @@ export async function PATCH(req: NextRequest) {
 
     return successResponse(`Delivery status updated to '${status}'.`);
   } catch (error: unknown) {
+    const problem = problemResponse(error);
+    if (problem) return problem;
     if (error instanceof Error) {
       if (
         error.message.includes("not assigned") ||
@@ -39,7 +44,9 @@ export async function PATCH(req: NextRequest) {
         return errorResponse(error.message, undefined, 400);
       }
     }
-    console.error("[PATCH /api/driver/status]", error);
+    logServerError("[PATCH /api/driver/status]", error);
     return serverErrorResponse();
   }
 }
+
+export const PATCH = withApiRoute("/api/driver/status", handlePATCH);

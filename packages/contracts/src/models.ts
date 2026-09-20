@@ -1,6 +1,16 @@
 import type { DeliveryStatus, UserRole } from "./constants";
 
 export type ApiErrorCode =
+  | "RATE_LIMITED"
+  | "PAYLOAD_TOO_LARGE"
+  | "INVALID_TRANSITION"
+  | "PIN_REQUIRED"
+  | "PIN_INVALID"
+  | "PIN_NOT_ISSUED"
+  | "PAYMENT_MISMATCH"
+  | "EMAIL_NOT_VERIFIED"
+  | "OTP_INVALID"
+  | "OAUTH_INVALID"
   | "BAD_REQUEST"
   | "INVALID_JSON"
   | "VALIDATION_ERROR"
@@ -12,12 +22,14 @@ export type ApiErrorCode =
   | "INTERNAL_ERROR";
 
 export interface ApiSuccess<T> {
+  request_id?: string;
   success: true;
   message: string;
   data: T;
 }
 
 export interface ApiFailure {
+  request_id?: string;
   success: false;
   code: ApiErrorCode;
   message: string;

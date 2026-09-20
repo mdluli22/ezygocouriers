@@ -1,3 +1,6 @@
+import { ApiProblem } from "@/lib/api/errors";
+import { lockAssignments } from "./driver-assignment";
+import { logServerError } from "@/lib/api/context";
 import { query, getClient } from "@/lib/db/server";
 import type { DeliveryStatus, UserRole } from "@ezygo/contracts";
 import { notifyAssignedDriver } from "@/lib/services/push-notifications";
@@ -87,6 +90,21 @@ export async function assignDriver(
   const client = await getClient();
   try {
     await client.query("BEGIN");
+    await lockAssignments(client);
+    const trip = await client.query<{ status: string }>(
+      "SELECT status FROM deliveries WHERE id = $1 FOR UPDATE", [deliveryId]
+    );
+    if (!trip.rows[0]) throw new ApiProblem("NOT_FOUND", "Delivery not found.", 404);
+    if (!["paid", "assigned"].includes(trip.rows[0].status))
+      throw new ApiProblem("INVALID_TRANSITION", "Only paid or assigned deliveries can be assigned.");
+    const driver = await client.query(
+      `SELECT dr.id FROM drivers dr JOIN users u ON u.id = dr.user_id
+       WHERE dr.id = $1 AND dr.status = 'active' AND u.is_active = TRUE
+       AND NOT EXISTS (SELECT 1 FROM deliveries d WHERE d.assigned_driver_id = dr.id
+         AND d.id <> $2 AND d.status IN ('assigned', 'picked_up', 'in_transit'))
+       FOR UPDATE OF dr`, [driverId, deliveryId]
+    );
+    if (!driver.rows[0]) throw new ApiProblem("CONFLICT", "Driver is unavailable.", 409);
 
     await client.query(
       `UPDATE deliveries
@@ -105,7 +123,7 @@ export async function assignDriver(
     try {
       await notifyAssignedDriver({ driverId, deliveryId });
     } catch (error) {
-      console.error("[Admin assignment push] Delivery failed", {
+      logServerError("[Admin assignment push] Delivery failed", {
         driverId,
         deliveryId,
         error,

@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import {
@@ -9,9 +11,9 @@ import { toNextJsHandler } from "better-auth/next-js";
 
 const handlers = toNextJsHandler(auth);
 
-export const GET = handlers.GET;
+const handleGET = handlers.GET;
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const sendsVerificationOtp = request.nextUrl.pathname.endsWith(
     "/email-otp/send-verification-otp"
   );
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
     try {
       await verifySmtpConnection();
     } catch (emailError) {
-      console.error("[Verification OTP SMTP preflight]", emailError);
+      logServerError("[Verification OTP SMTP preflight]", emailError);
       return NextResponse.json(
         {
           code: "SMTP_UNAVAILABLE",
@@ -63,3 +65,6 @@ export async function POST(request: NextRequest) {
 
   return handlers.POST(request);
 }
+
+export const POST = withApiRoute("/api/auth/[...all]", handlePOST);
+export const GET = withApiRoute("/api/auth/[...all]", handleGET);

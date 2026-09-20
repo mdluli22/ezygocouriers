@@ -11,7 +11,21 @@
       "android"
     ],
     "plugins": [
-      "expo-router"
-    ]
+      "expo-router",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "ios": {
+      "bundleIdentifier": "za.co.ezygocouriers.app",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "za.co.ezygocouriers.app"
+    }
   }
 }

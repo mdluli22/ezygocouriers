@@ -5,9 +5,9 @@ Release 1 scope and operating-policy drafts are defined in the
 tracking is required at launch; target minimums are iOS 16.4 and Android 7 (API 24),
 subject to native build and device validation.
 
-Expo Router starter for a future customer/driver application. This currently
-renders a welcome screen; native sign-in, bookings, payments, location and push
-workflows are not implemented yet. Existing features remain in the web/PWA app.
+Expo Router customer/driver app with email/password registration and sign-in, OTP
+verification, Google browser sign-in, secure session restoration, and logout.
+Bookings, payments, location and push screens are subsequent phases.
 
 Run `npm ci` at the repository root, then `npm run dev:mobile`.
 Use the Expo terminal controls to open iOS or Android. Native simulator/device
@@ -27,10 +27,13 @@ Copy `.env.example` to `.env.local` in this directory and set
 Restart Expo after changing environment configuration. All `EXPO_PUBLIC_*`
 values are public. Never copy the repository root environment files here.
 
-`lib/api.ts` creates an `@ezygo/api-client` instance for the backend. When adding
-native authentication, supply an OS secure-storage token reader and a cleanup
-callback for unauthorized sessions; follow
-[the authentication contract](../../docs/mobile-authentication.md).
+`lib/auth/session-controller.ts` owns authentication and authenticated requests;
+use its `request()` method for protected APIs. Credentials and pending OAuth PKCE
+state use Expo SecureStore only. See [the authentication contract](../../docs/mobile-authentication.md).
+
+Use a native development build to test Google OAuth and `ezygo://` links; Expo Go
+is not a substitute for the registered native scheme. Bundle/package identifier:
+`za.co.ezygocouriers.app`. Run `npm run test:mobile` at the repository root.
 Mobile code must never import PostgreSQL, server services, or web application
 source files. Put reusable transport types in `@ezygo/contracts`.
 

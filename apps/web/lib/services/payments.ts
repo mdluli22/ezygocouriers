@@ -1,3 +1,6 @@
+import { ApiProblem } from "@/lib/api/errors";
+import type { PoolClient } from "pg";
+import { logServerError } from "@/lib/api/context";
 import { query, getClient } from "@/lib/db/server";
 import { autoAssignDelivery } from "./driver-assignment";
 import { generateDeliveryPin, hashDeliveryPin } from "@/lib/delivery-pin";
@@ -31,7 +34,7 @@ async function deliverRecipientPin(notification: PinNotification | null): Promis
   } catch (error) {
     // Payment remains complete. A repeated verified ITN or local demo
     // reconciliation retries the notification with a freshly generated PIN.
-    console.error("[Delivery PIN email] Delivery failed", {
+    logServerError("[Delivery PIN email] Delivery failed", {
       deliveryId: notification.deliveryId,
       error,
     });
@@ -44,7 +47,7 @@ async function tryAutoAssignDelivery(deliveryId: number): Promise<void> {
   } catch (error) {
     // A successful payment must never be rolled back because dispatching is
     // temporarily unavailable. Location heartbeats retry waiting deliveries.
-    console.error("[Automatic driver assignment]", { deliveryId, error });
+    logServerError("[Automatic driver assignment]", { deliveryId, error });
   }
 }
 
@@ -59,17 +62,13 @@ export async function createPaymentRecord(params: {
   amount:     number;
   currency:   string;
   provider:   "payfast" | "yoco" | "paystack";
-}): Promise<number> {
-  const result = await query<{ id: number }>(
+}, client?: PoolClient): Promise<number> {
+  const execute = client ? client.query.bind(client) : query;
+  const result = await execute<{ id: number }>(
     `INSERT INTO payments (delivery_id, quote_id, customer_id, amount, currency, status, provider)
      VALUES ($1, $2, $3, $4, $5, 'pending', $6)
      ON CONFLICT (delivery_id) WHERE status = 'pending'
-     DO UPDATE SET provider = EXCLUDED.provider,
-                   provider_checkout_id = NULL,
-                   provider_payment_id = NULL,
-                   payfast_pf_payment_id = NULL,
-                   failure_reason = NULL,
-                   updated_at = NOW()
+     DO UPDATE SET updated_at = payments.updated_at
      RETURNING id`,
     [
       params.deliveryId,
@@ -102,8 +101,9 @@ export async function completePayment(params: {
       delivery_id: number;
       status: string;
       provider: string;
+      provider_payment_id: string | null;
     }>(
-      `SELECT delivery_id, status, provider
+      `SELECT delivery_id, status, provider, provider_payment_id
        FROM payments
        WHERE id = $1
        FOR UPDATE`,
@@ -112,10 +112,18 @@ export async function completePayment(params: {
     const payment = paymentResult.rows[0];
 
     if (!payment || payment.delivery_id !== params.deliveryId) {
-      throw new Error("Payment does not belong to this delivery.");
+      throw new ApiProblem("PAYMENT_MISMATCH", "Payment does not belong to this delivery.", 409);
     }
     if (payment.provider !== params.provider) {
-      throw new Error("Payment provider does not match this payment attempt.");
+      throw new ApiProblem("PAYMENT_MISMATCH", "Payment provider does not match this payment attempt.", 409);
+    }
+
+    const isLegacySandboxReconciliation = params.provider === "payfast" &&
+      (payment.provider_payment_id === `sandbox-return-${params.paymentId}` ||
+       params.providerPaymentId === `sandbox-return-${params.paymentId}`);
+    if (payment.status === "complete" && payment.provider_payment_id &&
+        payment.provider_payment_id !== params.providerPaymentId && !isLegacySandboxReconciliation) {
+      throw new ApiProblem("PAYMENT_MISMATCH", "Payment was completed with a different provider transaction.", 409);
     }
 
     const deliveryDetailsResult = await client.query<{

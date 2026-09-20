@@ -8,7 +8,9 @@ drivers, and administrators.
 The application-owned API contract is documented in
 [`docs/api-contracts.md`](docs/api-contracts.md). Shared request schemas and
 response-envelope types live in the [`@ezygo/contracts`](packages/contracts)
-workspace package.
+workspace package. The [endpoint inventory](docs/api-inventory.md) covers every
+route method. [Backend API operations](docs/backend-api-operations.md) documents
+rate limits, request IDs, migrations 011–012 and the PostgreSQL test suite.
 
 Native client authentication, secure token storage, renewal, and logout are
 documented in [`docs/mobile-authentication.md`](docs/mobile-authentication.md).
@@ -30,7 +32,7 @@ ezygocouriers/
 │   │   ├── components/
 │   │   ├── lib/             # Includes server-only database/services
 │   │   └── public/
-│   └── mobile/              # Expo Router starter for iOS and Android
+│   └── mobile/              # Expo Router app with native authentication
 │       ├── app/
 │       ├── components/
 │       ├── assets/

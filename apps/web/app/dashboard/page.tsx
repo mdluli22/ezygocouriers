@@ -1,5 +1,7 @@
 "use client";
 
+import type { CustomerDeliverySummary as Delivery } from "@ezygo/contracts";
+
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -22,20 +24,7 @@ import {
 } from "@ezygo/contracts";
 import { STATUS_COLORS } from "@/lib/constants/delivery-status";
 
-interface Delivery {
-  id: number;
-  tracking_number: string;
-  status: DeliveryStatus;
-  recipient_name: string;
-  parcel_description: string;
-  pickup_street: string;
-  pickup_city: string;
-  dropoff_street: string;
-  dropoff_city: string;
-  quote_amount: string;
-  quote_currency: string;
-  created_at: string;
-}
+
 
 const PAST_STATUSES: DeliveryStatus[] = ["delivered", "failed", "cancelled"];
 
@@ -63,7 +52,7 @@ function DeliveryRow({ delivery }: { delivery: Delivery }) {
         <small>{date} · {delivery.recipient_name}</small>
       </span>
       <span className="delivery-list-price">
-        <strong>{delivery.quote_currency} {parseFloat(delivery.quote_amount).toFixed(2)}</strong>
+        <strong>{delivery.quote_currency} {(delivery.quote_amount === null ? "Pending quote" : parseFloat(delivery.quote_amount).toFixed(2))}</strong>
         <ArrowRight size={17} />
       </span>
     </Link>

@@ -1,16 +1,17 @@
-import { StyleSheet, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { WelcomeCard } from "../components/WelcomeCard";
+import { Redirect } from "expo-router";
+import { Text } from "react-native";
+import { useAuth } from "../lib/auth/provider";
+import { Action, AuthPage, Notice, styles } from "../components/auth/AuthUI";
+import { SessionGate } from "../components/auth/AuthGate";
 
 export default function HomeScreen() {
-  return (
-    <SafeAreaView style={styles.screen}>
-      <Text style={styles.brand}>EzyGo Couriers</Text>
-      <WelcomeCard />
-    </SafeAreaView>
-  );
+  const auth = useAuth();
+  if (auth.phase === "signedOut") return <Redirect href="/auth/sign-in" />;
+  if (auth.phase !== "authenticated" || !auth.user) return <SessionGate />;
+  const role = auth.user.role === "driver" ? "Driver account" : auth.user.role === "customer" ? "Customer account" : "Administrator account";
+  return <AuthPage title={`Welcome, ${auth.user.full_name.split(" ")[0]}`} subtitle={role}>
+    <Text style={styles.label}>{auth.user.email}</Text>
+    <Notice message={auth.user.role === "admin" ? "Use the EzyGo website to manage dispatch and administration." : "You’re securely signed in. Booking and delivery screens will be added in the next phase."} />
+    <Action label="Sign out" secondary onPress={() => { void auth.signOut(); }} />
+  </AuthPage>;
 }
-const styles = StyleSheet.create({
-  screen: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#f1f5f3" },
-  brand: { fontSize: 32, fontWeight: "700", color: "#173d38", marginBottom: 24 },
-});

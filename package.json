@@ -15,7 +15,9 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "typecheck:contracts": "npm run typecheck --workspace @ezygo/contracts",
-    "test": "npm run test --workspace @ezygo/api-client"
+    "test": "npm run test --workspace @ezygo/api-client",
+    "test:api": "npm run test:api --workspace @ezygo/web",
+    "test:mobile": "npm run test --workspace @ezygo/mobile"
   },
   "engines": {
     "node": ">=22.13.0"

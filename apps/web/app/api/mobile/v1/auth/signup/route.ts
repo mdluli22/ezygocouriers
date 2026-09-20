@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { signupSchema } from "@ezygo/contracts";
 import { parseJsonRequest } from "@/lib/api/validation";
@@ -12,7 +14,7 @@ import {
 } from "@/lib/auth/email-registration";
 import { secureMobileResponse } from "@/lib/auth/mobile-session";
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const parsed = await parseJsonRequest(request, signupSchema);
     if (!parsed.success) return secureMobileResponse(parsed.response);
@@ -43,7 +45,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error("[POST /api/mobile/v1/auth/signup]", error);
+    logServerError("[POST /api/mobile/v1/auth/signup]", error);
     return secureMobileResponse(serverErrorResponse("Unable to create account."));
   }
 }
+
+export const POST = withApiRoute("/api/mobile/v1/auth/signup", handlePOST);

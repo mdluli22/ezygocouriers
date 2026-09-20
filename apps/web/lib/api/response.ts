@@ -1,3 +1,5 @@
+import { apiContext } from "./context";
+import { ApiProblem } from "./errors";
 import { NextResponse } from "next/server";
 import {
   API_CONTRACT_VERSION,
@@ -8,6 +10,8 @@ import {
 } from "@ezygo/contracts";
 
 function defaultErrorCode(status: number): ApiErrorCode {
+  if (status === 429) return "RATE_LIMITED";
+  if (status === 413) return "PAYLOAD_TOO_LARGE";
   if (status === 401) return "UNAUTHORIZED";
   if (status === 403) return "FORBIDDEN";
   if (status === 404) return "NOT_FOUND";
@@ -31,7 +35,7 @@ export function successResponse<T>(
   status: number = 200
 ) {
   return NextResponse.json<ApiSuccess<T | null>>(
-    { success: true, message, data: data ?? null },
+    { success: true, message, data: data ?? null, request_id: apiContext.getStore()?.requestId },
     { status, headers: contractHeaders }
   );
 }
@@ -46,7 +50,7 @@ export function errorResponse(
   code: ApiErrorCode = defaultErrorCode(status)
 ) {
   return NextResponse.json<ApiFailure>(
-    { success: false, code, message, errors: errors ?? null },
+    { success: false, code, message, errors: errors ?? null, request_id: apiContext.getStore()?.requestId },
     { status, headers: contractHeaders }
   );
 }
@@ -77,4 +81,10 @@ export function notFoundResponse(message = "Not found") {
  */
 export function serverErrorResponse(message = "Internal server error") {
   return errorResponse(message, undefined, 500);
+}
+
+export function problemResponse(error: unknown) {
+  return error instanceof ApiProblem
+    ? errorResponse(error.message, undefined, error.status, error.code)
+    : null;
 }

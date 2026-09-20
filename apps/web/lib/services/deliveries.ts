@@ -1,5 +1,7 @@
+import { ApiProblem } from "@/lib/api/errors";
+import { logServerError } from "@/lib/api/context";
 import { query, getClient } from "@/lib/db/server";
-import { generateQuote, acceptQuote } from "./quotes";
+import { generateQuote } from "./quotes";
 import type { CreateDeliveryInput } from "@ezygo/contracts";
 import {
   DeliveryStatus,
@@ -171,21 +173,18 @@ export async function confirmDelivery(
   deliveryId: number,
   customerId: number
 ): Promise<void> {
-  const result = await query<{ status: string; customer_id: number; quote_id: number }>(
-    `SELECT status, customer_id, quote_id FROM deliveries WHERE id = $1 LIMIT 1`,
-    [deliveryId]
-  );
-
-  const delivery = result.rows[0];
-  if (!delivery) throw new Error("Delivery not found.");
-  if (delivery.customer_id !== customerId) throw new Error("Unauthorized.");
-  if (!isValidTransition(delivery.status as DeliveryStatus, "confirmed")) {
-    throw new Error(`Cannot confirm a delivery with status '${delivery.status}'.`);
-  }
-
   const client = await getClient();
   try {
     await client.query("BEGIN");
+    const result = await client.query<{ status: DeliveryStatus; customer_id: number; quote_id: number }>(
+      `SELECT status, customer_id, quote_id FROM deliveries WHERE id = $1 FOR UPDATE`,
+      [deliveryId]
+    );
+    const delivery = result.rows[0];
+    if (!delivery || delivery.customer_id !== customerId)
+      throw new ApiProblem("NOT_FOUND", "Delivery not found.", 404);
+    if (!isValidTransition(delivery.status, "confirmed"))
+      throw new ApiProblem("INVALID_TRANSITION", `Cannot confirm a delivery with status '${delivery.status}'.`);
 
     await client.query(
       `UPDATE deliveries SET status = 'confirmed', updated_at = NOW() WHERE id = $1`,
@@ -193,7 +192,10 @@ export async function confirmDelivery(
     );
 
     if (delivery.quote_id) {
-      await acceptQuote(delivery.quote_id);
+      await client.query(
+        "UPDATE quotes SET status = 'accepted', updated_at = NOW() WHERE id = $1",
+        [delivery.quote_id]
+      );
     }
 
     await client.query(
@@ -249,10 +251,10 @@ export async function cancelCustomerDelivery(
     );
 
     const delivery = result.rows[0];
-    if (!delivery) throw new Error("Delivery not found.");
-    if (delivery.customer_id !== customerId) throw new Error("Unauthorized.");
+    if (!delivery) throw new ApiProblem("NOT_FOUND", "Delivery not found.", 404);
+    if (delivery.customer_id !== customerId) throw new ApiProblem("NOT_FOUND", "Delivery not found.", 404);
     if (!isValidTransition(delivery.status, "cancelled")) {
-      throw new Error(`Cannot cancel a delivery with status '${delivery.status}'.`);
+      throw new ApiProblem("INVALID_TRANSITION", `Cannot cancel a delivery with status '${delivery.status}'.`);
     }
 
     assignedDriverId = delivery.assigned_driver_id;
@@ -293,7 +295,7 @@ export async function cancelCustomerDelivery(
     } catch (error) {
       // Cancellation is already committed; a later location heartbeat retries
       // dispatching the next paid delivery.
-      console.error("[Customer cancellation queue assignment]", {
+      logServerError("[Customer cancellation queue assignment]", {
         driverId: assignedDriverId,
         error,
       });
@@ -343,7 +345,31 @@ export async function getCustomerDeliveries(customerId: number) {
 export async function getDeliveryById(deliveryId: number, customerId: number) {
   const result = await query(
     `SELECT
-       d.*,
+       d.id,
+       d.customer_id,
+       d.assigned_driver_id,
+       d.pickup_address_id,
+       d.dropoff_address_id,
+       d.quote_id,
+       d.pickup_contact_name,
+       d.pickup_contact_phone,
+       d.recipient_name,
+       d.recipient_phone,
+       d.recipient_email,
+       d.parcel_description,
+       d.special_instructions,
+       d.tracking_number,
+       d.status,
+       d.package_type,
+       d.package_category,
+       d.fragile,
+       d.require_pin,
+       d.pin_verified_at,
+       d.scheduled_time,
+       d.delivery_pin_sent_at,
+       d.delivery_completed_email_sent_at,
+       d.created_at,
+       d.updated_at,
        pa.street_address  AS pickup_street,
        pa.suburb          AS pickup_suburb,
        pa.city            AS pickup_city,

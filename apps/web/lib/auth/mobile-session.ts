@@ -36,6 +36,7 @@ export function createBearerHeaders(
   accessToken: string
 ): Headers {
   const headers = new Headers(requestHeaders);
+  headers.delete("cookie");
   headers.set("authorization", `Bearer ${accessToken}`);
   return headers;
 }

@@ -1,3 +1,5 @@
+import { logServerError } from "@/lib/api/context";
+import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { serverErrorResponse, successResponse } from "@/lib/api/response";
 import {
@@ -8,7 +10,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const session = await resolveMobileSession(request.headers);
     if (!session) return mobileUnauthorizedResponse();
@@ -20,9 +22,11 @@ export async function GET(request: NextRequest) {
       })
     );
   } catch (error) {
-    console.error("[GET /api/mobile/v1/auth/session]", error);
+    logServerError("[GET /api/mobile/v1/auth/session]", error);
     return secureMobileResponse(
       serverErrorResponse("Unable to validate the mobile session.")
     );
   }
 }
+
+export const GET = withApiRoute("/api/mobile/v1/auth/session", handleGET);
