@@ -9,7 +9,7 @@ export interface SessionStore {
 }
 export type AuthPhase = "loading" | "signedOut" | "authenticated" | "offline" | "storageError";
 export interface AuthState { phase: AuthPhase; user: MobileAuthUser | null; message: string | null }
-export type Transport = <T>(path: string, method: "GET" | "POST", body?: unknown, token?: string) => Promise<T>;
+export type Transport = <T>(path: string, method: "GET" | "POST" | "PATCH" | "DELETE", body?: unknown, token?: string) => Promise<T>;
 const prefix = "/api/mobile/v1/auth";
 
 /** No credentials or user profile are persisted outside the injected secure store. */
@@ -131,7 +131,7 @@ export class SessionController {
       });
     } catch { this.storageFailed(); }
   }
-  async request<T>(path: string, method: "GET" | "POST" = "GET", body?: unknown): Promise<T> {
+  async request<T>(path: string, method: "GET" | "POST" | "PATCH" | "DELETE" = "GET", body?: unknown): Promise<T> {
     if (this.state.phase !== "authenticated") throw new Error("Please verify your session first.");
     if (this.now() >= this.expiresAtMonotonic) await this.restore();
     if (this.state.phase !== "authenticated") throw new Error("Please sign in again.");

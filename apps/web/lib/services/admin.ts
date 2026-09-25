@@ -99,7 +99,7 @@ export async function assignDriver(
       throw new ApiProblem("INVALID_TRANSITION", "Only paid or assigned deliveries can be assigned.");
     const driver = await client.query(
       `SELECT dr.id FROM drivers dr JOIN users u ON u.id = dr.user_id
-       WHERE dr.id = $1 AND dr.status = 'active' AND u.is_active = TRUE
+       WHERE dr.id = $1 AND dr.status = 'active' AND dr.on_duty=TRUE AND u.is_active = TRUE
        AND NOT EXISTS (SELECT 1 FROM deliveries d WHERE d.assigned_driver_id = dr.id
          AND d.id <> $2 AND d.status IN ('assigned', 'picked_up', 'in_transit'))
        FOR UPDATE OF dr`, [driverId, deliveryId]

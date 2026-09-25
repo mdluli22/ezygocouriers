@@ -13,6 +13,7 @@ export const MOBILE_SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 7;
 const USER_ROLES = new Set<UserRole>(["customer", "driver", "admin"]);
 
 export interface ResolvedMobileSession {
+  sessionId: string;
   accessToken: string;
   expiresAt: string;
   user: MobileAuthUser;
@@ -72,6 +73,7 @@ export async function resolveMobileSession(
   if (!Number.isInteger(userId) || Number.isNaN(expiresAt.getTime())) return null;
 
   return {
+    sessionId: session.session.id,
     accessToken: readIssuedAuthToken(result.headers) ?? suppliedToken,
     expiresAt: expiresAt.toISOString(),
     user: {

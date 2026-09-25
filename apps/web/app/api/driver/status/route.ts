@@ -26,9 +26,9 @@ async function handlePATCH(req: NextRequest) {
       "Invalid request."
     );
     if (!parsed.success) return parsed.response;
-    const { delivery_id, status, note, pin } = parsed.data;
+    const { delivery_id, status, note, pin, operation_id } = parsed.data;
 
-    await updateDeliveryStatus(delivery_id, session.userId, status, note, pin);
+    await updateDeliveryStatus(delivery_id, session.userId, status, note, pin, operation_id);
 
     return successResponse(`Delivery status updated to '${status}'.`);
   } catch (error: unknown) {

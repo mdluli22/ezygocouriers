@@ -17,7 +17,9 @@
     "typecheck:contracts": "npm run typecheck --workspace @ezygo/contracts",
     "test": "npm run test --workspace @ezygo/api-client",
     "test:api": "npm run test:api --workspace @ezygo/web",
-    "test:mobile": "npm run test --workspace @ezygo/mobile"
+    "check:mobile-api": "node scripts/check-mobile-api.mjs",
+    "test:mobile": "npm run test --workspace @ezygo/mobile",
+    "worker:operations": "node --env-file=.env.local apps/web/scripts/operations-worker.mjs"
   },
   "engines": {
     "node": ">=22.13.0"

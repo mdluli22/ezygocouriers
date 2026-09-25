@@ -1,4 +1,7 @@
+import { unregisterNotifications } from "../operations/notifications";
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type PropsWithChildren } from "react";
+import { stopTracking, trackingConsent, flushTrackingStop } from "../driver/location";
+import { driverOutbox } from "../driver/queue";
 import { AppState } from "react-native";
 import { authController, googleFlow } from "./native-auth";
 
@@ -17,8 +20,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => { listener.remove(); clearInterval(timer); };
   }, []);
   async function signOut() {
-    setEmail("");
-    await Promise.all([googleFlow.cancel(), authController.signOut()]);
+    const owner = authController.getSnapshot().user?.id ?? (await trackingConsent())?.owner;
+    try {
+      await stopTracking();
+      await unregisterNotifications().catch(() => undefined);
+      if (owner) await flushTrackingStop(owner).catch(() => undefined);
+      if (owner) await driverOutbox.clear(owner);
+    } finally {
+      setEmail("");
+      await Promise.all([googleFlow.cancel(), authController.signOut()]);
+    }
   }
   return <AuthContext.Provider value={{ email, setEmail, signOut }}>{children}</AuthContext.Provider>;
 }

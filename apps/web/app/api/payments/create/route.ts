@@ -77,6 +77,7 @@ async function handlePOST(req: NextRequest) {
     const amount = parseFloat(delivery.quote_amount);
 
     const checkout = await initialisePaymentCheckout({
+      mobileReturn: req.headers.has("authorization"),
       provider: payment_method,
       delivery: {
         id: delivery.id,

@@ -28,11 +28,17 @@ const { hashDeliveryPin } = await import('../lib/delivery-pin.ts');
 const { consumeLimit, clientIdentity } = await import('../lib/api/rate-limit.ts');
 const { withApiRoute } = await import('../lib/api/route.ts');
 const routes = {
+  installations: await import("../app/api/mobile/v1/installations/route.ts"),
+  live: await import("../app/api/deliveries/[id]/location/route.ts"),
+  duty: await import("../app/api/driver/duty/route.ts"),
   login: await import('../app/api/mobile/v1/auth/login/route.ts'),
   customer: await import('../app/api/deliveries/[id]/route.ts'),
   driver: await import('../app/api/driver/deliveries/[id]/route.ts'),
   status: await import('../app/api/driver/status/route.ts'),
   location: await import('../app/api/driver/location/route.ts'),
+  verifyPayment: await import("../app/api/payments/verify/route.ts"),
+  places: await import("../app/api/places/route.ts"),
+  booking: await import("../app/api/deliveries/route.ts"),
   payment: await import('../app/api/payments/create/route.ts'),
   webhook: await import('../app/api/payments/paystack/webhook/route.ts'),
   callback: await import('../app/api/payments/paystack/callback/route.ts'),
@@ -86,7 +92,8 @@ before(async () => {
 });
 beforeEach(async () => {
   await pool.query('TRUNCATE api_rate_limits, delivery_status_logs, payments, deliveries, quotes, addresses RESTART IDENTITY CASCADE');
-  await pool.query("UPDATE drivers SET status = 'active'");
+  for (const role of ['driver','otherDriver']) ids[`${role}Profile`] = (await pool.query('INSERT INTO drivers (user_id) VALUES ($1) RETURNING id',[ids[role]])).rows[0].id;
+  await pool.query("UPDATE drivers SET status = 'active',on_duty=TRUE,current_latitude=NULL,current_longitude=NULL,location_updated_at=NULL,location_stopped_at=NULL,location_session_id=NULL,location_delivery_id=NULL");
 });
 after(async () => { await pool.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`); await pool.end(); });
 
@@ -419,4 +426,227 @@ test('Google expired handoff and revoked session cannot be exchanged', async () 
     else await pool.query('DELETE FROM auth_sessions WHERE user_id=$1', [ids.otherCustomer]);
     await assert.rejects(google.exchangeMobileGoogle({ code, state, code_verifier: verifier }, new Headers({ host: 'localhost:3000' })));
   }
+});
+
+test('mobile payment verification checks ownership, amount and signed return before confirming', async () => {
+  const login = await call(routes.login, "POST", "/api/mobile/v1/auth/login", null, { email: "othercustomer@example.test", password: "Example1Password" });
+  tokens.otherCustomer = (await login.json()).data.access_token;
+  const { id, transaction } = await pendingPayment();
+  const { signPaymentReturn } = await import('../lib/services/payment-return.ts');
+  const token = signPaymentReturn(id, transaction.reference);
+  assert.equal((await call(routes.verifyPayment, 'POST', '/api/payments/verify', 'otherCustomer', { token })).status, 404);
+  assert.equal((await call(routes.verifyPayment, 'POST', '/api/payments/verify', 'driver', { token })).status, 403);
+  assert.equal((await call(routes.verifyPayment, 'POST', '/api/payments/verify', 'customer', { token: 'forged' })).status, 400);
+  assert.equal((await call(routes.verifyPayment, 'POST', '/api/payments/verify', 'customer', { token, delivery_id: id + 1 })).status, 400);
+  const original = globalThis.fetch;
+  let mismatch = true;
+  globalThis.fetch = async url => {
+    assert.ok(String(url).startsWith('https://api.paystack.co/transaction/verify/'));
+    return Response.json({ status: true, data: { ...transaction, amount: mismatch ? 1 : transaction.amount } });
+  };
+  try {
+    const pending = await call(routes.verifyPayment, 'POST', '/api/payments/verify', 'customer', { token });
+    assert.equal((await pending.json()).data.status, 'pending');
+    mismatch = false;
+    const confirmed = await call(routes.verifyPayment, 'POST', '/api/payments/verify', 'customer', { token });
+    assert.equal((await confirmed.json()).data.status, 'complete');
+    const duplicate = await call(routes.verifyPayment, 'POST', '/api/payments/verify', 'customer', { delivery_id: id });
+    assert.equal((await duplicate.json()).data.status, 'complete');
+    assert.equal((await pool.query("SELECT COUNT(*)::int AS n FROM delivery_status_logs WHERE delivery_id=$1 AND status='paid'", [id])).rows[0].n, 1);
+  } finally { globalThis.fetch = original; }
+});
+
+test('mobile checkout callback returns signed app link after provider verification', async () => {
+  const { id, transaction } = await pendingPayment();
+  const { signPaymentReturn } = await import('../lib/services/payment-return.ts');
+  const token = signPaymentReturn(id, transaction.reference);
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ status: true, data: transaction });
+  try {
+    const response = await call(routes.callback, 'GET', `/api/payments/paystack/callback?reference=${transaction.reference}&app_return=${token}`);
+    assert.equal(response.status, 307);
+    assert.equal(response.headers.get('location'), `ezygo://payment-return?token=${token}`);
+  } finally { globalThis.fetch = original; }
+});
+
+test('an interrupted checkout can be resumed without creating another delivery', async () => {
+  const id = await delivery('confirmed');
+  const response = await call(routes.verifyPayment, 'POST', '/api/payments/verify', 'customer', { delivery_id: id });
+  assert.equal((await response.json()).data.status, 'not_started');
+  assert.equal((await call(routes.verifyPayment, 'POST', '/api/payments/verify', 'otherCustomer', { delivery_id: id })).status, 404);
+});
+
+test('mobile places proxy requires a customer and rejects out-of-area provider details', async () => {
+  const body = { place_id: 'place-test', session_token: randomUUID() };
+  assert.equal((await call(routes.places, 'POST', '/api/places', null, body)).status, 401);
+  assert.equal((await call(routes.places, 'POST', '/api/places', 'driver', body)).status, 403);
+  process.env.GOOGLE_PLACES_API_KEY = 'test-only-key';
+  const original = globalThis.fetch;
+  let outside = true;
+  globalThis.fetch = async (url, init) => {
+    assert.ok(String(url).startsWith('https://places.googleapis.com/v1/places/'));
+    assert.equal(init.headers['X-Goog-Api-Key'], 'test-only-key');
+    return Response.json({ formattedAddress: 'Long Street, Cape Town', location: { latitude: outside ? -26 : -33.92, longitude: 18.42 }, addressComponents: [{ longText: 'Cape Town', types: ['locality'] }] });
+  };
+  try {
+    assert.equal((await call(routes.places, 'POST', '/api/places', 'customer', body)).status, 400);
+    outside = false;
+    const response = await call(routes.places, 'POST', '/api/places', 'customer', body);
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).data.city, 'Cape Town');
+  } finally { globalThis.fetch = original; delete process.env.GOOGLE_PLACES_API_KEY; }
+});
+
+test('customer booking rejects out-of-area addresses on the server', async () => {
+  const address = { formatted_address: 'Cape Town', city: 'Cape Town', latitude: -26, longitude: 18.42 };
+  const response = await call(routes.booking, 'POST', '/api/deliveries', 'customer', { pickup_address: address, dropoff_address: address, pickup_contact_name: 'Sender', pickup_contact_phone: '+27821234567', recipient_name: 'Recipient', recipient_phone: '+27821234567', parcel_description: 'Documents', payment_method: 'paystack' });
+  assert.equal(response.status, 422);
+  assert.equal((await pool.query('SELECT COUNT(*)::int AS n FROM deliveries')).rows[0].n, 0);
+});
+
+test('native booking creates the central quote and payment with a signed app return', async () => {
+  const address = { formatted_address: '1 Long Street, Cape Town', city: 'Cape Town', latitude: -33.92, longitude: 18.42 };
+  const original = globalThis.fetch;
+  let callback;
+  globalThis.fetch = async (url, init) => {
+    assert.equal(String(url), 'https://api.paystack.co/transaction/initialize');
+    const body = JSON.parse(init.body);
+    callback = new URL(body.callback_url);
+    return Response.json({ status: true, data: { authorization_url: 'https://checkout.paystack.com/test', access_code: 'test', reference: body.reference } });
+  };
+  try {
+    const response = await call(routes.booking, 'POST', '/api/deliveries', 'customer', { pickup_address: address, dropoff_address: address, pickup_contact_name: 'Sender', pickup_contact_phone: '+27821234567', recipient_name: 'Recipient', recipient_phone: '+27821234567', parcel_description: 'Documents', payment_method: 'paystack' });
+    const body = await response.json();
+    assert.equal(response.status, 201, JSON.stringify(body));
+    const { verifyPaymentReturn } = await import('../lib/services/payment-return.ts');
+    assert.deepEqual(verifyPaymentReturn(callback.searchParams.get('app_return')), { deliveryId: body.data.id, reference: body.data.payment.checkout_id });
+    const stored = (await pool.query('SELECT d.status, p.amount, q.amount AS quote_amount FROM deliveries d JOIN quotes q ON q.id=d.quote_id JOIN payments p ON p.delivery_id=d.id WHERE d.id=$1', [body.data.id])).rows[0];
+    assert.equal(stored.status, 'confirmed');
+    assert.equal(stored.amount, stored.quote_amount);
+    assert.equal(Number(stored.amount), body.data.quote.amount);
+  } finally { globalThis.fetch = original; }
+});
+
+test('queued driver operations are idempotent after a lost response and reject changed payloads', async () => {
+  const id = await delivery('in_transit', true);
+  const body = { operation_id: randomUUID(), delivery_id: id, status: 'delivered', pin: '123456', note: 'Handed to recipient' };
+  const responses = await Promise.all([call(routes.status, 'PATCH', '/api/driver/status', 'driver', body), call(routes.status, 'PATCH', '/api/driver/status', 'driver', body)]);
+  assert.deepEqual(responses.map(r => r.status), [200, 200]);
+  const replay = await call(routes.status, 'PATCH', '/api/driver/status', 'driver', body);
+  assert.equal(replay.status, 200);
+  const changed = await call(routes.status, 'PATCH', '/api/driver/status', 'driver', { ...body, pin: '000000' });
+  assert.equal(changed.status, 409);
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM delivery_status_logs WHERE delivery_id=$1 AND status='delivered'", [id])).rows[0].n, 1);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM driver_operation_receipts WHERE operation_id=$1', [body.operation_id])).rows[0].n, 1);
+});
+
+test('PIN failure does not create a success receipt and ownership is checked for new operations', async () => {
+  const id = await delivery('in_transit', true);
+  const body = { operation_id: randomUUID(), delivery_id: id, status: 'delivered', pin: '000000' };
+  assert.equal((await call(routes.status, 'PATCH', '/api/driver/status', 'driver', body)).status, 400);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM driver_operation_receipts WHERE operation_id=$1', [body.operation_id])).rows[0].n, 0);
+  assert.equal((await call(routes.status, 'PATCH', '/api/driver/status', 'otherDriver', { ...body, pin: '123456' })).status, 404);
+});
+
+test('trip location rejects old/future/unassigned points and ignores out-of-order retries', async () => {
+  const id = await delivery('assigned');
+  const body = { delivery_id: id, latitude: -33.92, longitude: 18.42, accuracy: 15, recorded_at: new Date().toISOString() };
+  assert.equal((await call(routes.location, 'PATCH', '/api/driver/location', 'driver', body)).status, 200);
+  assert.equal((await call(routes.location, 'PATCH', '/api/driver/location', 'otherDriver', body)).status, 409);
+  assert.equal((await call(routes.location, 'PATCH', '/api/driver/location', 'driver', { ...body, recorded_at: new Date(Date.now() - 61000).toISOString() })).status, 400);
+  assert.equal((await call(routes.location, 'PATCH', '/api/driver/location', 'driver', { ...body, recorded_at: new Date(Date.now() + 30000).toISOString() })).status, 400);
+  assert.equal((await call(routes.location, 'PATCH', '/api/driver/location', 'driver', { ...body, latitude: -34, recorded_at: new Date(Date.parse(body.recorded_at) - 1000).toISOString() })).status, 200);
+  const row = (await pool.query('SELECT current_latitude, location_accuracy FROM drivers WHERE user_id=$1', [ids.driver])).rows[0];
+  assert.equal(Number(row.current_latitude), body.latitude); assert.equal(row.location_accuracy, 15);
+  await pool.query("UPDATE deliveries SET status='cancelled' WHERE id=$1", [id]);
+  assert.equal((await call(routes.location, 'PATCH', '/api/driver/location', 'driver', body)).status, 409);
+});
+
+test('stop sharing clears only the caller’s old location and does not erase a later restart', async () => {
+  const id = await delivery('assigned');
+  const time = new Date().toISOString();
+  await call(routes.location, 'PATCH', '/api/driver/location', 'driver', { delivery_id: id, latitude: -33.92, longitude: 18.42, recorded_at: time });
+  assert.equal((await call(routes.location, 'DELETE', '/api/driver/location', 'customer', { stopped_at: time })).status, 403);
+  await call(routes.location, 'DELETE', '/api/driver/location', 'driver', { stopped_at: new Date(Date.parse(time)-1000).toISOString() });
+  assert.notEqual((await pool.query('SELECT current_latitude FROM drivers WHERE user_id=$1', [ids.driver])).rows[0].current_latitude, null);
+  await call(routes.location, 'DELETE', '/api/driver/location', 'driver', { stopped_at: new Date().toISOString() });
+  assert.equal((await pool.query('SELECT current_latitude FROM drivers WHERE user_id=$1', [ids.driver])).rows[0].current_latitude, null);
+});
+
+test('native installations require identity proof and bind to the current session', async () => {
+ const input={installation_id:randomUUID(),installation_secret:'a'.repeat(64),expo_token:'ExpoPushToken[test_installation]',platform:'ios'};
+ assert.equal((await call(routes.installations,'POST','/api/mobile/v1/installations',null,input)).status,401);
+ assert.equal((await call(routes.installations,'POST','/api/mobile/v1/installations','customer',input)).status,200);
+ assert.equal((await call(routes.installations,'POST','/api/mobile/v1/installations','otherCustomer',{...input,installation_secret:'b'.repeat(64)})).status,409);
+ assert.equal((await call(routes.installations,'POST','/api/mobile/v1/installations','otherCustomer',input)).status,200);
+ assert.equal((await pool.query('SELECT user_id FROM native_installations WHERE id=$1',[input.installation_id])).rows[0].user_id,ids.otherCustomer);
+ await call(routes.installations,'DELETE','/api/mobile/v1/installations',null,{installation_id:input.installation_id,installation_secret:'b'.repeat(64)});
+ assert.equal((await pool.query('SELECT id FROM native_installations WHERE id=$1',[input.installation_id])).rowCount,1);
+ await call(routes.installations,'DELETE','/api/mobile/v1/installations',null,input);
+ assert.equal((await pool.query('SELECT id FROM native_installations WHERE id=$1',[input.installation_id])).rowCount,0);
+});
+test('live location is owner-only, trip-bound, stale-labelled, and erased off duty', async()=>{
+ const id=await delivery(); const path=`/api/deliveries/${id}/location`;
+ const read=()=>call(routes.live,'GET',path,'customer',undefined,id);
+ assert.equal((await (await read()).json()).data.location,null);
+ assert.equal((await call(routes.live,'GET',path,'otherCustomer',undefined,id)).status,404);
+ assert.equal((await call(routes.live,'GET',path,'driver',undefined,id)).status,403);
+ const point={delivery_id:id,latitude:-33.92,longitude:18.42,accuracy:20,recorded_at:new Date().toISOString()};
+ assert.equal((await call(routes.location,'PATCH','/api/driver/location','driver',point)).status,200);
+ assert.equal((await (await read()).json()).data.location.latitude,point.latitude);
+ await pool.query("UPDATE drivers SET location_updated_at=NOW()-INTERVAL '2 minutes' WHERE id=$1",[ids.driverProfile]);
+ assert.equal((await (await read()).json()).data.location.stale,true);
+ await pool.query("UPDATE drivers SET location_updated_at=NOW()-INTERVAL '6 minutes' WHERE id=$1",[ids.driverProfile]);
+ assert.equal((await (await read()).json()).data.location,null);
+ assert.equal((await call(routes.duty,'PATCH','/api/driver/duty','driver',{on_duty:false})).status,200);
+ assert.equal((await call(routes.location,'PATCH','/api/driver/location','driver',{...point,recorded_at:new Date().toISOString()})).status,403);
+ assert.equal((await (await read()).json()).data.location,null);
+});
+test('implausible jumps rejected and terminal delivery removes position atomically',async()=>{
+ const id=await delivery();const point={delivery_id:id,latitude:-33.92,longitude:18.42,recorded_at:new Date(Date.now()-1000).toISOString()};
+ assert.equal((await call(routes.location,'PATCH','/api/driver/location','driver',point)).status,200);
+ assert.equal((await call(routes.location,'PATCH','/api/driver/location','driver',{...point,longitude:18.7,recorded_at:new Date().toISOString()})).status,400);
+ await pool.query("UPDATE deliveries SET status='failed' WHERE id=$1",[id]);
+ assert.equal((await pool.query('SELECT current_latitude FROM drivers WHERE id=$1',[ids.driverProfile])).rows[0].current_latitude,null);
+ assert.equal((await pool.query("SELECT * FROM native_push_events WHERE delivery_id=$1 AND kind='failed'",[id])).rowCount,1);
+ await pool.query("UPDATE deliveries SET status='failed' WHERE id=$1",[id]);
+ assert.equal((await pool.query("SELECT * FROM native_push_events WHERE delivery_id=$1 AND kind='failed'",[id])).rowCount,1);
+});
+test('push worker sends committed events, records receipts, and retires invalid tokens',async()=>{
+ const input={installation_id:randomUUID(),installation_secret:'c'.repeat(64),expo_token:'ExpoPushToken[worker_test]',platform:'android'};
+ await call(routes.installations,'POST','/api/mobile/v1/installations','customer',input);
+ const id=await delivery('pending');
+ await pool.query("UPDATE deliveries SET status='confirmed' WHERE id=$1",[id]);
+ const {processNativeOperations}=await import('../lib/services/native-push.ts');
+ const original=globalThis.fetch;let sends=0;
+ globalThis.fetch=async(url,options)=>{
+  if(String(url).endsWith('/send')){sends++;const body=JSON.parse(options.body);assert.equal(body[0].data.delivery_id,id);assert.equal(body[0].title,'Payment action required');return Response.json({data:[{status:'ok',id:'ticket-test'}]});}
+  return Response.json({data:{'ticket-test':{status:'error',details:{error:'DeviceNotRegistered'}}}});
+ };
+ try{
+  await processNativeOperations();assert.equal(sends,1);
+  await processNativeOperations();assert.equal(sends,1);
+  await pool.query("UPDATE native_push_jobs SET next_attempt_at=NOW() WHERE ticket_id='ticket-test'");
+  await processNativeOperations();assert.equal(sends,1);
+  assert.equal((await pool.query('SELECT enabled FROM native_installations WHERE id=$1',[input.installation_id])).rows[0].enabled,false);
+ }finally{globalThis.fetch=original;await call(routes.installations,'DELETE','/api/mobile/v1/installations',null,input);}
+});
+test('expired sessions hide location and the worker removes expired operational data',async()=>{
+ const id=await delivery();
+ await call(routes.location,'PATCH','/api/driver/location','driver',{delivery_id:id,latitude:-33.92,longitude:18.42,recorded_at:new Date().toISOString()});
+ const session=(await pool.query('SELECT location_session_id FROM drivers WHERE id=$1',[ids.driverProfile])).rows[0].location_session_id;
+ const saved=(await pool.query('SELECT expires_at FROM auth_sessions WHERE id=$1',[session])).rows[0].expires_at;
+ try{
+  await pool.query("UPDATE auth_sessions SET expires_at=NOW()-INTERVAL '1 second' WHERE id=$1",[session]);
+  assert.equal((await (await call(routes.live,'GET',`/api/deliveries/${id}/location`,'customer',undefined,id)).json()).data.location,null);
+  const {processNativeOperations}=await import('../lib/services/native-push.ts');await processNativeOperations();
+  assert.equal((await pool.query('SELECT current_latitude FROM drivers WHERE id=$1',[ids.driverProfile])).rows[0].current_latitude,null);
+ }finally{await pool.query('UPDATE auth_sessions SET expires_at=$2 WHERE id=$1',[session,saved]);}
+});
+test('payment failures enqueue action-required without inventing a delivery transition',async()=>{
+ const {id,payment}=await pendingPayment();
+ await pool.query("UPDATE payments SET status='failed' WHERE id=$1",[payment]);
+ const event=(await pool.query('SELECT kind,user_id FROM native_push_events WHERE delivery_id=$1',[id])).rows;
+ assert.deepEqual(event,[{kind:'confirmed',user_id:ids.customer}]);
+ assert.equal((await pool.query('SELECT status FROM deliveries WHERE id=$1',[id])).rows[0].status,'confirmed');
 });

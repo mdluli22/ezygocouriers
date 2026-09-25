@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { ApiProblem } from "@/lib/api/errors";
 import { logServerError } from "@/lib/api/context";
 import { query, getClient } from "@/lib/db/server";
@@ -128,12 +129,26 @@ export async function updateDeliveryStatus(
   driverUserId: number,
   newStatus: DeliveryStatus,
   note?: string,
-  pin?: string
+  pin?: string,
+  operationId?: string
 ): Promise<void> {
   const client = await getClient();
   try {
     await client.query("BEGIN");
 
+    let payloadHash: string | undefined;
+    if (operationId) {
+      const secret = process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET;
+      if (!secret) throw new ApiProblem("SERVICE_UNAVAILABLE", "Request signing is unavailable.", 503);
+      payloadHash = createHmac("sha256", secret).update(JSON.stringify([deliveryId, newStatus, note ?? "", pin ?? ""])).digest("hex");
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`driver-operation:${driverUserId}:${operationId}`]);
+      const receipt = await client.query<{ payload_hash: string }>("SELECT payload_hash FROM driver_operation_receipts WHERE driver_user_id=$1 AND operation_id=$2", [driverUserId, operationId]);
+      if (receipt.rows[0]) {
+        if (receipt.rows[0].payload_hash !== payloadHash) throw new ApiProblem("CONFLICT", "Operation ID was already used for different input.", 409);
+        await client.query("COMMIT");
+        return;
+      }
+    }
     const check = await client.query<{
       status: string;
       id: number;
@@ -193,6 +208,10 @@ export async function updateDeliveryStatus(
       [deliveryId, newStatus, note || null, driverUserId]
     );
 
+    if (operationId) await client.query("INSERT INTO driver_operation_receipts (driver_user_id, operation_id, payload_hash) VALUES ($1,$2,$3)", [driverUserId, operationId, payloadHash]);
+    if (["delivered", "failed", "cancelled"].includes(newStatus)) {
+      await client.query("UPDATE drivers SET current_latitude=NULL, current_longitude=NULL, location_updated_at=NULL, location_accuracy=NULL WHERE id=$1", [delivery.driver_id]);
+    }
     await client.query("COMMIT");
 
     try {

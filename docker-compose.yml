@@ -1,5 +1,6 @@
 services:
   app:
+    image: ezygo-app
     build:
       context: .
       dockerfile: Dockerfile
@@ -19,6 +20,17 @@ services:
         condition: service_completed_successfully
     networks:
       - ezygo_network
+
+  operations:
+    image: ezygo-app
+    profiles: [operations]
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      OPERATIONS_API_URL: http://app:3000
+    command: [node, apps/web/scripts/operations-worker.mjs]
+    depends_on: [app]
+    networks: [ezygo_network]
 
   db:
     image: postgres:16-alpine
@@ -72,7 +84,9 @@ services:
           /migrations/010_push_subscriptions.sql \
           /migrations/011_api_rate_limits.sql \
           /migrations/012_payment_checkout_reuse.sql \
-          /migrations/013_mobile_oauth_and_session_revocation.sql
+          /migrations/013_mobile_oauth_and_session_revocation.sql \
+          /migrations/014_driver_mobile_operations.sql \
+          /migrations/015_native_operations.sql
         do
           echo "Applying $${migration}"
           psql -v ON_ERROR_STOP=1 -h db -U "$${DB_USER}" -d "$${DB_NAME}" -f "$${migration}"

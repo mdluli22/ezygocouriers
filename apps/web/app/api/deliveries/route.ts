@@ -49,6 +49,7 @@ async function handlePOST(req: NextRequest) {
     const user = userResult.rows[0];
 
     const payment = await initialisePaymentCheckout({
+      mobileReturn: req.headers.has("authorization"),
       provider: paymentMethod,
       delivery: {
         id: delivery.id,

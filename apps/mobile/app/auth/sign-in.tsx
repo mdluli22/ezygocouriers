@@ -3,7 +3,7 @@ import { Link, Redirect, router } from "expo-router";
 import { ApiError } from "@ezygo/api-client";
 import { loginSchema } from "@ezygo/contracts";
 import { useAuth } from "../../lib/auth/provider";
-import { startGoogleSignIn } from "../../lib/auth/native-auth";
+import { googleSignInAvailable, startGoogleSignIn } from "../../lib/auth/native-auth";
 import { Action, AuthPage, Field, Notice, errorMessage, styles } from "../../components/auth/AuthUI";
 import { SessionGate } from "../../components/auth/AuthGate";
 import { Text } from "react-native";
@@ -42,7 +42,8 @@ export default function SignIn() {
     <Notice message={error} error />
     <Action label="Sign in" busy={busy} disabled={googleBusy} onPress={() => { void submit(); }} />
     <Text style={styles.divider}>or</Text>
-    <Action label="Continue with Google" secondary busy={googleBusy} disabled={busy} onPress={() => { void google(); }} />
+    <Action label="Continue with Google" secondary busy={googleBusy} disabled={busy || !googleSignInAvailable} onPress={() => { void google(); }} />
+    {!googleSignInAvailable ? <Notice message="Google sign-in requires an EzyGo development build. Use email sign-in in Expo Go." /> : null}
     <Link href="/auth/register" style={styles.link}>New to EzyGo? Create an account</Link>
     <Link href="/auth/verify" style={styles.link}>Have a verification code?</Link>
   </AuthPage>;

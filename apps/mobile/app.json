@@ -18,7 +18,18 @@
           "configureAndroidBackup": true
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow EzyGo to share your location during a driver trip while the app is open.",
+          "locationAlwaysAndWhenInUsePermission": "Allow EzyGo to share your active driver trip location in the background until you stop sharing or finish the trip.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      "expo-notifications"
     ],
     "ios": {
       "bundleIdentifier": "za.co.ezygocouriers.app",

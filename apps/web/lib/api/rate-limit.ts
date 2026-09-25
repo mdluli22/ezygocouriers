@@ -11,6 +11,9 @@ export function ratePolicy(path: string, method: string): RatePolicy | null {
     return { name: "payment-return", max: 60, seconds: 60 };
   if (method === "GET" && (path.startsWith("/api/auth/") || path.startsWith("/api/mobile/v1/auth/")))
     return { name: "auth-read", max: 240, seconds: 60 };
+  if (path === "/api/mobile/v1/installations") return { name: "native-installation", max: 60, seconds: 60 };
+  if (path === "/api/driver/duty") return { name: "driver-duty", max: 60, seconds: 60 };
+  if (/^\/api\/deliveries\/.*\/location$/.test(path)) return { name: "live-location", max: 120, seconds: 60 };
   if (["GET", "HEAD", "OPTIONS"].includes(method)) return null;
   if (path.startsWith("/api/auth/") || path.startsWith("/api/mobile/v1/auth/")) {
     if (/send-verification|signup|sign-up|create-verification|request-password-reset|forget-password/.test(path))
@@ -21,6 +24,8 @@ export function ratePolicy(path: string, method: string): RatePolicy | null {
       return { name: "login", max: 30, accountMax: 10, seconds: 300 };
     return { name: "auth", max: 60, accountMax: 20, seconds: 60 };
   }
+  if (path === "/api/places") return { name: "places", max: 240, accountMax: 90, seconds: 60 };
+  if (path === "/api/payments/verify") return { name: "payment-verify", max: 180, accountMax: 30, seconds: 60 };
   if (path === "/api/driver/location")
     return { name: "location", max: 240, accountMax: 30, seconds: 60 };
   if (path === "/api/driver/status")

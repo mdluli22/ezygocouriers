@@ -1,3 +1,4 @@
+import { signPaymentReturn } from "@/lib/services/payment-return";
 import { createHmac, timingSafeEqual } from "crypto";
 import { query } from "@/lib/db/server";
 import type { PoolClient } from "pg";
@@ -79,6 +80,7 @@ export async function createPaystackCheckout(params: {
   amount: number;
   currency: string;
   customerEmail: string;
+  mobileReturn?: boolean;
 }, client?: PoolClient) {
   if (!Number.isFinite(params.amount) || params.amount <= 0) {
     throw new Error("Paystack checkout amount must be positive.");
@@ -90,6 +92,7 @@ export async function createPaystackCheckout(params: {
   const config = getPaystackConfig();
   const reference = `ezygo-${params.paymentId}-${Date.now()}`;
   const callbackUrl = new URL("/api/payments/paystack/callback", config.appUrl);
+  if (params.mobileReturn) callbackUrl.searchParams.set("app_return", signPaymentReturn(params.deliveryId, reference));
   callbackUrl.searchParams.set("payment_id", String(params.paymentId));
   callbackUrl.searchParams.set("delivery_id", String(params.deliveryId));
 

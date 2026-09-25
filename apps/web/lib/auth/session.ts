@@ -5,6 +5,7 @@ import type { UserRole } from "@ezygo/contracts";
 export type { UserRole } from "@ezygo/contracts";
 
 export interface AppSession {
+  sessionId: string;
   userId: number;
   email: string;
   role: UserRole;
@@ -15,8 +16,14 @@ export interface AppSession {
  * The compact AppSession shape keeps the rest of the business logic stable.
  */
 export async function getSession(): Promise<AppSession | null> {
+  const requestHeaders = await headers();
+  if (requestHeaders.has("authorization")) {
+    const { resolveMobileSession } = await import("./mobile-session");
+    const mobile = await resolveMobileSession(requestHeaders);
+    return mobile ? { sessionId: mobile.sessionId, userId: mobile.user.id, email: mobile.user.email, role: mobile.user.role } : null;
+  }
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
     query: { disableCookieCache: true },
   });
 
@@ -32,6 +39,7 @@ export async function getSession(): Promise<AppSession | null> {
   if (!Number.isInteger(userId)) return null;
 
   return {
+    sessionId: session.session.id,
     userId,
     email: session.user.email,
     role: session.user.role,

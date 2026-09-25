@@ -8,10 +8,12 @@ export default function HomeScreen() {
   const auth = useAuth();
   if (auth.phase === "signedOut") return <Redirect href="/auth/sign-in" />;
   if (auth.phase !== "authenticated" || !auth.user) return <SessionGate />;
-  const role = auth.user.role === "driver" ? "Driver account" : auth.user.role === "customer" ? "Customer account" : "Administrator account";
+  if (auth.user.role === "customer") return <Redirect href="/dashboard" />;
+  if (auth.user.role === "driver") return <Redirect href="/driver" />;
+  const role = "Administrator account";
   return <AuthPage title={`Welcome, ${auth.user.full_name.split(" ")[0]}`} subtitle={role}>
     <Text style={styles.label}>{auth.user.email}</Text>
-    <Notice message={auth.user.role === "admin" ? "Use the EzyGo website to manage dispatch and administration." : "You’re securely signed in. Booking and delivery screens will be added in the next phase."} />
+    <Notice message={auth.user.role === "admin" ? "Use the EzyGo website to manage dispatch and administration." : "You’re securely signed in. Driver tools are available on the EzyGo website."} />
     <Action label="Sign out" secondary onPress={() => { void auth.signOut(); }} />
   </AuthPage>;
 }

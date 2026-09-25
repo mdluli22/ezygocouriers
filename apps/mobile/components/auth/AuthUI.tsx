@@ -19,7 +19,7 @@ export function Field({ label, error, ...props }: TextInputProps & { label: stri
   return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} placeholderTextColor="#74817e" style={[styles.input, error ? styles.invalid : null]} autoCapitalize="none" autoCorrect={false} {...props} />{error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}</View>;
 }
 export function Action({ label, onPress, busy = false, secondary = false, disabled = false }: { label: string; onPress: () => void; busy?: boolean; secondary?: boolean; disabled?: boolean }) {
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [styles.button, secondary && styles.secondary, (disabled || busy || pressed) && styles.dim]}>
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [styles.button, secondary && styles.secondary, (disabled || busy || pressed) && styles.dim]}>
     {busy ? <ActivityIndicator color={secondary ? "#173d38" : "#ffffff"} /> : <Text style={[styles.buttonText, secondary && styles.secondaryText]}>{label}</Text>}
   </Pressable>;
 }

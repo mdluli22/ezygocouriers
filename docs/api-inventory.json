@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "updated": "2026-09-19",
+  "updated": "2026-09-25",
   "global_errors": [
     "413 PAYLOAD_TOO_LARGE: bodies exceed 32 KiB (256 KiB provider notifications)",
     "408 BAD_REQUEST: body read exceeds 10 seconds",
@@ -318,7 +318,7 @@
     {
       "method": "PATCH",
       "path": "/api/driver/location",
-      "request": "driverLocationSchema: {latitude,longitude}",
+      "request": "driverLocationSchema: {latitude,longitude}; optional delivery_id restricts location to an assigned active trip; recorded_at ISO timestamp and accuracy meters; stale/future points rejected and older points ignored",
       "response": "200 DriverLocationResponse",
       "authorization": "Verified active driver account; cookie or signed Bearer token; active driver profile",
       "errors": [
@@ -335,7 +335,7 @@
     {
       "method": "PATCH",
       "path": "/api/driver/status",
-      "request": "driverStatusUpdateSchema: {delivery_id,status,note?,pin?}",
+      "request": "driverStatusUpdateSchema: {delivery_id,status,note?,pin?}; optional operation_id UUID makes a successful status mutation idempotent; reused ID with different input returns 409",
       "response": "200 null",
       "authorization": "Verified active driver account; cookie or signed Bearer token; active driver profile; only assigned driver",
       "errors": [
@@ -642,6 +642,143 @@
         "500 INTERNAL_ERROR: unexpected dependency/server failure"
       ],
       "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/places",
+      "request": "{input?:string,place_id?:string,session_token:UUID}; input or place_id required",
+      "response": "200 address suggestions or validated AddressInput",
+      "authorization": "Verified active customer; cookie or signed Bearer token; delivery ownership enforced",
+      "errors": [
+        "401 UNAUTHORIZED",
+        "403 FORBIDDEN",
+        "400 BAD_REQUEST",
+        "422 VALIDATION_ERROR",
+        "404 NOT_FOUND",
+        "409 CONFLICT",
+        "429 RATE_LIMITED",
+        "500 INTERNAL_ERROR",
+        "503 SERVICE_UNAVAILABLE"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/verify",
+      "request": "{delivery_id?:positive integer,token?:signed payment return}; one required",
+      "response": "200 {delivery_id,status}; success only after server reconciliation",
+      "authorization": "Verified active customer; cookie or signed Bearer token; delivery ownership enforced",
+      "errors": [
+        "401 UNAUTHORIZED",
+        "403 FORBIDDEN",
+        "400 BAD_REQUEST",
+        "422 VALIDATION_ERROR",
+        "404 NOT_FOUND",
+        "409 CONFLICT",
+        "429 RATE_LIMITED",
+        "500 INTERNAL_ERROR",
+        "503 SERVICE_UNAVAILABLE"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/driver/location",
+      "request": "{stopped_at: ISO timestamp}; clears own point only if it predates stopping",
+      "response": "200 null",
+      "authorization": "Verified active driver session; own driver profile only",
+      "errors": [
+        "401 UNAUTHORIZED",
+        "403 FORBIDDEN",
+        "422 VALIDATION_ERROR",
+        "429 RATE_LIMITED",
+        "500 INTERNAL_ERROR"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile/v1/installations",
+      "request": "See shared operations schemas",
+      "response": "200 operation result",
+      "authorization": "Authenticated registration; installation secret required for removal",
+      "errors": [
+        "401 Unauthorized",
+        "403 Forbidden",
+        "404 Not found",
+        "409 Conflict"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/mobile/v1/installations",
+      "request": "See shared operations schemas",
+      "response": "200 operation result",
+      "authorization": "Authenticated registration; installation secret required for removal",
+      "errors": [
+        "401 Unauthorized",
+        "403 Forbidden",
+        "404 Not found",
+        "409 Conflict"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/driver/duty",
+      "request": "See shared operations schemas",
+      "response": "200 operation result",
+      "authorization": "Authenticated driver",
+      "errors": [
+        "401 Unauthorized",
+        "403 Forbidden",
+        "404 Not found",
+        "409 Conflict"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/driver/duty",
+      "request": "See shared operations schemas",
+      "response": "200 operation result",
+      "authorization": "Authenticated driver",
+      "errors": [
+        "401 Unauthorized",
+        "403 Forbidden",
+        "404 Not found",
+        "409 Conflict"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/deliveries/[id]/location",
+      "request": "See shared operations schemas",
+      "response": "200 operation result",
+      "authorization": "Owning authenticated customer",
+      "errors": [
+        "401 Unauthorized",
+        "403 Forbidden",
+        "404 Not found",
+        "409 Conflict"
+      ],
+      "contract": "ezygo-v1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/operations",
+      "request": "See shared operations schemas",
+      "response": "200 operation result",
+      "authorization": "OPERATIONS_WORKER_SECRET bearer credential",
+      "errors": [
+        "401 Unauthorized",
+        "403 Forbidden",
+        "404 Not found",
+        "409 Conflict"
+      ],
+      "contract": "internal"
     }
   ]
 }

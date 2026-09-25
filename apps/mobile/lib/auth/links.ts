@@ -13,3 +13,11 @@ export function parseGoogleLink(link: string): GoogleCallback {
   if (!/^[A-Za-z0-9_-]{43,128}$/.test(state) || (code && !/^[A-Za-z0-9_-]{43}$/.test(code)) || (!code && !error) || (code && error)) throw new Error("Invalid sign-in link.");
   return { state, code, error };
 }
+
+export function validateGoogleStartUrl(value: string, apiOrigin: string) {
+  const url = new URL(value);
+  if (url.origin !== apiOrigin || url.username || url.password || url.hash || url.pathname !== "/api/mobile/v1/auth/google/start") {
+    throw new Error("Google sign-in returned an unexpected server address. Please try again.");
+  }
+  return url.toString();
+}

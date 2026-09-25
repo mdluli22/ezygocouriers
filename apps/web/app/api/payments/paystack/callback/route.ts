@@ -1,3 +1,4 @@
+import { verifyPaymentReturn } from "@/lib/services/payment-return";
 import { logServerError } from "@/lib/api/context";
 import { withApiRoute } from "@/lib/api/route";
 import { NextRequest, NextResponse } from "next/server";
@@ -30,6 +31,14 @@ async function handleGET(req: NextRequest) {
   const reference = req.nextUrl.searchParams.get("reference");
   if (!reference) return dashboardRedirect("failed");
 
+  const token = req.nextUrl.searchParams.get("app_return");
+  const appReturn = token ? verifyPaymentReturn(token) : null;
+  function redirect(result: "success" | "failed", id?: number) {
+    if (appReturn && appReturn.reference === reference && appReturn.deliveryId === id) {
+      return NextResponse.redirect(`ezygo://payment-return?token=${encodeURIComponent(token!)}`);
+    }
+    return dashboardRedirect(result, id);
+  }
   let deliveryId: number | undefined;
   try {
     getPaystackConfig();
@@ -51,7 +60,7 @@ async function handleGET(req: NextRequest) {
       amount: Number(payment.amount),
       currency: payment.currency,
     })) {
-      return dashboardRedirect("failed", deliveryId);
+      return redirect("failed", deliveryId);
     }
 
     await completePayment({
@@ -60,10 +69,10 @@ async function handleGET(req: NextRequest) {
       provider: "paystack",
       providerPaymentId: String(transaction.id),
     });
-    return dashboardRedirect("success", deliveryId);
+    return redirect("success", deliveryId);
   } catch (error) {
     logServerError("[Paystack callback] Processing failed", { reference, error });
-    return dashboardRedirect("failed", deliveryId);
+    return redirect("failed", deliveryId);
   }
 }
 

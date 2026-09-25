@@ -22,6 +22,7 @@ export interface ApiClientOptions {
   /** Empty for same-origin browser requests; an HTTP(S) origin for native apps. */
   baseUrl?: string;
   credentials?: RequestCredentials;
+  timeoutMs?: number;
   getAccessToken?: () => string | null | Promise<string | null>;
   onUnauthorized?: () => void | Promise<void>;
   fetch?: typeof globalThis.fetch;
@@ -49,9 +50,16 @@ export function createApiClient(options: ApiClientOptions = {}) {
       }
       const token = await options.getAccessToken?.();
       if (token) headers.set("Authorization", `Bearer ${token}`);
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      init.signal?.addEventListener("abort", abort, { once: true });
+      if (init.signal?.aborted) abort();
+      const timeout = setTimeout(abort, options.timeoutMs ?? 15000);
+      try {
       const response = await (options.fetch ?? globalThis.fetch)(`${baseUrl}${path}`, {
         ...init,
         headers,
+        signal: controller.signal,
         credentials: options.credentials ?? "same-origin",
         redirect: "error",
       });
@@ -64,8 +72,14 @@ export function createApiClient(options: ApiClientOptions = {}) {
       let payload: ApiResponse<T>;
       try {
         payload = await response.json();
-      } catch {
-        throw new ApiError("The server returned an invalid JSON response.", response.status, undefined, null, metadata);
+      } catch (error) {
+        if (controller.signal.aborted) throw error;
+        const message = response.status === 404
+          ? "This feature is unavailable on the connected server. The server may need an update."
+          : response.status >= 500
+            ? "The server is temporarily unavailable. Please try again shortly."
+            : "The server returned an unexpected response. Please try again.";
+        throw new ApiError(message, response.status, response.status === 404 || response.status >= 500 ? "SERVICE_UNAVAILABLE" : undefined, null, metadata);
       }
       if (!payload || typeof payload !== "object" || typeof payload.success !== "boolean") {
         throw new ApiError("The server returned an invalid API response.", response.status, undefined, null, metadata);
@@ -77,6 +91,13 @@ export function createApiClient(options: ApiClientOptions = {}) {
       }
       if (!response.ok) throw new ApiError("The API request failed.", response.status, undefined, null, metadata);
       return payload;
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        throw new ApiError(controller.signal.aborted ? "The request timed out or was cancelled. Please try again." : "Unable to connect. Check your connection and try again.", 0);
+      } finally {
+        clearTimeout(timeout);
+        init.signal?.removeEventListener("abort", abort);
+      }
     },
   };
 }

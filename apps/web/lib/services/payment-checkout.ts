@@ -18,6 +18,7 @@ interface CheckoutDelivery {
 
 export async function initialisePaymentCheckout(params: {
   provider: PaymentProvider;
+  mobileReturn?: boolean;
   delivery: CheckoutDelivery;
 }): Promise<PaymentCheckout> {
   const { provider, delivery } = params;
@@ -47,7 +48,7 @@ export async function initialisePaymentCheckout(params: {
     const checkout = saved.provider_checkout_id && saved.provider_checkout_url
       ? { authorizationUrl: saved.provider_checkout_url, reference: saved.provider_checkout_id, testMode: getPaystackConfig().testMode }
       : await createPaystackCheckout({
-        paymentId, deliveryId: delivery.id, trackingNumber: delivery.trackingNumber,
+        mobileReturn: params.mobileReturn, paymentId, deliveryId: delivery.id, trackingNumber: delivery.trackingNumber,
         amount: delivery.amount, currency: delivery.currency, customerEmail: delivery.customerEmail,
       }, client);
     await client.query("COMMIT");

@@ -87,11 +87,15 @@ export const customerDeliveryActionSchema = z.object({
 });
 
 export const driverLocationSchema = z.object({
+  delivery_id: z.number().int().positive().optional(),
+  recorded_at: z.iso.datetime({ offset: true }).optional(),
+  accuracy: z.number().finite().min(0).max(1000).optional(),
   latitude: z.number().finite().min(-90).max(90),
   longitude: z.number().finite().min(-180).max(180),
 });
 
 export const driverStatusUpdateSchema = z.object({
+  operation_id: z.uuid().optional(),
   delivery_id: z.number().int().positive(),
   status: z.enum(DELIVERY_STATUSES),
   note: z.string().trim().max(500).optional(),

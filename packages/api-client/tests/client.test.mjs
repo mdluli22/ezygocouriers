@@ -59,3 +59,26 @@ test("rate-limit errors preserve request ID and retry delay without replaying a 
   await assert.rejects(client.request("/api/payments/create", { method: "POST", body: "{}" }), error => error instanceof ApiError && error.requestId === "request-123" && error.retryAfter === 42 && error.code === "RATE_LIMITED");
   assert.equal(calls, 1);
 });
+
+test("timeout aborts an in-flight mutation and does not replay it", async () => {
+  let calls = 0;
+  const client = createApiClient({ timeoutMs: 5, fetch: async (_url, init) => {
+    calls++;
+    return new Promise((_resolve, reject) => init.signal.addEventListener("abort", () => reject(new Error("aborted"))));
+  } });
+  await assert.rejects(client.request("/api/deliveries", { method: "POST", body: "{}" }), error => error instanceof ApiError && error.status === 0 && /timed out/.test(error.message));
+  assert.equal(calls, 1);
+});
+test("connection failures have the same normalized error shape", async () => {
+  const client = createApiClient({ fetch: async () => { throw new TypeError("fetch failed secret upstream details"); } });
+  await assert.rejects(client.request("/api/deliveries"), error => error instanceof ApiError && error.status === 0 && !error.message.includes("secret"));
+});
+
+test("missing deployed routes report unavailable features without exposing HTML", async () => {
+  const client = createApiClient({ fetch: async () => new Response('<html>not found with internal details</html>', { status: 404, headers: { 'Content-Type': 'text/html', 'X-Request-ID': 'missing-google' } }) });
+  await assert.rejects(client.request('/api/mobile/v1/auth/google', { method: 'POST', body: '{}' }), error => error instanceof ApiError && error.status === 404 && error.code === 'SERVICE_UNAVAILABLE' && error.requestId === 'missing-google' && /server may need an update/.test(error.message) && !error.message.includes('internal details'));
+});
+test("JSON authentication rejections preserve their actual cause", async () => {
+  const client = createApiClient({ fetch: async () => Response.json({ success: false, code: 'UNAUTHORIZED', message: 'Invalid email or password.', errors: null }, { status: 401 }) });
+  await assert.rejects(client.request('/api/mobile/v1/auth/login', { method: 'POST', body: '{}' }), error => error instanceof ApiError && error.status === 401 && error.message === 'Invalid email or password.');
+});
