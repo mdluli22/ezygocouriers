@@ -12,9 +12,11 @@
     "test": "node --import ../web/tests/register.mjs --test tests/*.test.mjs"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
     "@ezygo/api-client": "*",
     "@ezygo/contracts": "*",
     "expo": "~57.0.23",
+    "expo-blur": "~57.0.3",
     "expo-constants": "~57.0.18",
     "expo-crypto": "~57.0.3",
     "expo-device": "~57.0.2",

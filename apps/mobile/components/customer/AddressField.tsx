@@ -1,3 +1,4 @@
+import { colors } from "../../lib/theme";
 import { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import * as Crypto from "expo-crypto";
@@ -38,7 +39,7 @@ export function AddressField({ label, value, onChange }: { label: string; value?
     {error ? <><Notice message={error} error /><Action label="Retry address search" secondary onPress={() => setRetry(retry + 1)} /></> : null}
     {!value && query.length >= 3 && !busy && !error && suggestions.length === 0 ? <Notice message="Enter a street address and select a Cape Town result." /> : null}
     {suggestions.map(s => <Action key={s.id} label={s.label} secondary disabled={busy} onPress={() => void select(s.id)} />)}
-    {suggestions.length ? <Text style={{ color: "#52665e", fontSize: 12 }}>Google Maps</Text> : null}
+    {suggestions.length ? <Text style={{ color: colors.muted, fontSize: 12 }}>Google Maps</Text> : null}
     {value ? <Notice message="Cape Town address selected" /> : null}
   </View>;
 }

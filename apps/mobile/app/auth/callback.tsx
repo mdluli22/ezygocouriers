@@ -1,3 +1,4 @@
+import { colors } from "../../lib/theme";
 import { useEffect, useState } from "react";
 import { ActivityIndicator } from "react-native";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
@@ -21,6 +22,6 @@ export default function GoogleCallback() {
   }, [callbackParams, auth.phase]); // Scalar link fields; never persist router params.
   if (auth.phase === "authenticated") return <Redirect href="/" />;
   return <AuthPage title="Finishing sign-in" subtitle="Connecting your Google account securely.">
-    {error ? <><Notice message={error} error /><Action label="Back to sign in" onPress={() => router.replace("/auth/sign-in")} /></> : <ActivityIndicator color="#173d38" />}
+    {error ? <><Notice message={error} error /><Action label="Back to sign in" onPress={() => router.replace("/auth/sign-in")} /></> : <ActivityIndicator color={colors.ink} />}
   </AuthPage>;
 }

@@ -1,3 +1,4 @@
+import { colors } from "../lib/theme";
 import { StyleSheet, Text, View } from "react-native";
 
 export function WelcomeCard() {
@@ -9,7 +10,7 @@ export function WelcomeCard() {
   );
 }
 const styles = StyleSheet.create({
-  card: { backgroundColor: "white", borderRadius: 20, padding: 24, gap: 12 },
-  title: { fontSize: 24, fontWeight: "600", color: "#173d38" },
+  card: { backgroundColor: colors.surface, borderRadius: 20, padding: 24, gap: 12 },
+  title: { fontSize: 24, fontWeight: "600", color: colors.ink },
   description: { fontSize: 16, lineHeight: 24, color: "#435b55" },
 });

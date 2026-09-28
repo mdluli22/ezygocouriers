@@ -14,8 +14,11 @@ import {
   MapPin,
   Package,
   PackageOpen,
-  Plus,
   ShieldCheck,
+  Search,
+  Send,
+  Truck,
+  Home,
   Sparkles,
 } from "lucide-react";
 import {
@@ -51,12 +54,20 @@ function DeliveryRow({ delivery }: { delivery: Delivery }) {
         </span>
         <small>{date} · {delivery.recipient_name}</small>
       </span>
+      {!PAST_STATUSES.includes(delivery.status) && <ShipmentProgress status={delivery.status} />}
       <span className="delivery-list-price">
         <strong>{delivery.quote_currency} {(delivery.quote_amount === null ? "Pending quote" : parseFloat(delivery.quote_amount).toFixed(2))}</strong>
         <ArrowRight size={17} />
       </span>
     </Link>
   );
+}
+
+function ShipmentProgress({ status }: { status: DeliveryStatus }) {
+  const current = status === "in_transit" ? 2 : status === "picked_up" ? 1 : 0;
+  return <span className="shipment-progress" aria-label={`Shipment status: ${STATUS_LABELS[status]}`}>
+    {["Booked", "Picked up", "In transit", "Delivered"].map((label, index) => <span key={label} className={index <= current ? "is-complete" : ""}><i>{index <= current ? <Check size={11} /> : null}</i><small>{label}</small></span>)}
+  </span>;
 }
 
 function DeliverySection({
@@ -107,6 +118,8 @@ function DashboardContent() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState<"active" | "history">("active");
   const paymentResult = searchParams.get("payment");
   const paymentProvider = searchParams.get("provider");
   const returnedDeliveryId = Number(searchParams.get("delivery"));
@@ -178,33 +191,29 @@ function DashboardContent() {
     PAST_STATUSES.includes(delivery.status)
   );
   const completedDeliveries = deliveries.filter((delivery) => delivery.status === "delivered");
+  const searchQuery = query.trim().toLowerCase();
+  const visibleDeliveries = (searchQuery ? deliveries : view === "active" ? activeDeliveries : pastDeliveries).filter(
+    d => `${d.tracking_number} ${d.pickup_city} ${d.dropoff_city}`.toLowerCase().includes(searchQuery)
+  );
 
   return (
     <div className="portal-dashboard">
-      <section className="portal-hero-card customer-portal-hero">
-        <div className="portal-hero-grid" aria-hidden="true" />
-        <div className="portal-hero-orb" aria-hidden="true" />
-        <div className="portal-hero-copy">
-          <span className="portal-eyebrow"><Sparkles size={14} /> Customer hub</span>
-          <h1>Your deliveries,<br /><em>all in one place.</em></h1>
-          <p>Book, pay and follow every parcel from one calm, simple dashboard.</p>
-          <Link href="/dashboard/deliveries/new" className="portal-hero-action">
-            Book a delivery <Plus size={17} />
-          </Link>
+      <section className="dispatch-hero">
+        <div className="dispatch-hero-content">
+          <span className="portal-eyebrow">DELIVER ANYWHERE IN CAPE TOWN</span>
+          <h1>Hello, sender<span>.</span></h1>
+          <p>Send, track and receive.<br />A little less effort. A lot more EzyGo.</p>
         </div>
-        <div className="portal-pulse-card">
-          <span className="portal-pulse-label"><i /> Live overview</span>
-          <div className="portal-pulse-stats">
-            <div><strong>{activeDeliveries.length}</strong><span>Active</span></div>
-            <div><strong>{completedDeliveries.length}</strong><span>Delivered</span></div>
-            <div><strong>{deliveries.length}</strong><span>Total</span></div>
-          </div>
-          <div className="portal-pulse-route">
-            <span><i /></span><b /><span><i /></span><b /><span><Check size={12} /></span>
-          </div>
-          <small>From booking to their door, without the guesswork.</small>
-        </div>
+        <div className="dispatch-art" aria-hidden="true"><span className="dispatch-orbit" /><MapPin className="dispatch-pin" size={36} /><div className="dispatch-parcel parcel-back"><Package size={76} strokeWidth={1} /></div><div className="dispatch-parcel parcel-front"><Package size={60} strokeWidth={1} /></div><span className="dispatch-art-note">From your door.<br />To theirs.</span></div>
+        <label className="dispatch-search"><Search size={20} /><input id="parcel-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Find your parcel by tracking number or city" aria-label="Search your deliveries" /><span>{deliveries.length} parcels</span></label>
       </section>
+
+      <nav className="dispatch-shortcuts" aria-label="Delivery actions">
+        <Link href="/dashboard/deliveries/new"><span className="is-featured"><Send size={24} /></span><strong>Send parcel</strong><small>Book a collection</small></Link>
+        <button onClick={() => document.getElementById("parcel-search")?.focus()}><span><Package size={24} /></span><strong>Track order</strong><small>Find your shipment</small></button>
+        <button onClick={() => { setView("active"); document.getElementById("shipments")?.scrollIntoView({ behavior: "smooth" }); }}><span><Truck size={24} /></span><strong>Active shipments</strong><small>{activeDeliveries.length} in progress</small></button>
+        <button onClick={() => { setView("history"); document.getElementById("shipments")?.scrollIntoView({ behavior: "smooth" }); }}><span><History size={24} /></span><strong>History</strong><small>{completedDeliveries.length} delivered</small></button>
+      </nav>
 
       {(paymentResult || isNewCustomer || error) && (
         <div className="portal-notices">
@@ -237,8 +246,9 @@ function DashboardContent() {
       )}
 
       <div className="portal-content-grid">
-        <div className="portal-primary-column">
-          {deliveries.length === 0 ? (
+        <div className="portal-primary-column" id="shipments">
+          <div className="dispatch-list-heading"><h2>Your shipments</h2><div className="dispatch-tabs" role="group" aria-label="Shipment view"><button aria-pressed={view === "active"} onClick={() => setView("active")}>Active ({activeDeliveries.length})</button><button aria-pressed={view === "history"} onClick={() => setView("history")}>History</button></div></div>
+          {deliveries.length === 0 && !error ? (
             <div className="portal-empty-state">
               <span className="portal-empty-icon"><PackageOpen size={30} /></span>
               <span className="portal-section-kicker"><Sparkles size={13} /> Fresh start</span>
@@ -251,21 +261,18 @@ function DashboardContent() {
           ) : (
             <>
               <DeliverySection
-                title="Current deliveries"
-                description="Bookings awaiting payment, collection or delivery."
-                deliveries={activeDeliveries}
+                title={query ? "Search results" : view === "active" ? "Active shipments" : "Delivery history"}
+                description={query ? "Matching parcels across your bookings." : view === "active" ? "Follow every step, from collection to their door." : "All your previous journeys, in one place."}
+                deliveries={visibleDeliveries}
+                history={view === "history" && !query}
               />
-              <DeliverySection
-                title="Delivery history"
-                description="Completed, cancelled and unsuccessful deliveries."
-                deliveries={pastDeliveries}
-                history
-              />
+              {!error && visibleDeliveries.length === 0 && <div className="portal-empty-state"><PackageOpen size={32} /><h2>{query ? "No matching parcels" : view === "active" ? "You’re all caught up." : "No past shipments yet."}</h2><p>{query ? "Try another tracking number or city." : "Your shipments will appear here when they’re ready."}</p></div>}
             </>
           )}
         </div>
 
         <aside className="portal-side-column">
+          <Link href="/dashboard/deliveries/new" className="dispatch-pickup"><span className="portal-section-kicker">BUSINESS OR PERSONAL</span><h3>Need a pickup?</h3><p>We’ll come to you.</p><Truck size={70} strokeWidth={1.2} /><span className="dispatch-pickup-arrow"><ArrowRight size={20} /></span></Link>
           <div className="portal-side-card portal-side-card-accent">
             <span className="portal-side-icon"><ShieldCheck size={20} /></span>
             <span className="portal-section-kicker">EzyGo promise</span>
@@ -284,6 +291,7 @@ function DashboardContent() {
           </div>
         </aside>
       </div>
+      <nav className="dispatch-mobile-nav" aria-label="Dashboard navigation"><button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}><Home size={20} />Home</button><button onClick={() => { setView("active"); document.getElementById("shipments")?.scrollIntoView({ behavior: "smooth" }); }}><Package size={20} />Orders</button><Link href="/dashboard/deliveries/new" className="dispatch-nav-send"><Send size={23} />Send</Link><button onClick={() => { setView("history"); document.getElementById("shipments")?.scrollIntoView({ behavior: "smooth" }); }}><History size={20} />History</button></nav>
     </div>
   );
 }
