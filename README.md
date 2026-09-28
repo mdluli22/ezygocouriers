@@ -199,55 +199,38 @@ The booking flow currently accepts only pickup and drop-off addresses inside
 the Cape Town service area. This restriction is enforced in both Google Places
 autocomplete and server-side delivery validation.
 
-## Paystack test integration
+## Yoco test integration
 
-Paystack is currently the only payment method exposed by the checkout. PayFast
-and Yoco remain in the codebase for easy restoration, but new checkout requests
-for either provider are rejected by the API.
+Yoco is the only active checkout provider. Paystack and PayFast callbacks and
+sandbox confirmation handlers are commented out and return HTTP 503. Their
+client implementations are retained for restoration. The API rejects new
+checkout requests for either disabled provider.
 
-Set `PAYSTACK_SECRET_KEY` to the `sk_test_...` key from your Paystack dashboard.
-Set `PAYSTACK_APP_URL` to the application origin used for Paystack's return
-callback (it defaults to `NEXT_PUBLIC_APP_URL`). The secret key is used only by
-server routes and must never be exposed to browser code.
+Set these server-only variables in your environment (see `.env.example`):
 
-Register this URL as the webhook URL in the Paystack dashboard:
-
-```text
-https://your-public-app.example.com/api/payments/paystack/webhook
+```dotenv
+YOCO_SANDBOX=true
+YOCO_SECRET_KEY=sk_test_your_key_here
+YOCO_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+YOCO_APP_URL=https://your-public-app.example.com
 ```
 
-The hosted checkout redirects through `/api/payments/paystack/callback`, which
-verifies the transaction before completing the delivery. The signed
-`charge.success` webhook provides a second idempotent completion path. Both
-paths validate provider mode, reference, amount, and currency before fulfillment.
+Register `https://your-public-app.example.com/api/payments/yoco/webhook` with
+the Yoco Checkout API using your test secret key, and save the returned webhook
+secret as `YOCO_WEBHOOK_SECRET`. The webhook must be reachable from Yoco;
+use a public HTTPS deployment or tunnel when testing locally. Restart the app
+after changing environment variables. Never put secret keys in browser code.
 
-## Disabled PayFast sandbox integration
+Apply `scripts/sql/011_yoco_provider.sql` to an existing database; Docker's
+migration service also runs it. Historical payment provider values are preserved.
 
-Set `PAYFAST_SANDBOX=true`. You can provide credentials from your own PayFast
-sandbox account, or leave `PAYFAST_MERCHANT_ID` and `PAYFAST_MERCHANT_KEY` blank
-to use PayFast's complete published shared test credential set. When using your
-own credentials, `PAYFAST_PASSPHRASE` must exactly match the passphrase on that
-sandbox account.
+Create a booking or retry an unpaid delivery to open Yoco checkout. Use the test
+card details from your Yoco account. A browser success redirect only means the
+payment was submitted: completion requires a valid signed Yoco webhook matching
+the payment provider, mode, amount, currency and checkout ID.
 
-For end-to-end ITN testing, `PAYFAST_APP_URL` (or `NEXT_PUBLIC_APP_URL`) must be
-a public HTTPS origin. PayFast rejects localhost callback URLs. Without one,
-the app uses an explicit no-money local demo confirmation screen. With a public
-HTTPS origin, checkout is sent to PayFast. Sandbox success returns are
-reconciled for the authenticated customer in addition to accepting verified
-ITNs. In live mode, the verified ITN remains the sole source of truth.
-
-## Disabled Yoco sandbox integration
-
-Set `YOCO_SANDBOX=true` and add the `sk_test_...` secret key from the Yoco App
-as `YOCO_SECRET_KEY`. Set `YOCO_APP_URL` to the app origin used for checkout
-success, cancellation, and failure redirects (it defaults to
-`NEXT_PUBLIC_APP_URL`).
-
-Register `https://your-public-app.example.com/api/payments/yoco/webhook` as the
-Yoco Checkout API webhook, then save the returned `whsec_...` value as
-`YOCO_WEBHOOK_SECRET`. Payment completion is accepted only from a valid signed
-Yoco webhook whose provider, mode, currency, and amount match the pending
-payment attempt.
+Yoco references: [Accepting a payment](https://developer.yoco.com/guides/online-payments/accepting-a-payment)
+and [Verifying webhook events](https://developer.yoco.com/guides/online-payments/webhooks/verifying-the-events).
 
 ## Admin subdomain
 

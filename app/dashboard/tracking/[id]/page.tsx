@@ -348,7 +348,7 @@ function TrackingContent() {
             border: "1px solid rgb(239 68 68 / 0.2)",
           }}
         >
-          Payment failed. You can try Paystack again when you are ready.
+          Payment failed. You can try Yoco again when you are ready.
         </div>
       )}
 
@@ -443,7 +443,7 @@ function TrackingContent() {
           <div>
             <p className="font-bold text-white">Ready to pay?</p>
             <p className="text-sm text-white opacity-70 mt-0.5">
-              Secure payment via Paystack · R{parseFloat(delivery.quote_amount).toFixed(2)}
+              Secure payment via Yoco · R{parseFloat(delivery.quote_amount).toFixed(2)}
             </p>
           </div>
           <Link

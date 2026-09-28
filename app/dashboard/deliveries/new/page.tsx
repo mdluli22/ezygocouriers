@@ -17,7 +17,7 @@ interface User {
 type Step = 1 | 2 | 3;
 type MeetingDropoff = "curb" | "meet" | "leave";
 type AuthTab = "login" | "signup";
-type PaymentProvider = "paystack";
+type PaymentProvider = "yoco";
 const SA_PHONE_PATTERN = /^(\+27|0)[6-8][0-9]{8}$/;
 
 interface AddressGeo {
@@ -188,7 +188,7 @@ export default function NewDeliveryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const paymentMethod: PaymentProvider = "paystack";
+  const paymentMethod: PaymentProvider = "yoco";
   const isProcessing = loading;
 
   useEffect(() => {
@@ -630,7 +630,7 @@ export default function NewDeliveryPage() {
                   }}
                 >
                   <span className="flex items-center justify-between gap-2">
-                    <strong className="text-sm" style={{ color: "var(--color-text-primary)" }}>Paystack</strong>
+                    <strong className="text-sm" style={{ color: "var(--color-text-primary)" }}>Yoco</strong>
                     <span className="w-4 h-4 rounded-full flex items-center justify-center" style={{ border: "2px solid var(--color-primary)" }}>
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--color-primary)" }} />
                     </span>
@@ -700,9 +700,9 @@ export default function NewDeliveryPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                   </svg>
-                  Opening Paystack…
+                  Opening Yoco…
                 </span>
-              ) : user ? "Pay R99 with Paystack →" : "Sign in to pay →"}
+              ) : user ? "Pay R99 with Yoco →" : "Sign in to pay →"}
             </button>
           </div>
         </div>

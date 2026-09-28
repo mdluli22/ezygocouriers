@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { createDelivery, confirmDelivery } from "@/lib/services/deliveries";
 import { initialisePaymentCheckout } from "@/lib/services/payment-checkout";
-import { getPaystackConfig } from "@/lib/paystack";
+import { getYocoConfig } from "@/lib/yoco";
 import { query } from "@/lib/db/server";
 import { createDeliveryRequestSchema } from "@ezygo/contracts";
 import { parseJsonRequest } from "@/lib/api/validation";
@@ -28,9 +28,13 @@ export async function POST(req: NextRequest) {
     const { payment_method: paymentMethod, ...deliveryInput } = parsed.data;
 
     try {
-      getPaystackConfig();
-    } catch {
-      return errorResponse("Paystack test checkout is not configured yet.", undefined, 503);
+      getYocoConfig();
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : "Yoco checkout is not configured yet.",
+        undefined,
+        503
+      );
     }
     // 3. Create delivery (quoted status)
     const delivery = await createDelivery(session.userId, deliveryInput);
