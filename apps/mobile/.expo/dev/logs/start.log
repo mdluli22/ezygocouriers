@@ -1,0 +1,331 @@
+{"_e":"root:init","_t":1789585883135,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789585883135,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789585883136,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789585883325,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789585883797,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1789585883876,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789585884340,"atlas":false,"workers":6,"host":"::","port":8081}
+{"_e":"root:init","_t":1789585949465,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789585949466,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789585949466,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789585949643,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789585950176,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1789585950254,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789585950675,"atlas":false,"workers":6,"host":"::","port":8081}
+{"_e":"root:init","_t":1789586966824,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789586966824,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789586966825,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789586967019,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789586967498,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1789586967578,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789586968174,"atlas":false,"workers":6,"host":"::","port":8081}
+{"_e":"root:init","_t":1789587372664,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789587372665,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789587372665,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789587372852,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789587373319,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1789587373408,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789587373856,"atlas":false,"workers":6,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1789587377057,"id":"1","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1789587377058,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789587377060,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789587377323,"id":"1","progress":0.010000000000000002,"total":1,"current":1}
+{"_e":"metro:bundling:progress","_t":1789587377423,"id":"1","progress":0.08650519031141869,"total":17,"current":5}
+{"_e":"metro:bundling:progress","_t":1789587377530,"id":"1","progress":0.12456747404844293,"total":17,"current":6}
+{"_e":"metro:bundling:progress","_t":1789587377631,"id":"1","progress":0.12456747404844293,"total":123,"current":11}
+{"_e":"metro:bundling:progress","_t":1789587377751,"id":"1","progress":0.12456747404844293,"total":165,"current":18}
+{"_e":"metro:bundling:progress","_t":1789587377859,"id":"1","progress":0.12456747404844293,"total":183,"current":29}
+{"_e":"metro:bundling:progress","_t":1789587377960,"id":"1","progress":0.12456747404844293,"total":203,"current":42}
+{"_e":"metro:bundling:progress","_t":1789587378061,"id":"1","progress":0.12456747404844293,"total":230,"current":69}
+{"_e":"metro:bundling:progress","_t":1789587378161,"id":"1","progress":0.16563007030827476,"total":258,"current":105}
+{"_e":"metro:bundling:progress","_t":1789587378262,"id":"1","progress":0.27454728842184273,"total":292,"current":153}
+{"_e":"metro:bundling:progress","_t":1789587378362,"id":"1","progress":0.28444444444444444,"total":345,"current":184}
+{"_e":"metro:bundling:progress","_t":1789587378462,"id":"1","progress":0.32236837801950535,"total":391,"current":222}
+{"_e":"metro:bundling:progress","_t":1789587378562,"id":"1","progress":0.3643868597610016,"total":439,"current":265}
+{"_e":"metro:bundling:progress","_t":1789587378663,"id":"1","progress":0.3712607975872413,"total":494,"current":301}
+{"_e":"metro:bundling:progress","_t":1789587378763,"id":"1","progress":0.3712607975872413,"total":557,"current":331}
+{"_e":"metro:bundling:progress","_t":1789587378865,"id":"1","progress":0.4027366863905325,"total":572,"current":363}
+{"_e":"metro:bundling:progress","_t":1789587378965,"id":"1","progress":0.4855545174223995,"total":597,"current":416}
+{"_e":"metro:bundling:progress","_t":1789587379065,"id":"1","progress":0.5465181818871149,"total":629,"current":465}
+{"_e":"metro:bundling:progress","_t":1789587379166,"id":"1","progress":0.5763507496318147,"total":681,"current":517}
+{"_e":"metro:bundling:progress","_t":1789587379266,"id":"1","progress":0.5763507496318147,"total":756,"current":563}
+{"_e":"metro:bundling:progress","_t":1789587379366,"id":"1","progress":0.6011723004872777,"total":779,"current":604}
+{"_e":"metro:bundling:progress","_t":1789587379466,"id":"1","progress":0.604520352258787,"total":827,"current":643}
+{"_e":"metro:bundling:progress","_t":1789587379566,"id":"1","progress":0.604520352258787,"total":867,"current":666}
+{"_e":"metro:bundling:progress","_t":1789587379668,"id":"1","progress":0.6192170248620044,"total":901,"current":709}
+{"_e":"metro:bundling:progress","_t":1789587379768,"id":"1","progress":0.6355679984145225,"total":937,"current":747}
+{"_e":"metro:bundling:progress","_t":1789587379868,"id":"1","progress":0.644607853471575,"total":974,"current":782}
+{"_e":"metro:bundling:progress","_t":1789587379968,"id":"1","progress":0.669271988081109,"total":995,"current":814}
+{"_e":"metro:bundling:progress","_t":1789587380068,"id":"1","progress":0.669271988081109,"total":1003,"current":820}
+{"_e":"metro:bundling:progress","_t":1789587380169,"id":"1","progress":0.6848989298454221,"total":1015,"current":840}
+{"_e":"metro:bundling:progress","_t":1789587380270,"id":"1","progress":0.7327762434516677,"total":1021,"current":874}
+{"_e":"metro:bundling:progress","_t":1789587380372,"id":"1","progress":0.7765264821579762,"total":1027,"current":905}
+{"_e":"metro:bundling:progress","_t":1789587380476,"id":"1","progress":0.8020883795011817,"total":1044,"current":935}
+{"_e":"metro:bundling:progress","_t":1789587380576,"id":"1","progress":0.8482918266414751,"total":1051,"current":968}
+{"_e":"metro:bundling:progress","_t":1789587380676,"id":"1","progress":0.8677289511385515,"total":1066,"current":993}
+{"_e":"metro:bundling:progress","_t":1789587380777,"id":"1","progress":0.8817244713527698,"total":1082,"current":1016}
+{"_e":"metro:bundling:progress","_t":1789587380878,"id":"1","progress":0.9127383452609646,"total":1098,"current":1049}
+{"_e":"metro:bundling:progress","_t":1789587380993,"id":"1","progress":0.9127383452609646,"total":1123,"current":1070}
+{"_e":"metro:bundling:progress","_t":1789587381093,"id":"1","progress":0.9502864884741511,"total":1152,"current":1123}
+{"_e":"metro:bundling:progress","_t":1789587381194,"id":"1","progress":0.9502864884741511,"total":1202,"current":1165}
+{"_e":"metro:bundling:progress","_t":1789587381294,"id":"1","progress":0.9740481466055809,"total":1225,"current":1209}
+{"_e":"metro:bundling:progress","_t":1789587381394,"id":"1","progress":0.996812751030832,"total":1254,"current":1252}
+{"_e":"metro:bundling:progress","_t":1789587381494,"id":"1","progress":0.9984057395918388,"total":1254,"current":1253}
+{"_e":"metro:bundling:progress","_t":1789587381558,"id":"1","progress":0.999,"total":1254,"current":1254}
+{"_e":"metro:bundling:progress","_t":1789587381658,"id":"1","progress":0.999,"total":1265,"current":1265}
+{"_e":"metro:bundling:done","_t":1789587381740,"id":"1","total":1265,"ms":4682.985208}
+{"_e":"metro:bundling:started","_t":1789587401151,"id":"2","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"root:init","_t":1789924478377,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789924478377,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789924478378,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789924478594,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789924479098,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1789924479177,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789924479614,"atlas":false,"workers":6,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1789924495654,"id":"1","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1789924495655,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789924495658,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789924495996,"id":"1","progress":0.010000000000000002,"total":1,"current":1}
+{"_e":"metro:bundling:progress","_t":1789924496100,"id":"1","progress":0.09467455621301776,"total":13,"current":4}
+{"_e":"metro:bundling:progress","_t":1789924496239,"id":"1","progress":0.09467455621301776,"total":118,"current":7}
+{"_e":"metro:bundling:progress","_t":1789924496298,"id":"1","progress":0.09467455621301776,"total":118,"current":8}
+{"_e":"metro:bundling:progress","_t":1789924496399,"id":"1","progress":0.09467455621301776,"total":132,"current":20}
+{"_e":"metro:bundling:progress","_t":1789924496500,"id":"1","progress":0.09467455621301776,"total":154,"current":32}
+{"_e":"metro:bundling:progress","_t":1789924496601,"id":"1","progress":0.09467455621301776,"total":178,"current":44}
+{"_e":"metro:bundling:progress","_t":1789924496702,"id":"1","progress":0.1563007030827474,"total":215,"current":85}
+{"_e":"metro:bundling:progress","_t":1789924496801,"id":"1","progress":0.21074961056724206,"total":281,"current":129}
+{"_e":"metro:bundling:progress","_t":1789924496902,"id":"1","progress":0.26204648526077096,"total":336,"current":172}
+{"_e":"metro:bundling:progress","_t":1789924497002,"id":"1","progress":0.29824323687435195,"total":412,"current":225}
+{"_e":"metro:bundling:progress","_t":1789924497102,"id":"1","progress":0.3417366304582074,"total":467,"current":273}
+{"_e":"metro:bundling:progress","_t":1789924497203,"id":"1","progress":0.3584889838288256,"total":476,"current":285}
+{"_e":"metro:bundling:progress","_t":1789924497302,"id":"1","progress":0.3584889838288256,"total":542,"current":319}
+{"_e":"metro:bundling:progress","_t":1789924497402,"id":"1","progress":0.4031242126480221,"total":567,"current":360}
+{"_e":"metro:bundling:progress","_t":1789924497502,"id":"1","progress":0.5151335610452629,"total":581,"current":417}
+{"_e":"metro:bundling:progress","_t":1789924497602,"id":"1","progress":0.5359517085432012,"total":642,"current":470}
+{"_e":"metro:bundling:progress","_t":1789924497702,"id":"1","progress":0.5359517085432012,"total":735,"current":522}
+{"_e":"metro:bundling:progress","_t":1789924497802,"id":"1","progress":0.5522262435821901,"total":763,"current":567}
+{"_e":"metro:bundling:progress","_t":1789924497902,"id":"1","progress":0.5680830923438879,"total":808,"current":609}
+{"_e":"metro:bundling:progress","_t":1789924498002,"id":"1","progress":0.5914342403628119,"total":840,"current":646}
+{"_e":"metro:bundling:progress","_t":1789924498102,"id":"1","progress":0.6231730717025905,"total":869,"current":686}
+{"_e":"metro:bundling:progress","_t":1789924498203,"id":"1","progress":0.6231730717025905,"total":911,"current":717}
+{"_e":"metro:bundling:progress","_t":1789924498304,"id":"1","progress":0.6231730717025905,"total":969,"current":754}
+{"_e":"metro:bundling:progress","_t":1789924498404,"id":"1","progress":0.6303397612488522,"total":990,"current":786}
+{"_e":"metro:bundling:progress","_t":1789924498504,"id":"1","progress":0.6365671157836914,"total":1024,"current":817}
+{"_e":"metro:bundling:progress","_t":1789924498604,"id":"1","progress":0.6617196745562131,"total":1040,"current":846}
+{"_e":"metro:bundling:progress","_t":1789924498704,"id":"1","progress":0.7018858166773497,"total":1048,"current":878}
+{"_e":"metro:bundling:progress","_t":1789924498804,"id":"1","progress":0.7446809080870923,"total":1058,"current":913}
+{"_e":"metro:bundling:progress","_t":1789924498905,"id":"1","progress":0.7929002019946977,"total":1068,"current":951}
+{"_e":"metro:bundling:progress","_t":1789924499006,"id":"1","progress":0.8345251102559395,"total":1087,"current":993}
+{"_e":"metro:bundling:progress","_t":1789924499142,"id":"1","progress":0.8615305770526254,"total":1114,"current":1034}
+{"_e":"metro:bundling:progress","_t":1789924499243,"id":"1","progress":0.9091011399645885,"total":1139,"current":1086}
+{"_e":"metro:bundling:progress","_t":1789924499343,"id":"1","progress":0.9339029729538875,"total":1190,"current":1150}
+{"_e":"metro:bundling:progress","_t":1789924499443,"id":"1","progress":0.9339029729538875,"total":1320,"current":1205}
+{"_e":"metro:bundling:progress","_t":1789924499544,"id":"1","progress":0.9339029729538875,"total":1340,"current":1255}
+{"_e":"metro:bundling:progress","_t":1789924499645,"id":"1","progress":0.9339029729538875,"total":1340,"current":1277}
+{"_e":"metro:bundling:progress","_t":1789924499762,"id":"1","progress":0.9528090888839384,"total":1340,"current":1308}
+{"_e":"metro:bundling:progress","_t":1789924499863,"id":"1","progress":0.9927457620673338,"total":1376,"current":1371}
+{"_e":"metro:bundling:progress","_t":1789924499964,"id":"1","progress":0.999,"total":1379,"current":1379}
+{"_e":"metro:bundling:done","_t":1789924500061,"id":"1","total":1379,"ms":4406.677833}
+{"_e":"metro:server_log","_t":1789924582188,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:bundling:started","_t":1789925319786,"id":"2","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1789925319786,"id":"2","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789925319848,"id":"2","total":1,"ms":61.578292}
+{"_e":"metro:server_log","_t":1789925404770,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:server_log","_t":1789925539837,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"root:init","_t":1790017064369,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1790017064370,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1790017064371,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1790017064569,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1790017065057,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1790017065147,"plugins":[]}
+{"_e":"metro:instantiate","_t":1790017065598,"atlas":false,"workers":6,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1790017077550,"id":"1","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1790017077550,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790017077553,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790017077653,"id":"1","progress":0.16823901177822462,"total":295,"current":121}
+{"_e":"metro:bundling:progress","_t":1790017077753,"id":"1","progress":0.3315502252532193,"total":653,"current":376}
+{"_e":"metro:bundling:progress","_t":1790017077853,"id":"1","progress":0.5683354555778979,"total":902,"current":680}
+{"_e":"metro:bundling:progress","_t":1790017077953,"id":"1","progress":0.8999294706989549,"total":1071,"current":1016}
+{"_e":"metro:bundling:progress","_t":1790017078053,"id":"1","progress":0.9527254412673702,"total":1254,"current":1224}
+{"_e":"metro:bundling:progress","_t":1790017078153,"id":"1","progress":0.9827589437979047,"total":1386,"current":1374}
+{"_e":"metro:bundling:progress","_t":1790017078254,"id":"1","progress":0.9828083432534549,"total":1390,"current":1378}
+{"_e":"metro:bundling:progress","_t":1790017078355,"id":"1","progress":0.989953418560116,"total":1390,"current":1383}
+{"_e":"metro:bundling:done","_t":1790017078481,"id":"1","total":1390,"ms":931.423166}
+{"_e":"metro:server_log","_t":1790017255350,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"root:init","_t":1790017299727,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1790017299727,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1790017299728,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1790017299909,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1790017300377,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1790017300454,"plugins":[]}
+{"_e":"metro:instantiate","_t":1790017301137,"atlas":false,"workers":6,"host":"::","port":8081}
+{"_e":"metro:server_log","_t":1790017556897,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:server_log","_t":1790017900506,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"root:init","_t":1790018025099,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1790018025099,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1790018025101,"mode":"development","files":["../../../.env.local"],"env":{"EXPO_PUBLIC_API_URL":"http://192.168.18.219:3001"}}
+{"_e":"devserver:start","_t":1790018025290,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1790018025775,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1790018025860,"plugins":[]}
+{"_e":"metro:instantiate","_t":1790018026280,"atlas":false,"workers":6,"host":"::","port":8081}
+{"_e":"root:init","_t":1790018073800,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1790018073800,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1790018073801,"mode":"development","files":["../../../.env.local"],"env":{"EXPO_PUBLIC_API_URL":"http://192.168.18.219:3001"}}
+{"_e":"root:init","_t":1790018087706,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1790018087706,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1790018087708,"mode":"development","files":["../../../.env.local"],"env":{"EXPO_PUBLIC_API_URL":"http://192.168.18.219:3001"}}
+{"_e":"devserver:start","_t":1790018098731,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1790018099178,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1790018099256,"plugins":[]}
+{"_e":"metro:instantiate","_t":1790018099538,"atlas":false,"workers":6,"host":"::","port":8082}
+{"_e":"metro:bundling:started","_t":1790018108017,"id":"1","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1790018108017,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790018108021,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790018108353,"id":"1","progress":0.010000000000000002,"total":1,"current":1}
+{"_e":"metro:bundling:progress","_t":1790018108454,"id":"1","progress":0.12755102040816327,"total":14,"current":5}
+{"_e":"metro:bundling:progress","_t":1790018108534,"id":"1","progress":0.18367346938775508,"total":14,"current":6}
+{"_e":"metro:bundling:progress","_t":1790018108636,"id":"1","progress":0.18367346938775508,"total":113,"current":10}
+{"_e":"metro:bundling:progress","_t":1790018108740,"id":"1","progress":0.18367346938775508,"total":130,"current":17}
+{"_e":"metro:bundling:progress","_t":1790018108840,"id":"1","progress":0.18367346938775508,"total":145,"current":29}
+{"_e":"metro:bundling:progress","_t":1790018108941,"id":"1","progress":0.18367346938775508,"total":161,"current":39}
+{"_e":"metro:bundling:progress","_t":1790018109043,"id":"1","progress":0.18367346938775508,"total":199,"current":68}
+{"_e":"metro:bundling:progress","_t":1790018109143,"id":"1","progress":0.20520125648330775,"total":234,"current":106}
+{"_e":"metro:bundling:progress","_t":1790018109244,"id":"1","progress":0.21326437114197533,"total":288,"current":133}
+{"_e":"metro:bundling:progress","_t":1790018109344,"id":"1","progress":0.266196177273682,"total":345,"current":178}
+{"_e":"metro:bundling:progress","_t":1790018109444,"id":"1","progress":0.2853123140987508,"total":410,"current":219}
+{"_e":"metro:bundling:progress","_t":1790018109544,"id":"1","progress":0.3038195186087022,"total":459,"current":253}
+{"_e":"metro:bundling:progress","_t":1790018109646,"id":"1","progress":0.3540125783970607,"total":479,"current":285}
+{"_e":"metro:bundling:progress","_t":1790018109747,"id":"1","progress":0.36357096388901317,"total":539,"current":325}
+{"_e":"metro:bundling:progress","_t":1790018109847,"id":"1","progress":0.38739892984542207,"total":580,"current":361}
+{"_e":"metro:bundling:progress","_t":1790018109948,"id":"1","progress":0.4675286726568778,"total":585,"current":400}
+{"_e":"metro:bundling:progress","_t":1790018110049,"id":"1","progress":0.5112249999999999,"total":600,"current":429}
+{"_e":"metro:bundling:progress","_t":1790018110151,"id":"1","progress":0.5172762852943034,"total":666,"current":479}
+{"_e":"metro:bundling:progress","_t":1790018110252,"id":"1","progress":0.5172762852943034,"total":753,"current":532}
+{"_e":"metro:bundling:progress","_t":1790018110352,"id":"1","progress":0.5548729695960017,"total":784,"current":584}
+{"_e":"metro:bundling:progress","_t":1790018110452,"id":"1","progress":0.573265306122449,"total":840,"current":636}
+{"_e":"metro:bundling:progress","_t":1790018110552,"id":"1","progress":0.5993756503642039,"total":868,"current":672}
+{"_e":"metro:bundling:progress","_t":1790018110652,"id":"1","progress":0.5993756503642039,"total":911,"current":704}
+{"_e":"metro:bundling:progress","_t":1790018110752,"id":"1","progress":0.6382714390065742,"total":925,"current":739}
+{"_e":"metro:bundling:progress","_t":1790018110852,"id":"1","progress":0.6382714390065742,"total":984,"current":774}
+{"_e":"metro:bundling:progress","_t":1790018110953,"id":"1","progress":0.6382714390065742,"total":1020,"current":814}
+{"_e":"metro:bundling:progress","_t":1790018111053,"id":"1","progress":0.6569529085872575,"total":1045,"current":847}
+{"_e":"metro:bundling:progress","_t":1790018111154,"id":"1","progress":0.6780177283431463,"total":1059,"current":872}
+{"_e":"metro:bundling:progress","_t":1790018111255,"id":"1","progress":0.7168338246447469,"total":1063,"current":900}
+{"_e":"metro:bundling:progress","_t":1790018111355,"id":"1","progress":0.7776778799351,"total":1075,"current":948}
+{"_e":"metro:bundling:progress","_t":1790018111455,"id":"1","progress":0.820819299624116,"total":1085,"current":983}
+{"_e":"metro:bundling:progress","_t":1790018111555,"id":"1","progress":0.8501633136778818,"total":1116,"current":1029}
+{"_e":"metro:bundling:progress","_t":1790018111662,"id":"1","progress":0.8652943912397457,"total":1132,"current":1053}
+{"_e":"metro:bundling:progress","_t":1790018111762,"id":"1","progress":0.8930409899192914,"total":1182,"current":1117}
+{"_e":"metro:bundling:progress","_t":1790018111862,"id":"1","progress":0.9339162859446385,"total":1220,"current":1179}
+{"_e":"metro:bundling:progress","_t":1790018111963,"id":"1","progress":0.9339162859446385,"total":1303,"current":1221}
+{"_e":"metro:bundling:progress","_t":1790018112063,"id":"1","progress":0.9339162859446385,"total":1341,"current":1253}
+{"_e":"metro:bundling:progress","_t":1790018112163,"id":"1","progress":0.9339162859446385,"total":1341,"current":1290}
+{"_e":"metro:bundling:progress","_t":1790018112263,"id":"1","progress":0.9677912882449857,"total":1355,"current":1333}
+{"_e":"metro:bundling:progress","_t":1790018112364,"id":"1","progress":0.9942611309287884,"total":1392,"current":1388}
+{"_e":"metro:bundling:progress","_t":1790018112465,"id":"1","progress":0.999,"total":1393,"current":1393}
+{"_e":"metro:bundling:done","_t":1790018112561,"id":"1","total":1393,"ms":4543.62875}
+{"_e":"root:init","_t":1790362405476,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1790362405476,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1790362405478,"mode":"development","files":["../../../.env.local"],"env":{"EXPO_PUBLIC_API_URL":"http://192.168.18.219:3001"}}
+{"_e":"devserver:start","_t":1790362410314,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1790362410764,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1790362410855,"plugins":[]}
+{"_e":"metro:instantiate","_t":1790362411216,"atlas":false,"workers":6,"host":"::","port":8082}
+{"_e":"metro:bundling:started","_t":1790362444636,"id":"1","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1790362444636,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790362444639,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790362444974,"id":"1","progress":0.010000000000000002,"total":1,"current":1}
+{"_e":"metro:bundling:progress","_t":1790362445076,"id":"1","progress":0.12755102040816327,"total":14,"current":5}
+{"_e":"metro:bundling:progress","_t":1790362445211,"id":"1","progress":0.12755102040816327,"total":26,"current":8}
+{"_e":"metro:bundling:progress","_t":1790362445326,"id":"1","progress":0.22299382716049382,"total":36,"current":17}
+{"_e":"metro:bundling:progress","_t":1790362445431,"id":"1","progress":0.22299382716049382,"total":78,"current":34}
+{"_e":"metro:bundling:progress","_t":1790362445536,"id":"1","progress":0.22299382716049382,"total":188,"current":49}
+{"_e":"metro:bundling:progress","_t":1790362445638,"id":"1","progress":0.22299382716049382,"total":248,"current":69}
+{"_e":"metro:bundling:progress","_t":1790362445744,"id":"1","progress":0.22299382716049382,"total":314,"current":94}
+{"_e":"metro:bundling:progress","_t":1790362445844,"id":"1","progress":0.22299382716049382,"total":342,"current":110}
+{"_e":"metro:bundling:progress","_t":1790362445944,"id":"1","progress":0.22299382716049382,"total":383,"current":148}
+{"_e":"metro:bundling:progress","_t":1790362446044,"id":"1","progress":0.22299382716049382,"total":451,"current":196}
+{"_e":"metro:bundling:progress","_t":1790362446144,"id":"1","progress":0.22299382716049382,"total":484,"current":224}
+{"_e":"metro:bundling:progress","_t":1790362446245,"id":"1","progress":0.22299382716049382,"total":553,"current":260}
+{"_e":"metro:bundling:progress","_t":1790362446345,"id":"1","progress":0.2886785406492387,"total":590,"current":317}
+{"_e":"metro:bundling:progress","_t":1790362446445,"id":"1","progress":0.3309936924720578,"total":624,"current":359}
+{"_e":"metro:bundling:progress","_t":1790362446546,"id":"1","progress":0.331948160258951,"total":696,"current":401}
+{"_e":"metro:bundling:progress","_t":1790362446646,"id":"1","progress":0.3446826222684703,"total":775,"current":455}
+{"_e":"metro:bundling:progress","_t":1790362446746,"id":"1","progress":0.37881642952551503,"total":801,"current":493}
+{"_e":"metro:bundling:progress","_t":1790362446846,"id":"1","progress":0.4077148969080181,"total":841,"current":537}
+{"_e":"metro:bundling:progress","_t":1790362446946,"id":"1","progress":0.4077148969080181,"total":928,"current":592}
+{"_e":"metro:bundling:progress","_t":1790362447046,"id":"1","progress":0.44538656276931915,"total":944,"current":630}
+{"_e":"metro:bundling:progress","_t":1790362447147,"id":"1","progress":0.49304504704899754,"total":967,"current":679}
+{"_e":"metro:bundling:progress","_t":1790362447247,"id":"1","progress":0.5488641433670434,"total":984,"current":729}
+{"_e":"metro:bundling:progress","_t":1790362447347,"id":"1","progress":0.5488641433670434,"total":1061,"current":773}
+{"_e":"metro:bundling:progress","_t":1790362447448,"id":"1","progress":0.5550114299554414,"total":1098,"current":818}
+{"_e":"metro:bundling:progress","_t":1790362447548,"id":"1","progress":0.617651162961494,"total":1107,"current":870}
+{"_e":"metro:bundling:progress","_t":1790362447650,"id":"1","progress":0.6562868810963296,"total":1127,"current":913}
+{"_e":"metro:bundling:progress","_t":1790362447750,"id":"1","progress":0.6973561580000549,"total":1146,"current":957}
+{"_e":"metro:bundling:progress","_t":1790362447853,"id":"1","progress":0.7288397663916942,"total":1169,"current":998}
+{"_e":"metro:bundling:progress","_t":1790362447953,"id":"1","progress":0.7820915501341358,"total":1202,"current":1063}
+{"_e":"metro:bundling:progress","_t":1790362448055,"id":"1","progress":0.8092594286101373,"total":1215,"current":1093}
+{"_e":"metro:bundling:progress","_t":1790362448156,"id":"1","progress":0.8308796013240006,"total":1232,"current":1123}
+{"_e":"metro:bundling:progress","_t":1790362448256,"id":"1","progress":0.8419897599999999,"total":1250,"current":1147}
+{"_e":"metro:bundling:progress","_t":1790362448356,"id":"1","progress":0.864624573762415,"total":1283,"current":1193}
+{"_e":"metro:bundling:progress","_t":1790362448479,"id":"1","progress":0.8733855516866712,"total":1314,"current":1228}
+{"_e":"metro:bundling:progress","_t":1790362448579,"id":"1","progress":0.8733855516866712,"total":1394,"current":1266}
+{"_e":"metro:bundling:progress","_t":1790362448679,"id":"1","progress":0.8733855516866712,"total":1419,"current":1326}
+{"_e":"metro:bundling:progress","_t":1790362448779,"id":"1","progress":0.8985599044393413,"total":1421,"current":1347}
+{"_e":"metro:bundling:progress","_t":1790362448879,"id":"1","progress":0.9458623314403778,"total":1421,"current":1382}
+{"_e":"metro:bundling:progress","_t":1790362448979,"id":"1","progress":0.9458623314403778,"total":1479,"current":1437}
+{"_e":"metro:bundling:progress","_t":1790362449079,"id":"1","progress":0.9880677236588954,"total":1504,"current":1495}
+{"_e":"metro:bundling:progress","_t":1790362449180,"id":"1","progress":0.999,"total":1519,"current":1519}
+{"_e":"metro:bundling:done","_t":1790362449295,"id":"1","total":1519,"ms":4659.296167}
+{"_e":"metro:client_log","_t":1790362451476,"level":"warn","data":["expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Learn more at https://docs.expo.dev/develop/development-builds/introduction/."]}
+{"_e":"metro:client_log","_t":1790362451477,"level":"warn","data":["`expo-notifications` functionality is not fully supported in Expo Go:\nWe recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client."]}
+{"_e":"metro:bundling:started","_t":1790362488440,"id":"2","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1790362488440,"id":"2","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1790362488490,"id":"2","total":1,"ms":50.532041}
+{"_e":"metro:client_log","_t":1790362491505,"level":"warn","data":["expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Learn more at https://docs.expo.dev/develop/development-builds/introduction/."]}
+{"_e":"metro:client_log","_t":1790362491506,"level":"warn","data":["`expo-notifications` functionality is not fully supported in Expo Go:\nWe recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client."]}
+{"_e":"metro:server_log","_t":1790362752705,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:server_log","_t":1790362993272,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:bundling:started","_t":1790363388035,"id":"3","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1790363388036,"id":"3","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790363388045,"id":"3","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1790363388149,"id":"3","total":1,"ms":113.486416}
+{"_e":"metro:client_log","_t":1790363392731,"level":"warn","data":["expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Learn more at https://docs.expo.dev/develop/development-builds/introduction/."]}
+{"_e":"metro:client_log","_t":1790363392738,"level":"warn","data":["`expo-notifications` functionality is not fully supported in Expo Go:\nWe recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client."]}
+{"_e":"metro:server_log","_t":1790363574024,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:server_log","_t":1790363864910,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:bundling:started","_t":1790364197985,"id":"4","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1790364197985,"id":"4","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790364197991,"id":"4","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1790364198050,"id":"4","total":1,"ms":64.531292}
+{"_e":"metro:client_log","_t":1790364201303,"level":"warn","data":["expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Learn more at https://docs.expo.dev/develop/development-builds/introduction/."]}
+{"_e":"metro:client_log","_t":1790364201303,"level":"warn","data":["`expo-notifications` functionality is not fully supported in Expo Go:\nWe recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client."]}
+{"_e":"metro:bundling:failed","_t":1790364427416,"id":null,"message":"Unable to resolve \"expo-blur\" from \"apps/mobile/app/(customer)/dashboard.tsx\"\n> 1 | import { BlurTargetView } from \"expo-blur\";\n    |                                 ^\n  2 | import Ionicons from \"@expo/vector-icons/Ionicons\";\n  3 | import { GlassNavigation } from \"../../components/customer/GlassNavigation\";\n  4 | import { colors } from \"../../lib/theme\";","importStack":"\u001b[1mImport stack:\u001b[22m\n\n\u001b[90m \u001b[39mapps/mobile/app/(customer)/dashboard.tsx\n\u001b[90m |\u001b[39m \u001b[36mimport\u001b[39m \u001b[32m\"expo-blur\"\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/app\u001b[2m (require.context)\u001b[22m\n","filename":null,"targetModuleName":"expo-blur","originModulePath":"apps/mobile/app/(customer)/dashboard.tsx"}
+{"_e":"metro:server_log","_t":1790364435009,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:bundling:failed","_t":1790364495319,"id":null,"message":"Unable to resolve \"@expo/vector-icons/Ionicons\" from \"apps/mobile/app/(customer)/dashboard.tsx\"\n  1 | import { BlurTargetView } from \"expo-blur\";\n> 2 | import Ionicons from \"@expo/vector-icons/Ionicons\";\n    |                       ^\n  3 | import { GlassNavigation } from \"../../components/customer/GlassNavigation\";\n  4 | import { colors } from \"../../lib/theme\";\n  5 | import { useRef, useState } from \"react\";","importStack":"\u001b[1mImport stack:\u001b[22m\n\n\u001b[90m \u001b[39mapps/mobile/app/(customer)/dashboard.tsx\n\u001b[90m |\u001b[39m \u001b[36mimport\u001b[39m \u001b[32m\"@expo/vector-icons/Ionicons\"\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/app\u001b[2m (require.context)\u001b[22m\n","filename":null,"targetModuleName":"@expo/vector-icons/Ionicons","originModulePath":"apps/mobile/app/(customer)/dashboard.tsx"}
+{"_e":"metro:bundling:failed","_t":1790364495737,"id":null,"message":"Unable to resolve \"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf\" from \"node_modules/@expo/vector-icons/build/Ionicons.js\"\n  1 | 'use client';\n  2 | import createIconSet from './createIconSet';\n> 3 | import font from './vendor/react-native-vector-icons/Fonts/Ionicons.ttf';\n    |                   ^\n  4 | import glyphMap from './vendor/react-native-vector-icons/glyphmaps/Ionicons.json';\n  5 | export default createIconSet(glyphMap, 'ionicons', font);\n  6 | //# sourceMappingURL=Ionicons.js.map","importStack":"\u001b[1mImport stack:\u001b[22m\n\u001b[90m\u001b[39m\n\u001b[90m\u001b[90m \u001b[39m\u001b[90mnode_modules/\u001b[1m@expo\u001b[22m/vector-icons/build/Ionicons.js\u001b[39m\n\u001b[90m\u001b[90m |\u001b[39m\u001b[90m \u001b[36mimport\u001b[39m\u001b[90m \u001b[32m\"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf\"\u001b[39m\u001b[90m\u001b[39m\n\u001b[90m\u001b[39m\n\u001b[90m\u001b[90m \u001b[39m\u001b[90mnode_modules/\u001b[1m@expo\u001b[22m/vector-icons/Ionicons.js\u001b[39m\n\u001b[90m\u001b[90m |\u001b[39m\u001b[90m \u001b[36mimport\u001b[39m\u001b[90m \u001b[32m\"./build/Ionicons\"\u001b[39m\u001b[90m\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/app/(customer)/dashboard.tsx\n\u001b[90m |\u001b[39m \u001b[36mimport\u001b[39m \u001b[32m\"@expo/vector-icons/Ionicons\"\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/app\u001b[2m (require.context)\u001b[22m\n","filename":null,"targetModuleName":"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf","originModulePath":"node_modules/@expo/vector-icons/build/Ionicons.js"}
+{"_e":"metro:bundling:failed","_t":1790364496005,"id":null,"message":"Unable to resolve \"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf\" from \"node_modules/@expo/vector-icons/build/Ionicons.js\"\n  1 | 'use client';\n  2 | import createIconSet from './createIconSet';\n> 3 | import font from './vendor/react-native-vector-icons/Fonts/Ionicons.ttf';\n    |                   ^\n  4 | import glyphMap from './vendor/react-native-vector-icons/glyphmaps/Ionicons.json';\n  5 | export default createIconSet(glyphMap, 'ionicons', font);\n  6 | //# sourceMappingURL=Ionicons.js.map","importStack":"\u001b[1mImport stack:\u001b[22m\n\u001b[90m\u001b[39m\n\u001b[90m\u001b[90m \u001b[39m\u001b[90mnode_modules/\u001b[1m@expo\u001b[22m/vector-icons/build/Ionicons.js\u001b[39m\n\u001b[90m\u001b[90m |\u001b[39m\u001b[90m \u001b[36mimport\u001b[39m\u001b[90m \u001b[32m\"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf\"\u001b[39m\u001b[90m\u001b[39m\n\u001b[90m\u001b[39m\n\u001b[90m\u001b[90m \u001b[39m\u001b[90mnode_modules/\u001b[1m@expo\u001b[22m/vector-icons/Ionicons.js\u001b[39m\n\u001b[90m\u001b[90m |\u001b[39m\u001b[90m \u001b[36mimport\u001b[39m\u001b[90m \u001b[32m\"./build/Ionicons\"\u001b[39m\u001b[90m\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/components/customer/GlassNavigation.tsx\n\u001b[90m |\u001b[39m \u001b[36mimport\u001b[39m \u001b[32m\"@expo/vector-icons/Ionicons\"\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/app/(customer)/dashboard.tsx\n\u001b[90m |\u001b[39m \u001b[36mimport\u001b[39m \u001b[32m\"../../components/customer/GlassNavigation\"\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/app\u001b[2m (require.context)\u001b[22m\n","filename":null,"targetModuleName":"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf","originModulePath":"node_modules/@expo/vector-icons/build/Ionicons.js"}
+{"_e":"metro:bundling:failed","_t":1790364496271,"id":null,"message":"Unable to resolve \"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf\" from \"node_modules/@expo/vector-icons/build/Ionicons.js\"\n  1 | 'use client';\n  2 | import createIconSet from './createIconSet';\n> 3 | import font from './vendor/react-native-vector-icons/Fonts/Ionicons.ttf';\n    |                   ^\n  4 | import glyphMap from './vendor/react-native-vector-icons/glyphmaps/Ionicons.json';\n  5 | export default createIconSet(glyphMap, 'ionicons', font);\n  6 | //# sourceMappingURL=Ionicons.js.map","importStack":"\u001b[1mImport stack:\u001b[22m\n\u001b[90m\u001b[39m\n\u001b[90m\u001b[90m \u001b[39m\u001b[90mnode_modules/\u001b[1m@expo\u001b[22m/vector-icons/build/Ionicons.js\u001b[39m\n\u001b[90m\u001b[90m |\u001b[39m\u001b[90m \u001b[36mimport\u001b[39m\u001b[90m \u001b[32m\"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf\"\u001b[39m\u001b[90m\u001b[39m\n\u001b[90m\u001b[39m\n\u001b[90m\u001b[90m \u001b[39m\u001b[90mnode_modules/\u001b[1m@expo\u001b[22m/vector-icons/Ionicons.js\u001b[39m\n\u001b[90m\u001b[90m |\u001b[39m\u001b[90m \u001b[36mimport\u001b[39m\u001b[90m \u001b[32m\"./build/Ionicons\"\u001b[39m\u001b[90m\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/components/customer/GlassNavigation.tsx\n\u001b[90m |\u001b[39m \u001b[36mimport\u001b[39m \u001b[32m\"@expo/vector-icons/Ionicons\"\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/app/(customer)/dashboard.tsx\n\u001b[90m |\u001b[39m \u001b[36mimport\u001b[39m \u001b[32m\"../../components/customer/GlassNavigation\"\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/app\u001b[2m (require.context)\u001b[22m\n","filename":null,"targetModuleName":"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf","originModulePath":"node_modules/@expo/vector-icons/build/Ionicons.js"}
+{"_e":"metro:bundling:failed","_t":1790364496524,"id":null,"message":"Unable to resolve \"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf\" from \"node_modules/@expo/vector-icons/build/Ionicons.js\"\n  1 | 'use client';\n  2 | import createIconSet from './createIconSet';\n> 3 | import font from './vendor/react-native-vector-icons/Fonts/Ionicons.ttf';\n    |                   ^\n  4 | import glyphMap from './vendor/react-native-vector-icons/glyphmaps/Ionicons.json';\n  5 | export default createIconSet(glyphMap, 'ionicons', font);\n  6 | //# sourceMappingURL=Ionicons.js.map","importStack":"\u001b[1mImport stack:\u001b[22m\n\u001b[90m\u001b[39m\n\u001b[90m\u001b[90m \u001b[39m\u001b[90mnode_modules/\u001b[1m@expo\u001b[22m/vector-icons/build/Ionicons.js\u001b[39m\n\u001b[90m\u001b[90m |\u001b[39m\u001b[90m \u001b[36mimport\u001b[39m\u001b[90m \u001b[32m\"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf\"\u001b[39m\u001b[90m\u001b[39m\n\u001b[90m\u001b[39m\n\u001b[90m\u001b[90m \u001b[39m\u001b[90mnode_modules/\u001b[1m@expo\u001b[22m/vector-icons/Ionicons.js\u001b[39m\n\u001b[90m\u001b[90m |\u001b[39m\u001b[90m \u001b[36mimport\u001b[39m\u001b[90m \u001b[32m\"./build/Ionicons\"\u001b[39m\u001b[90m\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/components/customer/GlassNavigation.tsx\n\u001b[90m |\u001b[39m \u001b[36mimport\u001b[39m \u001b[32m\"@expo/vector-icons/Ionicons\"\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/app/(customer)/dashboard.tsx\n\u001b[90m |\u001b[39m \u001b[36mimport\u001b[39m \u001b[32m\"../../components/customer/GlassNavigation\"\u001b[39m\n\n\u001b[90m \u001b[39mapps/mobile/app\u001b[2m (require.context)\u001b[22m\n","filename":null,"targetModuleName":"./vendor/react-native-vector-icons/Fonts/Ionicons.ttf","originModulePath":"node_modules/@expo/vector-icons/build/Ionicons.js"}
+{"_e":"metro:bundling:started","_t":1790364862726,"id":"5","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1790364862726,"id":"5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1790364862778,"id":"5","total":1,"ms":51.676542}
+{"_e":"metro:client_log","_t":1790364865038,"level":"warn","data":["expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Learn more at https://docs.expo.dev/develop/development-builds/introduction/."]}
+{"_e":"metro:client_log","_t":1790364865052,"level":"warn","data":["`expo-notifications` functionality is not fully supported in Expo Go:\nWe recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client."]}
+{"_e":"metro:server_log","_t":1790365097896,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:bundling:started","_t":1790365329464,"id":"7","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1790365329464,"id":"7","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1790365329518,"id":"7","total":1,"ms":54.388}
+{"_e":"metro:client_log","_t":1790365331975,"level":"warn","data":["expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Learn more at https://docs.expo.dev/develop/development-builds/introduction/."]}
+{"_e":"metro:client_log","_t":1790365331986,"level":"warn","data":["`expo-notifications` functionality is not fully supported in Expo Go:\nWe recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client."]}
+{"_e":"metro:server_log","_t":1790365541564,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:server_log","_t":1790365681697,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:bundling:started","_t":1790366237260,"id":"8","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:progress","_t":1790366237260,"id":"8","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790366237266,"id":"8","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1790366237398,"id":"8","total":1,"ms":138.100792}
+{"_e":"metro:client_log","_t":1790366241015,"level":"warn","data":["expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Learn more at https://docs.expo.dev/develop/development-builds/introduction/."]}
+{"_e":"metro:client_log","_t":1790366241030,"level":"warn","data":["`expo-notifications` functionality is not fully supported in Expo Go:\nWe recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client."]}
+{"_e":"metro:server_log","_t":1790366585417,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:server_log","_t":1790366950028,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}
+{"_e":"metro:server_log","_t":1790367044894,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone","60"]}

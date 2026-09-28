@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
 import { initialisePaymentCheckout } from "@/lib/services/payment-checkout";
-import { getPaystackConfig } from "@/lib/paystack";
+import { getYocoConfig } from "@/lib/yoco";
 import { createPaymentSchema } from "@ezygo/contracts";
 import { parseJsonRequest } from "@/lib/api/validation";
 import {
@@ -21,9 +21,13 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return parsed.response;
     const { delivery_id, payment_method } = parsed.data;
     try {
-      getPaystackConfig();
-    } catch {
-      return errorResponse("Paystack test checkout is not configured yet.", undefined, 503);
+      getYocoConfig();
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : "Yoco checkout is not configured yet.",
+        undefined,
+        503
+      );
     }
 
     // 1. Fetch delivery — verify ownership and status

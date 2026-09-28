@@ -49,7 +49,7 @@ export interface MobileSessionData {
 }
 
 export interface PaymentCheckout {
-  provider: "paystack";
+  provider: "yoco";
   redirect_url: string;
   checkout_id: string;
   demo_mode: boolean;

@@ -70,7 +70,7 @@ const pillars = [
 
 const senderFeatures = [
   "Easy quoting in seconds",
-  "Instant PayFast or card payments",
+  "Secure card payments with Yoco",
   "Live real-time tracking",
   "Clear statuses from pending to delivered",
 ];

@@ -1,10 +1,11 @@
-// PayFast and Yoco are intentionally disabled for now. Their implementations
-// remain in lib/payfast and lib/yoco so they can be restored later.
-import { createPaystackCheckout } from "@/lib/paystack";
+// Paystack and PayFast checkout are disabled while testing Yoco.
+// import { createPaystackCheckout } from "@/lib/paystack";
+// Their clients remain in lib/paystack and lib/payfast for restoration.
+import { createYocoCheckout } from "@/lib/yoco";
 import { createPaymentRecord } from "./payments";
 import type { PaymentCheckout } from "@ezygo/contracts";
 
-export type PaymentProvider = "paystack";
+export type PaymentProvider = "yoco";
 
 interface CheckoutDelivery {
   id: number;
@@ -30,20 +31,19 @@ export async function initialisePaymentCheckout(params: {
     provider,
   });
 
-  const checkout = await createPaystackCheckout({
+  const checkout = await createYocoCheckout({
     paymentId,
     deliveryId: delivery.id,
     trackingNumber: delivery.trackingNumber,
     amount: delivery.amount,
     currency: delivery.currency,
-    customerEmail: delivery.customerEmail,
   });
 
   return {
     provider,
-    redirect_url: checkout.authorizationUrl,
-    checkout_id: checkout.reference,
-    demo_mode: checkout.testMode,
+    redirect_url: checkout.redirectUrl,
+    checkout_id: checkout.id,
+    demo_mode: checkout.processingMode === "test",
     payment_id: paymentId,
     delivery_id: delivery.id,
   };
