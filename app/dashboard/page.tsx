@@ -1,301 +1,183 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import {
-  ArrowRight,
-  Check,
-  CheckCircle2,
-  Clock3,
-  History,
-  MapPin,
-  Package,
-  PackageOpen,
-  Plus,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
-import {
-  STATUS_LABELS,
-  type DeliveryStatus,
-} from "@ezygo/contracts";
+import { ArrowRight, Check, CheckCircle2, Clock3, History, Package, PackageOpen, RefreshCw, Search, Send, ShieldCheck, Sparkles, X } from "lucide-react";
+import { STATUS_LABELS, type DeliveryStatus } from "@ezygo/contracts";
 import { STATUS_COLORS } from "@/lib/constants/delivery-status";
+import "./dashboard.css";
 
 interface Delivery {
   id: number;
   tracking_number: string;
   status: DeliveryStatus;
   recipient_name: string;
-  parcel_description: string;
-  pickup_street: string;
   pickup_city: string;
-  dropoff_street: string;
   dropoff_city: string;
-  quote_amount: string;
+  quote_amount: string | null;
   quote_currency: string;
   created_at: string;
 }
 
 const PAST_STATUSES: DeliveryStatus[] = ["delivered", "failed", "cancelled"];
+const STEPS = ["Booked", "Picked up", "In transit", "Delivered"];
 
-function DeliveryRow({ delivery }: { delivery: Delivery }) {
-  const date = new Date(delivery.created_at).toLocaleDateString("en-ZA", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
+function ShipmentCard({ delivery }: { delivery: Delivery }) {
+  const current = delivery.status === "delivered" ? 3 : delivery.status === "in_transit" ? 2 : delivery.status === "picked_up" ? 1 : 0;
+  const stopped = delivery.status === "failed" || delivery.status === "cancelled";
   return (
-    <Link href={`/dashboard/tracking/${delivery.id}`} className="delivery-list-card group">
-      <span className="delivery-list-icon"><Package size={20} /></span>
-      <span className="delivery-list-copy">
-        <span className="delivery-list-topline">
-          <strong>{delivery.tracking_number}</strong>
-          <span className={`badge ${STATUS_COLORS[delivery.status]}`}>
-            {STATUS_LABELS[delivery.status]}
-          </span>
-        </span>
-        <span className="delivery-list-route">
-          <MapPin size={13} /> {delivery.pickup_city}
-          <ArrowRight size={12} /> {delivery.dropoff_city}
-        </span>
-        <small>{date} · {delivery.recipient_name}</small>
-      </span>
-      <span className="delivery-list-price">
-        <strong>{delivery.quote_currency} {parseFloat(delivery.quote_amount).toFixed(2)}</strong>
-        <ArrowRight size={17} />
-      </span>
+    <Link href={`/dashboard/tracking/${delivery.id}`} className="customer-shipment" aria-label={`View ${delivery.tracking_number}, ${STATUS_LABELS[delivery.status]}`}>
+      <div className="customer-shipment-top">
+        <span className="customer-parcel-icon"><Package size={24} /></span>
+        <div className="customer-shipment-copy">
+          <h3>{delivery.tracking_number}</h3>
+          <p>{delivery.pickup_city} <ArrowRight size={12} aria-label="to" /> {delivery.dropoff_city}</p>
+        </div>
+        <span className={`badge ${STATUS_COLORS[delivery.status]}`}>{STATUS_LABELS[delivery.status]}</span>
+      </div>
+      {!stopped && (
+        <ol className="customer-progress" aria-label="Shipment progress">
+          {STEPS.map((label, index) => (
+            <li key={label} className={index <= current ? "is-complete" : ""} aria-current={index === current ? "step" : undefined}>
+              <span className="customer-progress-dot">{index <= current && <Check size={12} aria-hidden="true" />}</span>
+              <span>{label}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {PAST_STATUSES.includes(delivery.status) && (
+        <p className="customer-shipment-meta">{delivery.recipient_name} · Booked {new Date(delivery.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}</p>
+      )}
+      <div className="customer-shipment-footer">
+        <span>{delivery.quote_amount === null ? "Quote pending" : `${delivery.quote_currency} ${Number(delivery.quote_amount).toFixed(2)}`}</span>
+        <strong>View shipment <ArrowRight size={15} /></strong>
+      </div>
     </Link>
   );
 }
 
-function DeliverySection({
-  title,
-  description,
-  deliveries,
-  history = false,
-}: {
-  title: string;
-  description: string;
-  deliveries: Delivery[];
-  history?: boolean;
-}) {
-  if (deliveries.length === 0) return null;
-
-  return (
-    <section className="portal-list-section">
-      <div className="portal-section-heading">
-        <div>
-          <span className="portal-section-kicker">
-            {history ? <History size={13} /> : <Clock3 size={13} />}
-            {history ? "Archive" : "In motion"}
-          </span>
-          <h2>{title}</h2>
-          <p>{description}</p>
-        </div>
-        <span className="portal-count-badge">{deliveries.length}</span>
-      </div>
-      <div className="delivery-list-stack">
-        {deliveries.map((delivery) => (
-          <DeliveryRow key={delivery.id} delivery={delivery} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
 export default function DashboardPage() {
-  return (
-    <Suspense>
-      <DashboardContent />
-    </Suspense>
-  );
+  return <Suspense fallback={<div className="portal-loading-state" role="status">Loading your dashboard…</div>}><DashboardContent /></Suspense>;
 }
 
 function DashboardContent() {
   const searchParams = useSearchParams();
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [firstName, setFirstName] = useState("sender");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const search = useRef<HTMLInputElement>(null);
   const paymentResult = searchParams.get("payment");
-//   const paymentProvider = searchParams.get("provider");
-//   const returnedDeliveryId = Number(searchParams.get("delivery"));
-//   const returnedPaymentId = Number(searchParams.get("payment_id"));
   const isNewCustomer = searchParams.get("welcome") === "1";
+  const section = searchParams.get("section");
+  const history = section === "history";
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    fetch("/api/auth/me", { cache: "no-store", signal: controller.signal })
+      .then(response => response.json())
+      .then(result => { if (result.success && result.data?.full_name) setFirstName(result.data.full_name.trim().split(/\s+/)[0]); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
 
+  useEffect(() => {
+    const controller = new AbortController();
     async function loadDeliveries() {
+      setLoading(true);
+      setError("");
       try {
-//         if (
-//           paymentResult === "success" &&
-//           (paymentProvider === "payfast" || !paymentProvider) &&
-//           Number.isSafeInteger(returnedDeliveryId) && returnedDeliveryId > 0 &&
-//           Number.isSafeInteger(returnedPaymentId) && returnedPaymentId > 0
-//         ) {
-//           const confirmation = await fetch("/api/payments/sandbox-confirm", {
-//             method: "POST",
-//             headers: { "Content-Type": "application/json" },
-//             body: JSON.stringify({
-//               delivery_id: returnedDeliveryId,
-//               payment_id: returnedPaymentId,
-//             }),
-//           });
-//
-//           // A 403 means this is a live checkout, where only PayFast's verified
-//           // ITN may complete payment. Other errors indicate a real sandbox
-//           // reconciliation problem and should be visible to the customer.
-//           if (!confirmation.ok && confirmation.status !== 403) {
-//             const confirmationResult = await confirmation.json();
-//             throw new Error(
-//               confirmationResult.message || "Payment could not be confirmed."
-//             );
-//           }
-//         }
-//
-
-        const response = await fetch("/api/deliveries", { cache: "no-store" });
+        const response = await fetch("/api/deliveries", { cache: "no-store", signal: controller.signal });
         if (!response.ok) throw new Error("Failed to load deliveries");
         const result = await response.json();
-        if (!cancelled) setDeliveries(result.data ?? []);
+        if (!controller.signal.aborted) setDeliveries(result.data ?? []);
       } catch {
-        if (!cancelled) setError("Failed to load deliveries. Please refresh.");
+        if (!controller.signal.aborted) setError("We couldn’t load your shipments. Please try again.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
+    void loadDeliveries();
+    return () => controller.abort();
+  }, [paymentResult, refreshKey]);
 
-    loadDeliveries();
-    return () => {
-      cancelled = true;
-    };
-  }, [paymentResult]);
-
-  if (loading) {
-    return (
-      <div className="portal-loading-state">
-        <span><Package size={25} /></span>
-        <strong>Gathering your deliveries</strong>
-        <p>One moment while we bring everything into view.</p>
-      </div>
-    );
+  const activeDeliveries = deliveries.filter(delivery => !PAST_STATUSES.includes(delivery.status));
+  const pastDeliveries = deliveries.filter(delivery => PAST_STATUSES.includes(delivery.status));
+  const filtered = (history ? pastDeliveries : activeDeliveries).filter(delivery =>
+    `${delivery.tracking_number} ${delivery.pickup_city} ${delivery.dropoff_city}`.toLowerCase().includes(query.trim().toLowerCase())
+  );
+  function destination(next: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("section", next);
+    return `/dashboard?${params.toString()}#shipments`;
   }
 
-  const activeDeliveries = deliveries.filter(
-    (delivery) => !PAST_STATUSES.includes(delivery.status)
-  );
-  const pastDeliveries = deliveries.filter((delivery) =>
-    PAST_STATUSES.includes(delivery.status)
-  );
-  const completedDeliveries = deliveries.filter((delivery) => delivery.status === "delivered");
-
   return (
-    <div className="portal-dashboard">
-      <section className="portal-hero-card customer-portal-hero">
-        <div className="portal-hero-grid" aria-hidden="true" />
-        <div className="portal-hero-orb" aria-hidden="true" />
-        <div className="portal-hero-copy">
-          <span className="portal-eyebrow"><Sparkles size={14} /> Customer hub</span>
-          <h1>Your deliveries,<br /><em>all in one place.</em></h1>
-          <p>Book, pay and follow every parcel from one calm, simple dashboard.</p>
-          <Link href="/dashboard/deliveries/new" className="portal-hero-action">
-            Book a delivery <Plus size={17} />
-          </Link>
-        </div>
-        <div className="portal-pulse-card">
-          <span className="portal-pulse-label"><i /> Live overview</span>
-          <div className="portal-pulse-stats">
-            <div><strong>{activeDeliveries.length}</strong><span>Active</span></div>
-            <div><strong>{completedDeliveries.length}</strong><span>Delivered</span></div>
-            <div><strong>{deliveries.length}</strong><span>Total</span></div>
+    <div className="customer-dashboard" id="dashboard-home">
+      <section className="customer-welcome" aria-labelledby="customer-greeting">
+        <div className="customer-welcome-top">
+          <div className="customer-welcome-copy">
+            <span className="customer-eyebrow">Deliver anywhere in Cape Town</span>
+            <h1 id="customer-greeting">Hello, {firstName}.</h1>
+            <p>Send, track and receive.<br />A little less effort. A lot more EzyGo.</p>
           </div>
-          <div className="portal-pulse-route">
-            <span><i /></span><b /><span><i /></span><b /><span><Check size={12} /></span>
+          <div className="customer-parcel-art" aria-hidden="true">
+            <div className="customer-orbit" />
+            <div className="customer-box customer-box-back"><i /><span>↑ ↑</span></div>
+            <div className="customer-box customer-box-front"><i /><span>EzyGo</span></div>
           </div>
-          <small>From booking to their door, without the guesswork.</small>
         </div>
+        <form className="customer-search" role="search" onSubmit={event => { event.preventDefault(); document.getElementById("shipments")?.scrollIntoView({ block: "start" }); }}>
+          <Search size={21} aria-hidden="true" />
+          <input ref={search} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Tracking number or city" aria-label="Search by tracking number or city" autoCapitalize="none" autoComplete="off" spellCheck={false} />
+          {query && <button type="button" onClick={() => { setQuery(""); search.current?.focus(); }} aria-label="Clear search"><X size={18} /></button>}
+          <button type="submit" aria-label="Search shipments"><ArrowRight size={21} /></button>
+        </form>
       </section>
 
-      {(paymentResult || isNewCustomer || error) && (
-        <div className="portal-notices">
-          {paymentResult === "success" && (
-            <div className="portal-notice is-success">
-              <CheckCircle2 size={19} />
-              <span><strong>Payment submitted.</strong> Your provider is confirming the transaction.</span>
-            </div>
-          )}
-          {isNewCustomer && (
-            <div className="portal-notice is-info">
-              <Sparkles size={19} />
-              <span><strong>Welcome to EzyGo.</strong> Your account is verified and ready to go.</span>
-            </div>
-          )}
-          {paymentResult === "cancelled" && (
-            <div className="portal-notice is-warning">
-              <Clock3 size={19} />
-              <span><strong>Payment paused.</strong> Your booking is safe—open it below to try again.</span>
-            </div>
-          )}
-          {paymentResult === "failed" && (
-            <div className="portal-notice is-error">
-              <Clock3 size={19} />
-              <span><strong>Payment failed.</strong> Open your booking below to try another payment option.</span>
-            </div>
-          )}
-          {error && <div className="portal-notice is-error">{error}</div>}
-        </div>
-      )}
+      <nav className="customer-shortcuts" aria-label="Quick actions">
+        <Link href="/dashboard/deliveries/new"><span className="is-featured"><Send size={24} /></span>Send parcel</Link>
+        <button type="button" onClick={() => search.current?.focus()}><span><Search size={24} /></span>Track order</button>
+        <Link href={destination("orders")} onClick={() => setQuery("")}><span><Package size={24} /></span>Active shipments</Link>
+        <Link href={destination("history")} onClick={() => setQuery("")}><span><History size={24} /></span>History</Link>
+      </nav>
 
-      <div className="portal-content-grid">
-        <div className="portal-primary-column">
-          {deliveries.length === 0 ? (
-            <div className="portal-empty-state">
-              <span className="portal-empty-icon"><PackageOpen size={30} /></span>
-              <span className="portal-section-kicker"><Sparkles size={13} /> Fresh start</span>
-              <h2>Your first delivery starts here.</h2>
-              <p>Tell us where it needs to go. We’ll handle the route, updates and delivery.</p>
-              <Link href="/dashboard/deliveries/new" className="portal-primary-button">
-                Book your first delivery <ArrowRight size={17} />
-              </Link>
-            </div>
-          ) : (
-            <>
-              <DeliverySection
-                title="Current deliveries"
-                description="Bookings awaiting payment, collection or delivery."
-                deliveries={activeDeliveries}
-              />
-              <DeliverySection
-                title="Delivery history"
-                description="Completed, cancelled and unsuccessful deliveries."
-                deliveries={pastDeliveries}
-                history
-              />
-            </>
-          )}
-        </div>
+      {(paymentResult || isNewCustomer) && <div className="portal-notices" role="status">
+        {paymentResult === "success" && <div className="portal-notice is-success"><CheckCircle2 size={19} /><span><strong>Payment submitted.</strong> Your provider is confirming the transaction.</span></div>}
+        {isNewCustomer && <div className="portal-notice is-info"><Sparkles size={19} /><span><strong>Welcome to EzyGo.</strong> Your account is verified and ready to go.</span></div>}
+        {paymentResult === "cancelled" && <div className="portal-notice is-warning"><Clock3 size={19} /><span><strong>Payment paused.</strong> Your booking is safe—open it below to try again.</span></div>}
+        {paymentResult === "failed" && <div className="portal-notice is-error"><Clock3 size={19} /><span><strong>Payment failed.</strong> Open your booking below to try another payment option.</span></div>}
+      </div>}
 
-        <aside className="portal-side-column">
-          <div className="portal-side-card portal-side-card-accent">
-            <span className="portal-side-icon"><ShieldCheck size={20} /></span>
-            <span className="portal-section-kicker">EzyGo promise</span>
-            <h3>Simple from start to finish.</h3>
-            <ul>
-              <li><Check size={14} /> One transparent flat fee</li>
-              <li><Check size={14} /> Live status updates</li>
-              <li><Check size={14} /> Secure online payment</li>
-            </ul>
+      <div className="customer-content">
+        <section className="customer-shipments" id="shipments" aria-labelledby="shipments-heading" aria-busy={loading}>
+          <div className="customer-section-heading">
+            <h2 id="shipments-heading">Your shipments</h2>
+            <nav className="customer-tabs" aria-label="Shipment views">
+              <Link href={destination("orders")} aria-current={!history ? "page" : undefined}>Active{!loading && !error ? ` (${activeDeliveries.length})` : ""}</Link>
+              <Link href={destination("history")} aria-current={history ? "page" : undefined}>History{!loading && !error ? ` (${pastDeliveries.length})` : ""}</Link>
+            </nav>
           </div>
-          <div className="portal-side-card portal-flat-fee-card">
-            <span>Flat delivery fee</span>
-            <strong>R99</strong>
-            <p>One clear price for every standard Cape Town delivery.</p>
-            <Link href="/dashboard/deliveries/new">Start a booking <ArrowRight size={15} /></Link>
+          <div className="customer-list-intro">
+            <div><h3>{query.trim() ? "Search results" : history ? "Delivery history" : "Active shipments"}</h3><p>{query.trim() ? `Matching ${history ? "past" : "active"} parcels.` : history ? "Completed, cancelled and unsuccessful deliveries." : "Follow every step, from collection to their door."}</p></div>
+            <button type="button" className="customer-refresh" onClick={() => setRefreshKey(key => key + 1)} disabled={loading} aria-label="Refresh shipments"><RefreshCw size={17} /></button>
           </div>
+          {loading ? <div className="customer-empty" role="status"><Package size={30} /><h3>Gathering your shipments</h3><p>One moment while we bring everything into view.</p></div>
+            : error ? <div className="customer-empty" role="alert"><PackageOpen size={30} /><h3>Shipments unavailable</h3><p>{error}</p><button className="portal-primary-button" onClick={() => setRefreshKey(key => key + 1)}>Try again <RefreshCw size={16} /></button></div>
+            : filtered.length === 0 ? <div className="customer-empty"><PackageOpen size={32} /><h3>{query.trim() ? "No matching parcels" : history ? "No past shipments yet." : "Ready when you are."}</h3><p>{query.trim() ? "Try another tracking number or city." : history ? "Your completed deliveries will appear here." : "Book a pickup and follow your parcel right here."}</p>{query.trim() ? <button className="portal-primary-button" onClick={() => setQuery("")}>Clear search <X size={16} /></button> : !history && <Link href="/dashboard/deliveries/new" className="portal-primary-button">{deliveries.length ? "Send a parcel" : "Send your first parcel"} <ArrowRight size={16} /></Link>}</div>
+            : <div className="customer-shipment-list">{filtered.map(delivery => <ShipmentCard key={delivery.id} delivery={delivery} />)}</div>}
+        </section>
+
+        <aside className="customer-extras" aria-label="Delivery services">
+          <Link href="/dashboard/deliveries/new" className="customer-pickup"><span className="customer-eyebrow">Business or personal</span><h2>Need a pickup?</h2><p>We’ll come to you.</p><span className="customer-pickup-arrow"><ArrowRight size={23} /></span><small>From your door. To theirs.</small></Link>
+          <div className="customer-promise"><ShieldCheck size={23} /><span className="customer-eyebrow">EzyGo promise</span><h2>Simple from start to finish.</h2><ul>{["One transparent flat fee", "Live status updates", "Secure online payment"].map(label => <li key={label}><Check size={15} />{label}</li>)}</ul></div>
+          <Link href="/dashboard/deliveries/new" className="customer-fee"><span className="customer-eyebrow">Flat delivery fee</span><strong>R99</strong><p>One clear price for every standard Cape Town delivery.</p><span className="customer-text-link">Start a booking <ArrowRight size={15} /></span></Link>
         </aside>
       </div>
+
     </div>
   );
 }

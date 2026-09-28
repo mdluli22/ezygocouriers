@@ -1,4 +1,4 @@
-const STATIC_CACHE = "ezygo-static-v3";
+const STATIC_CACHE = "ezygo-static-v4";
 const OFFLINE_URL = "/offline";
 const PRECACHE_URLS = [OFFLINE_URL, "/EzyGoIcon.png", "/GoLogo.png"];
 
@@ -29,10 +29,11 @@ self.addEventListener("activate", (event) => {
 });
 
 function isCacheableStaticAsset(url) {
-  if (url.pathname === "/sw.js") return false;
-  if (url.pathname.startsWith("/_next/static/")) return true;
+  // Next.js owns chunk caching and revalidation. Never serve an old module
+  // graph after a deployment or a development hot update.
+  if (url.pathname === "/sw.js" || url.pathname.startsWith("/_next/")) return false;
 
-  return /\.(?:css|js|woff2?|png|jpe?g|gif|webp|svg|ico)$/i.test(
+  return /\.(?:woff2?|png|jpe?g|gif|webp|svg|ico)$/i.test(
     url.pathname
   );
 }
