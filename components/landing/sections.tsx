@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import BrandLogo from "@/components/BrandLogo";
 import {
   ArrowRight,
   BellRing,
@@ -121,12 +121,7 @@ export function Footer() {
       <div className="landing-shell">
         <div className="footer-main">
           <div className="footer-brand">
-            <Link href="/" className="brand-lockup footer-logo" aria-label="EzyGo home">
-              <span className="brand-logo-surface footer-logo-surface">
-                <Image src="/GoLogo.png" alt="" width={98} height={27} />
-              </span>
-              <span className="brand-name">EzyGo</span>
-            </Link>
+            <BrandLogo variant="dark" />
             <p>Simple, reliable courier delivery across Cape Town.</p>
             <span className="footer-location"><MapPin size={14} /> Cape Town, South Africa</span>
           </div>

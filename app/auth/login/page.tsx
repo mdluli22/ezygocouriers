@@ -132,6 +132,7 @@ function LoginForm() {
       {/* Server error */}
       {notice && (
         <div
+          role="status"
           className="flex items-start gap-3 p-4 rounded-xl text-sm font-medium"
           style={{
             backgroundColor: "rgb(34 197 94 / 0.1)",
@@ -145,6 +146,7 @@ function LoginForm() {
 
       {serverError && (
         <div
+          role="alert"
           className="flex items-start gap-3 p-4 rounded-xl text-sm font-medium"
           style={{
             backgroundColor: "rgb(239 68 68 / 0.08)",

@@ -20,7 +20,6 @@ export default function DriverLayoutShell({ children }: { children: React.ReactN
           <BrandLogo
             href="/driver"
             size="md"
-            subtitle="Driver Portal"
             ariaLabel="EzyGo driver portal"
             priority
           />

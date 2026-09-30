@@ -155,7 +155,7 @@ function DashboardContent() {
       <div className="customer-content">
         <section className="customer-shipments" id="shipments" aria-labelledby="shipments-heading" aria-busy={loading}>
           <div className="customer-section-heading">
-            <h2 id="shipments-heading">Your shipments</h2>
+            <h2 id="shipments-heading">Your deliveries</h2>
             <nav className="customer-tabs" aria-label="Shipment views">
               <Link href={destination("orders")} aria-current={!history ? "page" : undefined}>Active{!loading && !error ? ` (${activeDeliveries.length})` : ""}</Link>
               <Link href={destination("history")} aria-current={history ? "page" : undefined}>History{!loading && !error ? ` (${pastDeliveries.length})` : ""}</Link>
@@ -168,7 +168,7 @@ function DashboardContent() {
           {loading ? <div className="customer-empty" role="status"><Package size={30} /><h3>Gathering your shipments</h3><p>One moment while we bring everything into view.</p></div>
             : error ? <div className="customer-empty" role="alert"><PackageOpen size={30} /><h3>Shipments unavailable</h3><p>{error}</p><button className="portal-primary-button" onClick={() => setRefreshKey(key => key + 1)}>Try again <RefreshCw size={16} /></button></div>
             : filtered.length === 0 ? <div className="customer-empty"><PackageOpen size={32} /><h3>{query.trim() ? "No matching parcels" : history ? "No past shipments yet." : "Ready when you are."}</h3><p>{query.trim() ? "Try another tracking number or city." : history ? "Your completed deliveries will appear here." : "Book a pickup and follow your parcel right here."}</p>{query.trim() ? <button className="portal-primary-button" onClick={() => setQuery("")}>Clear search <X size={16} /></button> : !history && <Link href="/dashboard/deliveries/new" className="portal-primary-button">{deliveries.length ? "Send a parcel" : "Send your first parcel"} <ArrowRight size={16} /></Link>}</div>
-            : <div className="customer-shipment-list">{filtered.map(delivery => <ShipmentCard key={delivery.id} delivery={delivery} />)}</div>}
+            : <div className="customer-shipment-list" tabIndex={0} role="region" aria-label="Your deliveries list">{filtered.map(delivery => <ShipmentCard key={delivery.id} delivery={delivery} />)}</div>}
         </section>
 
         <aside className="customer-extras" aria-label="Delivery services">

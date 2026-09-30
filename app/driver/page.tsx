@@ -2,21 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Check,
-  CheckCircle2,
-  Clock3,
-  MapPin,
-  Navigation,
-  Package,
-  Route,
-  Sparkles,
-  Truck,
-  XCircle,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, Navigation, Package, RefreshCw, Search, ShieldCheck, Truck } from "lucide-react";
 import { STATUS_LABELS, type DeliveryStatus } from "@ezygo/contracts";
-import { STATUS_COLORS } from "@/lib/constants/delivery-status";
+import "./deliveries.css";
 
 interface Delivery {
   id: number;
@@ -35,136 +23,19 @@ interface Delivery {
 }
 
 const ACTIVE_STATUSES: DeliveryStatus[] = ["assigned", "picked_up", "in_transit"];
+const FILTERS = ["active", "history", "all"] as const;
+type Filter = typeof FILTERS[number];
 
-const STATUS_STEP: Record<DeliveryStatus, number> = {
-  assigned: 1,
-  picked_up: 2,
-  in_transit: 3,
-  delivered: 4,
-  pending: 0,
-  quoted: 0,
-  confirmed: 0,
-  paid: 0,
-  failed: 0,
-  cancelled: 0,
-};
-
-function TripProgress({ status }: { status: DeliveryStatus }) {
-  const steps = ["Assigned", "Picked up", "In transit", "Delivered"];
-  const current = STATUS_STEP[status] ?? 0;
-
-  return (
-    <div className="driver-progress" aria-label={`Current delivery status: ${STATUS_LABELS[status]}`}>
-      {steps.map((step, index) => {
-        const stepNumber = index + 1;
-        const done = stepNumber < current;
-        const active = stepNumber === current;
-
-        return (
-          <div key={step} className={`driver-progress-step ${done ? "is-done" : ""} ${active ? "is-active" : ""}`}>
-            <span>{done ? <Check size={13} /> : stepNumber}</span>
-            <small>{step}</small>
-            {index < steps.length - 1 && <i />}
-          </div>
-        );
-      })}
-    </div>
-  );
+function RouteStops({ delivery }: { delivery: Delivery }) {
+  return <ol className="dispatch-stops">
+    <li><span aria-hidden="true" /><div><small>Pickup</small><strong>{delivery.pickup_street}</strong><p>{delivery.pickup_city}</p></div></li>
+    <li><span aria-hidden="true" /><div><small>Drop-off</small><strong>{delivery.dropoff_street}</strong><p>{delivery.dropoff_city}</p></div></li>
+  </ol>;
 }
 
-function ActiveTripCard({ delivery }: { delivery: Delivery }) {
-  return (
-    <Link href={`/driver/deliveries/${delivery.id}`} className="driver-active-card group">
-      <div className="driver-card-grid" aria-hidden="true" />
-      <div className="driver-active-heading">
-        <div>
-          <span className="portal-eyebrow"><Navigation size={14} /> Active trip</span>
-          <h2>{delivery.tracking_number}</h2>
-          <p>Next stop: {delivery.dropoff_city}</p>
-        </div>
-        <span className="driver-truck-icon"><Truck size={24} /></span>
-      </div>
-
-      <TripProgress status={delivery.status} />
-
-      <div className="driver-route-card">
-        <span className="driver-route-rail"><i /><b /><i /></span>
-        <div>
-          <small>Pick up</small>
-          <strong>{delivery.pickup_street}</strong>
-          <span>{delivery.pickup_city}</span>
-        </div>
-        <div>
-          <small>Drop off</small>
-          <strong>{delivery.dropoff_street}</strong>
-          <span>{delivery.dropoff_city}</span>
-        </div>
-      </div>
-
-      <div className="driver-active-footer">
-        <span className="driver-recipient">
-          <i>{delivery.recipient_name.charAt(0).toUpperCase()}</i>
-          <span><strong>{delivery.recipient_name}</strong><small>Recipient</small></span>
-        </span>
-        <span className="driver-view-link">View trip <ArrowRight size={16} /></span>
-      </div>
-      {(delivery.fragile || delivery.require_pin) && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {delivery.fragile && <span className="badge" style={{ backgroundColor: "rgb(245 158 11 / 0.16)", color: "#fbbf24" }}>Fragile · handle with care</span>}
-          {delivery.require_pin && <span className="badge" style={{ backgroundColor: "rgb(16 185 129 / 0.16)", color: "#34d399" }}>PIN handover</span>}
-        </div>
-      )}
-    </Link>
-  );
-}
-
-function TripRow({ delivery }: { delivery: Delivery }) {
-  const isActive = ACTIVE_STATUSES.includes(delivery.status);
-  const Icon = delivery.status === "delivered"
-    ? CheckCircle2
-    : delivery.status === "cancelled" || delivery.status === "failed"
-      ? XCircle
-      : isActive
-        ? Route
-        : Package;
-
-  return (
-    <Link href={`/driver/deliveries/${delivery.id}`} className="driver-trip-row group">
-      <span className={`driver-trip-icon ${isActive ? "is-active" : ""}`}><Icon size={19} /></span>
-      <span className="driver-trip-copy">
-        <span>
-          <strong>{delivery.dropoff_street}, {delivery.dropoff_city}</strong>
-          <i className={`badge ${STATUS_COLORS[delivery.status]}`}>{STATUS_LABELS[delivery.status]}</i>
-        </span>
-        <small>
-          {delivery.tracking_number} · {delivery.recipient_name}
-          {delivery.fragile ? " · Fragile" : ""}
-          {delivery.require_pin ? " · PIN required" : ""}
-        </small>
-      </span>
-      <ArrowRight size={16} className="driver-trip-arrow" />
-    </Link>
-  );
-}
-
-function DriverStat({
-  value,
-  label,
-  icon: Icon,
-  highlight = false,
-}: {
-  value: number;
-  label: string;
-  icon: typeof Truck;
-  highlight?: boolean;
-}) {
-  return (
-    <div className={`driver-stat-card ${highlight ? "is-highlighted" : ""}`}>
-      <span><Icon size={17} /></span>
-      <strong>{value}</strong>
-      <small>{label}</small>
-    </div>
-  );
+function Handling({ delivery }: { delivery: Delivery }) {
+  if (!delivery.fragile && !delivery.require_pin) return null;
+  return <div className="dispatch-handling">{delivery.fragile && <span><Package size={13} aria-hidden="true" />Fragile</span>}{delivery.require_pin && <span><ShieldCheck size={13} aria-hidden="true" />PIN required</span>}</div>;
 }
 
 export default function DriverDashboardPage() {
@@ -172,98 +43,92 @@ export default function DriverDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [driverName, setDriverName] = useState("");
-  const [tab, setTab] = useState<"active" | "all">("active");
+  const [filter, setFilter] = useState<Filter>("active");
+  const [query, setQuery] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    fetch("/api/auth/me", { cache: "no-store" }).then((response) => response.json()).then((data) => {
-      if (data.success) setDriverName(data.data.full_name.split(" ")[0]);
-    });
-    fetch("/api/driver/deliveries")
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) setDeliveries(data.data);
-        else setError(data.message);
-      })
-      .catch(() => setError("Failed to load deliveries."))
-      .finally(() => setLoading(false));
+    const controller = new AbortController();
+    fetch("/api/auth/me", { cache: "no-store", signal: controller.signal })
+      .then(response => response.json())
+      .then(data => { if (data.success && !controller.signal.aborted) setDriverName(data.data.full_name.split(" ")[0]); })
+      .catch(() => {});
+    return () => controller.abort();
   }, []);
 
-  const active = deliveries.filter((delivery) => ACTIVE_STATUSES.includes(delivery.status));
-  const completed = deliveries.filter((delivery) => delivery.status === "delivered");
-  const pending = deliveries.filter((delivery) => delivery.status === "assigned");
-  const currentTrip = active[0] ?? null;
-  const tabDeliveries = tab === "active"
-    ? deliveries.filter((delivery) => ACTIVE_STATUSES.includes(delivery.status))
-    : deliveries;
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+    async function load() {
+      try {
+        const response = await fetch("/api/driver/deliveries", { cache: "no-store", signal: controller.signal });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || "Failed to load deliveries.");
+        if (!controller.signal.aborted) setDeliveries(data.data);
+      } catch (error) {
+        if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "Failed to load deliveries.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+    void load();
+    return () => controller.abort();
+  }, [refreshKey]);
 
-  if (loading) {
-    return (
-      <div className="portal-loading-state">
-        <span><Truck size={25} /></span>
-        <strong>Preparing your route</strong>
-        <p>Checking assignments and delivery updates.</p>
-      </div>
-    );
-  }
+  const active = deliveries.filter(delivery => ACTIVE_STATUSES.includes(delivery.status));
+  const history = deliveries.filter(delivery => !ACTIVE_STATUSES.includes(delivery.status));
+  const awaitingPickup = active.filter(delivery => delivery.status === "assigned");
+  const completed = deliveries.filter(delivery => delivery.status === "delivered");
+  const currentTrip = active.find(delivery => delivery.status === "in_transit" || delivery.status === "picked_up") ?? active[0];
+  const filtered = (filter === "active" ? active : filter === "history" ? history : deliveries).filter(delivery =>
+    `${delivery.tracking_number} ${delivery.recipient_name} ${delivery.pickup_street} ${delivery.pickup_city} ${delivery.dropoff_street} ${delivery.dropoff_city}`.toLowerCase().includes(query.trim().toLowerCase())
+  );
+  const counts = { active: active.length, history: history.length, all: deliveries.length };
 
   return (
-    <div className="portal-dashboard driver-dashboard">
-      <section className="driver-welcome-card">
-        <div className="portal-hero-grid" aria-hidden="true" />
-        <div className="driver-welcome-copy">
-          <span className="portal-eyebrow"><Sparkles size={14} /> Driver workspace</span>
-          <p>{new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}</p>
-          <h1>{driverName ? `Ready to move, ${driverName}?` : "Ready to move?"}</h1>
-          <span>See what needs your attention and keep every trip moving.</span>
-        </div>
-        <div className="driver-stat-grid">
-          <DriverStat value={active.length} label="Active trips" icon={Navigation} highlight />
-          <DriverStat value={pending.length} label="Awaiting pickup" icon={Clock3} />
-          <DriverStat value={completed.length} label="Delivered" icon={CheckCircle2} />
-        </div>
-      </section>
+    <div className="dispatch-page">
+      <header className="dispatch-header">
+        <div><p className="dispatch-eyebrow">DRIVER WORKSPACE</p><h1>Your deliveries</h1><p>{driverName ? `${driverName}, here’s what’s on your route.` : "Your assignments, from pickup to handover."}</p></div>
+        <button className="dispatch-refresh" onClick={() => setRefreshKey(value => value + 1)} disabled={loading}><RefreshCw size={16} aria-hidden="true" />{loading ? "Refreshing…" : "Refresh"}</button>
+      </header>
 
-      {error && <div className="portal-notice is-error">{error}</div>}
+      <dl className="dispatch-stats" aria-label="Delivery totals">
+        <div><dt><Navigation size={17} aria-hidden="true" />Active deliveries</dt><dd>{loading ? "—" : active.length}</dd></div>
+        <div><dt><Clock3 size={17} aria-hidden="true" />Awaiting pickup</dt><dd>{loading ? "—" : awaitingPickup.length}</dd></div>
+        <div><dt><CheckCircle2 size={17} aria-hidden="true" />Delivered</dt><dd>{loading ? "—" : completed.length}</dd></div>
+      </dl>
 
-      <div className={`driver-dashboard-grid ${currentTrip ? "has-active-trip" : ""}`}>
-        {currentTrip && <ActiveTripCard delivery={currentTrip} />}
+      {error && <div className="dispatch-error" role="alert"><p>{error} {deliveries.length > 0 && "Showing previously loaded deliveries."}</p><button onClick={() => setRefreshKey(value => value + 1)}>Try again</button></div>}
+      {loading && deliveries.length === 0 ? <div className="dispatch-empty" role="status"><Truck size={30} aria-hidden="true" /><h2>Loading your deliveries</h2><p>Checking your assignments and recent updates.</p></div> : error && deliveries.length === 0 ? null :
+      <div className="dispatch-layout">
+        <aside className="dispatch-focus" aria-label="Current delivery">
+          {currentTrip ? <>
+            <div className="dispatch-focus-heading"><span className="dispatch-eyebrow">{currentTrip.status === "assigned" ? "READY FOR PICKUP" : "IN PROGRESS"}</span><Truck size={23} aria-hidden="true" /></div>
+            <h2>{currentTrip.status === "assigned" ? "Your next pickup." : "Keep this delivery moving."}</h2>
+            <p className="dispatch-focus-reference">{currentTrip.tracking_number}</p>
+            <span className="dispatch-status">{STATUS_LABELS[currentTrip.status]}</span>
+            <RouteStops delivery={currentTrip} />
+            <div className="dispatch-parcel"><small>Deliver to</small><strong>{currentTrip.recipient_name}</strong>{currentTrip.parcel_description && <p>{currentTrip.parcel_description}</p>}</div>
+            <Handling delivery={currentTrip} />
+            <Link className="dispatch-primary" href={`/driver/deliveries/${currentTrip.id}`}>{currentTrip.status === "assigned" ? "View pickup" : "Continue delivery"}<ArrowRight size={18} aria-hidden="true" /></Link>
+          </> : <div className="dispatch-off-duty"><CheckCircle2 size={32} aria-hidden="true" /><h2>You’re all caught up.</h2><p>New assignments will appear here when a delivery is assigned to you.</p></div>}
+        </aside>
 
-        <section className="driver-trip-panel">
-          <div className="portal-section-heading">
-            <div>
-              <span className="portal-section-kicker"><MapPin size={13} /> Dispatch queue</span>
-              <h2>Your trips</h2>
-              <p>Every assignment and delivery update in one place.</p>
-            </div>
-          </div>
-
-          <div className="driver-tabs" role="tablist" aria-label="Filter trips">
-            {(["active", "all"] as const).map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setTab(filter)}
-                className={tab === filter ? "is-active" : ""}
-                role="tab"
-                aria-selected={tab === filter}
-              >
-                {filter === "active" ? `Active (${active.length})` : `All trips (${deliveries.length})`}
-              </button>
-            ))}
-          </div>
-
-          {tabDeliveries.length === 0 ? (
-            <div className="driver-empty-state">
-              <span><Truck size={25} /></span>
-              <strong>{tab === "active" ? "No active trips" : "No trips yet"}</strong>
-              <p>{tab === "active" ? "You’re all caught up. New assignments will appear here." : "Your delivery history will appear here."}</p>
-            </div>
-          ) : (
-            <div className="driver-trip-list">
-              {tabDeliveries.map((delivery) => <TripRow key={delivery.id} delivery={delivery} />)}
-            </div>
-          )}
+        <section className="dispatch-queue" aria-labelledby="dispatch-queue-heading" aria-busy={loading}>
+          <div className="dispatch-queue-heading"><h2 id="dispatch-queue-heading">Delivery queue</h2><span>{filtered.length} {filtered.length === 1 ? "delivery" : "deliveries"}</span></div>
+          <div className="dispatch-filters" role="group" aria-label="Filter deliveries">{FILTERS.map(value => <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === "active" ? "Active" : value === "history" ? "History" : "All deliveries"}<span>{counts[value]}</span></button>)}</div>
+          <label className="dispatch-search"><Search size={18} aria-hidden="true" /><span className="sr-only">Search deliveries by tracking number, address or recipient</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tracking number, address or recipient" /></label>
+          {filtered.length > 0 ? <ul className="dispatch-list" tabIndex={0} aria-label="Delivery queue results">{filtered.map(delivery => <li key={delivery.id}>
+            <Link className="dispatch-job" href={`/driver/deliveries/${delivery.id}`}>
+              <div className="dispatch-job-heading"><strong>{delivery.tracking_number}</strong><span className={`dispatch-status${delivery.status === "failed" || delivery.status === "cancelled" ? " is-ended" : ""}`}>{STATUS_LABELS[delivery.status]}</span></div>
+              <RouteStops delivery={delivery} />
+              <Handling delivery={delivery} />
+              <div className="dispatch-job-footer"><span>{delivery.recipient_name}</span><strong>View delivery <ArrowRight size={15} aria-hidden="true" /></strong></div>
+            </Link>
+          </li>)}</ul> : <div className="dispatch-empty"><Package size={28} aria-hidden="true" /><h3>{query ? "No matching deliveries" : filter === "active" ? "No active deliveries" : "No deliveries here yet"}</h3><p>{query ? "Try another address, recipient or tracking number." : "Your deliveries will appear here as they are assigned and updated."}</p>{query && <button onClick={() => setQuery("")}>Clear search</button>}</div>}
         </section>
-      </div>
+      </div>}
     </div>
   );
 }

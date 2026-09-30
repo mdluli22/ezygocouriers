@@ -360,7 +360,10 @@ export async function getDeliveryById(deliveryId: number, customerId: number) {
        q.currency         AS quote_currency,
        q.status           AS quote_status,
        u.full_name        AS driver_name,
-       u.phone            AS driver_phone
+       u.phone            AS driver_phone,
+       u.avatar_url       AS driver_avatar_url,
+       dr.vehicle_type    AS driver_vehicle_type,
+       dr.vehicle_reg     AS driver_vehicle_reg
      FROM deliveries d
      JOIN addresses pa ON pa.id = d.pickup_address_id
      JOIN addresses da ON da.id = d.dropoff_address_id

@@ -8,7 +8,8 @@ import {
   VALID_TRANSITIONS,
   type DeliveryStatus,
 } from "@ezygo/contracts";
-import { STATUS_COLORS } from "@/lib/constants/delivery-status";
+import { ArrowLeft, ArrowRight, CheckCircle2, Navigation, Package, Phone, ShieldCheck, Truck } from "lucide-react";
+import "./delivery.css";
 
 interface Delivery {
   id: number;
@@ -43,11 +44,11 @@ function fmt(parts: (string | null | undefined)[]) {
   return parts.filter(Boolean).join(", ");
 }
 
-const ACTION_LABELS: Partial<Record<DeliveryStatus, { label: string; emoji: string }>> = {
-  picked_up:  { label: "Confirm Pickup",    emoji: "📦" },
-  in_transit: { label: "Start Delivery",    emoji: "🚚" },
-  delivered:  { label: "Complete Delivery", emoji: "✅" },
-  cancelled:  { label: "Cancel Trip",       emoji: "❌" },
+const ACTION_LABELS: Partial<Record<DeliveryStatus, string>> = {
+  picked_up: "Confirm pickup",
+  in_transit: "Start delivery",
+  delivered: "Complete delivery",
+  cancelled: "Cancel delivery",
 };
 
 export default function DriverDeliveryDetailPage() {
@@ -65,6 +66,7 @@ export default function DriverDeliveryDetailPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const res  = await fetch(`/api/driver/deliveries/${params.id}`);
       const data = await res.json();
@@ -128,295 +130,78 @@ export default function DriverDeliveryDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse"
-          style={{ backgroundColor: "#1A2F2F" }}>
-          {/* <span className="text-2xl">🚚</span> */}
-        </div>
-        <p className="text-sm font-semibold" style={{ color: "var(--color-text-muted)" }}>Loading trip…</p>
-      </div>
-    );
+    return <div className="driver-detail"><section className="trip-detail-panel trip-detail-empty" role="status"><Truck size={30} aria-hidden="true" /><h1>Loading your delivery</h1><p>Getting the route and delivery details.</p></section></div>;
   }
 
   if (error || !delivery) {
-    return (
-      <div className="max-w-lg mx-auto text-center py-20 space-y-4">
-        <span className="text-5xl">❗️</span>
-        <p className="font-bold" style={{ color: "var(--color-primary)" }}>Trip not found</p>
-        <Link href="/driver" className="btn-primary inline-flex">Back to dashboard</Link>
-      </div>
-    );
+    return <div className="driver-detail"><Link href="/driver" className="trip-back"><ArrowLeft size={16} />All deliveries</Link><section className="trip-detail-panel trip-detail-empty" role="alert"><h1>Unable to load delivery</h1><p>{error || "This delivery is unavailable."}</p><button className="trip-button" onClick={() => void load()}>Try again</button></section></div>;
   }
 
   const nextStatuses = VALID_TRANSITIONS[delivery.status] ?? [];
-  const isTerminal   = nextStatuses.length === 0;
-  const primaryNext  = nextStatuses.filter(s => s !== "cancelled")[0];
-  const canCancel    = nextStatuses.includes("cancelled");
+  const isTerminal = nextStatuses.length === 0;
+  const primaryNext = nextStatuses.filter(status => status !== "cancelled")[0];
+  const canCancel = nextStatuses.includes("cancelled");
+  const pickupNext = delivery.status === "assigned";
+  const headline = isTerminal
+    ? delivery.status === "delivered" ? "Delivery complete." : "This delivery has ended."
+    : pickupNext ? "Head to pickup." : delivery.status === "picked_up" ? "Ready for the road." : "On to the drop-off.";
+  const statusDescription = isTerminal
+    ? delivery.status === "delivered" ? "The parcel has reached its recipient." : `This delivery is ${STATUS_LABELS[delivery.status].toLowerCase()}.`
+    : pickupNext ? "Collect the parcel, then confirm pickup below." : delivery.status === "picked_up" ? "Start the delivery when you’re ready to leave." : "Complete the delivery once the parcel is handed over.";
 
   return (
-    <div className="max-w-lg mx-auto space-y-5 pb-8">
+    <div className="driver-detail">
+      <Link href="/driver" className="trip-back"><ArrowLeft size={16} />All deliveries</Link>
+      <header className="trip-detail-header"><div><span className="trip-eyebrow">DELIVERY DETAILS</span><h1>{headline}</h1><p>{statusDescription}</p></div><div className="trip-reference"><span>Tracking number</span><strong>{delivery.tracking_number}</strong></div></header>
 
-      {/* Back */}
-      <Link href="/driver"
-        className="inline-flex items-center gap-1.5 text-sm font-semibold hover:opacity-70 transition-opacity"
-        style={{ color: "var(--color-text-secondary)" }}>
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        All Trips
-      </Link>
+      <div className="trip-detail-grid">
+        <div className="trip-detail-main">
+          <section className="trip-detail-panel" aria-labelledby="trip-route-title">
+            <div className="trip-section-heading"><h2 id="trip-route-title">Your route</h2><Navigation size={20} aria-hidden="true" /></div>
+            <ol className="trip-route-stops">
+              {(["pickup", "dropoff"] as const).map(stop => {
+                const pickup = stop === "pickup";
+                const name = pickup ? delivery.pickup_contact_name : delivery.recipient_name;
+                const phone = pickup ? delivery.pickup_contact_phone : delivery.recipient_phone;
+                const address = pickup
+                  ? fmt([delivery.pickup_street, delivery.pickup_suburb, delivery.pickup_city, delivery.pickup_province, delivery.pickup_postal_code])
+                  : fmt([delivery.dropoff_street, delivery.dropoff_suburb, delivery.dropoff_city, delivery.dropoff_province, delivery.dropoff_postal_code]);
+                const notes = pickup ? delivery.pickup_notes : delivery.dropoff_notes;
+                return <li key={stop}>
+                  <span className={`trip-stop-marker${pickup ? " is-pickup" : ""}`} aria-hidden="true" />
+                  <div className="trip-stop-content"><span className="trip-eyebrow">{pickup ? "PICKUP" : "DROP-OFF"}</span><h3>{pickup ? delivery.pickup_street : delivery.dropoff_street}</h3><p>{address}</p>
+                    <div className="trip-stop-contact"><span>{name || "Contact not provided"}</span>{phone && <a href={`tel:${phone}`}><Phone size={14} aria-hidden="true" />{phone}</a>}</div>
+                    {notes && <p className="trip-stop-note">{notes}</p>}
+                    <a className="trip-directions" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer"><Navigation size={14} aria-hidden="true" />Directions to {pickup ? "pickup" : "drop-off"}<ArrowRight size={14} aria-hidden="true" /><span className="sr-only"> (opens Google Maps in a new tab)</span></a>
+                  </div>
+                </li>;
+              })}
+            </ol>
+          </section>
 
-      {/* Status action card */}
-      <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ backgroundColor: "#1A2F2F" }}>
-        <div className="px-5 pt-5 pb-2">
-          <div className="flex items-start justify-between gap-3 mb-1">
-            <div>
-              <p className="text-white font-black text-xl leading-tight">{delivery.tracking_number}</p>
-              <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
-                {delivery.parcel_description}
-              </p>
-            </div>
-            <span className={`badge shrink-0 ${STATUS_COLORS[delivery.status]}`}>
-              {STATUS_LABELS[delivery.status]}
-            </span>
-          </div>
+          <section className="trip-detail-panel"><div className="trip-section-heading"><h2>Parcel details</h2><Package size={20} aria-hidden="true" /></div>
+            <dl className="trip-info"><div><dt>Description</dt><dd>{delivery.parcel_description || "Not provided"}</dd></div>{delivery.special_instructions && <div><dt>Instructions</dt><dd>{delivery.special_instructions}</dd></div>}{delivery.fragile && <div><dt>Handling</dt><dd>Fragile · handle with care</dd></div>}{delivery.require_pin && <div><dt>Handover</dt><dd>{delivery.pin_verified_at ? "Recipient PIN verified" : "Recipient PIN required"}</dd></div>}</dl>
+          </section>
+          <section className="trip-detail-panel"><div className="trip-section-heading"><h2>Customer</h2></div><div className="trip-customer"><strong>{delivery.customer_name}</strong>{delivery.customer_phone && <a href={`tel:${delivery.customer_phone}`}><Phone size={15} aria-hidden="true" />{delivery.customer_phone}</a>}</div></section>
         </div>
 
-        {/* Route summary */}
-        <div className="mx-5 mb-4 rounded-2xl p-4" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
-          <div className="flex gap-3 items-stretch">
-            <div className="flex flex-col items-center pt-1">
-              <div className="w-2.5 h-2.5 rounded-full border-2 mt-0.5" style={{ borderColor: "#F59E0B" }} />
-              <div className="flex-1 w-0.5 my-1 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.15)", minHeight: 18 }} />
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#F59E0B" }} />
-            </div>
-            <div className="flex-1 space-y-2.5">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.4)" }}>Pickup</p>
-                <p className="text-sm font-semibold text-white leading-tight">
-                  {fmt([delivery.pickup_street, delivery.pickup_suburb])}
-                </p>
-                <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-                  {fmt([delivery.pickup_city, delivery.pickup_province])}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.4)" }}>Drop-off</p>
-                <p className="text-sm font-semibold text-white leading-tight">
-                  {fmt([delivery.dropoff_street, delivery.dropoff_suburb])}
-                </p>
-                <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-                  {fmt([delivery.dropoff_city, delivery.dropoff_province])}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        {!isTerminal && (
-          <div className="px-5 pb-5 space-y-3">
-            {updateError && (
-              <p className="text-xs font-semibold text-center" style={{ color: "#FCA5A5" }}>{updateError}</p>
-            )}
-            {!online && !updateError && (
-              <p className="text-xs font-semibold text-center" style={{ color: "#FCD34D" }}>
-                Status actions are paused until you reconnect.
-              </p>
-            )}
-
-            {/* Optional note toggle */}
-            <button onClick={() => setShowNote(v => !v)}
-              className="text-xs font-semibold flex items-center gap-1 transition-opacity hover:opacity-70"
-              style={{ color: "rgba(255,255,255,0.5)" }}>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d={showNote ? "M19 9l-7 7-7-7" : "M9 5l7 7-7 7"} />
-              </svg>
-              {showNote ? "Hide note" : "Add a note (optional)"}
-            </button>
-
-            {showNote && (
-              <input value={note} onChange={e => setNote(e.target.value)}
-                placeholder="e.g. Arrived at pickup, slight delay…"
-                className="input text-sm w-full"
-                style={{ backgroundColor: "rgba(255,255,255,0.08)", color: "white", borderColor: "rgba(255,255,255,0.15)" }} />
-            )}
-
-            {primaryNext === "delivered" && delivery.require_pin && (
-              <div className="rounded-2xl p-4 space-y-2" style={{ backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.13)" }}>
-                <label htmlFor="delivery-pin" className="block text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.65)" }}>
-                  Recipient handover PIN
-                </label>
-                <input
-                  id="delivery-pin"
-                  value={deliveryPin}
-                  onChange={(event) => setDeliveryPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="Enter 6-digit PIN"
-                  aria-describedby="delivery-pin-help"
-                  className="input text-center text-xl font-black tracking-[0.35em] w-full"
-                  style={{ backgroundColor: "white", color: "#1A2F2F", borderColor: "transparent" }}
-                />
-                <p id="delivery-pin-help" className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
-                  Ask the recipient for the PIN emailed to them. Complete delivery only after handover.
-                </p>
-              </div>
-            )}
-
-            {/* Primary action */}
-            {primaryNext && (
-              <button onClick={() => handleStatusUpdate(primaryNext)}
-                disabled={!online || updating !== null || (primaryNext === "delivered" && delivery.require_pin && deliveryPin.length !== 6)}
-                className="w-full py-3.5 rounded-2xl font-black text-base transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-                style={{ backgroundColor: "#F59E0B", color: "#111" }}>
-                {updating === primaryNext ? (
-                  <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg> Updating…</>
-                ) : (
-                  <>{ACTION_LABELS[primaryNext]?.emoji} {ACTION_LABELS[primaryNext]?.label ?? `Mark as ${STATUS_LABELS[primaryNext]}`}</>
-                )}
-              </button>
-            )}
-
-            {/* Cancel (destructive, secondary) */}
-            {canCancel && (
-              <button onClick={() => handleStatusUpdate("cancelled")}
-                disabled={!online || updating !== null}
-                className="w-full py-2.5 rounded-2xl font-semibold text-sm transition-all disabled:opacity-60"
-                style={{ backgroundColor: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>
-                {updating === "cancelled" ? "Cancelling…" : "Cancel this trip"}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Terminal state */}
-        {isTerminal && (
-          <div className="px-5 pb-5">
-            <div className="rounded-2xl p-4 text-center text-sm font-semibold"
-              style={{
-                backgroundColor: delivery.status === "delivered" ? "rgba(16,185,129,0.12)" : "rgba(100,116,139,0.12)",
-                color:           delivery.status === "delivered" ? "#34D399" : "rgba(255,255,255,0.5)",
-              }}>
-              {delivery.status === "delivered" ? "Delivery completed successfully!" : `This trip is ${STATUS_LABELS[delivery.status].toLowerCase()}.`}
-            </div>
-          </div>
-        )}
+        <aside className="trip-action-panel" aria-label="Delivery status and actions">
+          <div className="trip-action-status"><span className="trip-eyebrow">{isTerminal ? "FINAL STATUS" : "CURRENT STATUS"}</span>{isTerminal && delivery.status === "delivered" ? <CheckCircle2 size={23} aria-hidden="true" /> : <Truck size={23} aria-hidden="true" />}</div>
+          <h2>{STATUS_LABELS[delivery.status]}</h2>
+          <p>{statusDescription}</p>
+          {!isTerminal && <>
+            <div className="trip-next-stop"><span className="trip-eyebrow">{pickupNext ? "PICKUP ADDRESS" : "DROP-OFF ADDRESS"}</span><strong>{pickupNext ? delivery.pickup_street : delivery.dropoff_street}</strong><p>{pickupNext ? delivery.pickup_city : delivery.dropoff_city}</p></div>
+            {updateError && <p className="trip-action-error" role="alert">{updateError}</p>}
+            {!online && <p className="trip-offline" role="status">Status actions are paused until you reconnect. Your note and PIN will stay on this screen.</p>}
+            <button className="trip-note-toggle" onClick={() => setShowNote(value => !value)} aria-expanded={showNote} aria-controls="trip-note-field">{showNote ? "Hide note" : "Add a note (optional)"}</button>
+            {showNote && <div id="trip-note-field" className="trip-field"><label htmlFor="trip-update-note">Delivery note</label><textarea id="trip-update-note" value={note} onChange={event => setNote(event.target.value)} rows={3} placeholder="Add a pickup or delivery update…" /></div>}
+            {primaryNext === "delivered" && delivery.require_pin && <div className="trip-field trip-pin-field"><label htmlFor="delivery-pin"><ShieldCheck size={16} aria-hidden="true" />Recipient handover PIN</label><input id="delivery-pin" value={deliveryPin} onChange={event => setDeliveryPin(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="6-digit PIN" aria-describedby="delivery-pin-help" /><p id="delivery-pin-help">Ask the recipient for their emailed PIN. Complete delivery only after handover.</p></div>}
+            {primaryNext && <button className="trip-button trip-primary" onClick={() => handleStatusUpdate(primaryNext)} disabled={!online || updating !== null || (primaryNext === "delivered" && delivery.require_pin && deliveryPin.length !== 6)}>{updating === primaryNext ? "Updating…" : ACTION_LABELS[primaryNext] ?? `Mark as ${STATUS_LABELS[primaryNext]}`}<ArrowRight size={17} aria-hidden="true" /></button>}
+            {canCancel && <button className="trip-button trip-cancel" onClick={() => handleStatusUpdate("cancelled")} disabled={!online || updating !== null}>{updating === "cancelled" ? "Cancelling…" : "Cancel delivery"}</button>}
+          </>}
+          {isTerminal && <Link href="/driver" className="trip-button trip-primary">Back to deliveries<ArrowRight size={17} aria-hidden="true" /></Link>}
+        </aside>
       </div>
-
-      {/* Pickup details */}
-      <section className="rounded-2xl p-5 space-y-4"
-        style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-        <div className="flex items-center gap-2">
-          {/* <span className="text-base">📍</span> */}
-          <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Pickup</h3>
-        </div>
-        <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-          {fmt([delivery.pickup_street, delivery.pickup_suburb, delivery.pickup_city, delivery.pickup_province, delivery.pickup_postal_code])}
-        </p>
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          {delivery.pickup_contact_name && (
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--color-text-muted)" }}>Contact</p>
-              <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>{delivery.pickup_contact_name}</p>
-            </div>
-          )}
-          {delivery.pickup_contact_phone && (
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--color-text-muted)" }}>Phone</p>
-              <a href={`tel:${delivery.pickup_contact_phone}`} className="text-sm font-medium" style={{ color: "var(--color-info)" }}>
-                {delivery.pickup_contact_phone}
-              </a>
-            </div>
-          )}
-        </div>
-        {delivery.pickup_notes && (
-          <p className="text-xs p-3 rounded-xl" style={{ backgroundColor: "var(--color-surface-raised)", color: "var(--color-text-secondary)" }}>
-            {delivery.pickup_notes}
-          </p>
-        )}
-      </section>
-
-      {/* Drop-off details */}
-      <section className="rounded-2xl p-5 space-y-4"
-        style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-        <div className="flex items-center gap-2">
-          {/* <span className="text-base">🏁</span> */}
-          <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Drop-off</h3>
-        </div>
-        <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-          {fmt([delivery.dropoff_street, delivery.dropoff_suburb, delivery.dropoff_city, delivery.dropoff_province, delivery.dropoff_postal_code])}
-        </p>
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--color-text-muted)" }}>Recipient</p>
-            <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>{delivery.recipient_name}</p>
-          </div>
-          {delivery.recipient_phone && (
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--color-text-muted)" }}>Phone</p>
-              <a href={`tel:${delivery.recipient_phone}`} className="text-sm font-medium" style={{ color: "var(--color-info)" }}>
-                {delivery.recipient_phone}
-              </a>
-            </div>
-          )}
-        </div>
-        {delivery.dropoff_notes && (
-          <p className="text-xs p-3 rounded-xl" style={{ backgroundColor: "var(--color-surface-raised)", color: "var(--color-text-secondary)" }}>
-            {delivery.dropoff_notes}
-          </p>
-        )}
-      </section>
-
-      {/* Parcel */}
-      <section className="rounded-2xl p-5 space-y-3"
-        style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-        <div className="flex items-center gap-2">
-          {/* <span className="text-base">📦</span> */}
-          <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Parcel</h3>
-        </div>
-        <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>{delivery.parcel_description}</p>
-        <div className="flex flex-wrap gap-2">
-          {delivery.fragile && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full" style={{ backgroundColor: "rgb(245 158 11 / 0.13)", color: "var(--color-warning)" }}>
-              Fragile · handle with care
-            </span>
-          )}
-          {delivery.require_pin && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full" style={{ backgroundColor: "rgb(16 185 129 / 0.12)", color: "var(--color-success)" }}>
-              PIN required at handover
-            </span>
-          )}
-        </div>
-        {delivery.special_instructions && (
-          <p className="text-xs p-3 rounded-xl" style={{ backgroundColor: "rgba(245,158,11,0.08)", color: "var(--color-warning)" }}>
-            {delivery.special_instructions}
-          </p>
-        )}
-      </section>
-
-      {/* Customer */}
-      <section className="rounded-2xl p-5 space-y-3"
-        style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-        <div className="flex items-center gap-2">
-          {/* <span className="text-base">👤</span> */}
-          <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Customer</h3>
-        </div>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>{delivery.customer_name}</p>
-          {delivery.customer_phone && (
-            <a href={`tel:${delivery.customer_phone}`}
-              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
-              style={{ backgroundColor: "rgba(59,130,246,0.1)", color: "var(--color-info)" }}>
-                {delivery.customer_phone}
-            </a>
-          )}
-        </div>
-      </section>
     </div>
   );
 }

@@ -41,7 +41,8 @@
 .customer-list-intro h3 { font-size: 14px; font-weight: 800; }
 .customer-list-intro p, .customer-empty p { margin-top: 4px; color: var(--customer-muted); font-size: 13px; }
 .customer-refresh { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--customer-border); border-radius: 12px; background: #fff; }
-.customer-shipment-list { display: grid; gap: 16px; }
+.customer-shipment-list { display: grid; align-content: start; gap: 16px; max-height: clamp(320px, 65dvh, 760px); overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: #809f8e #e4eee7; padding: 4px 8px 4px 4px; }
+.customer-shipment-list:focus-visible { outline: 3px solid #c58312; outline-offset: 4px; border-radius: 12px; }
 .customer-shipment { display: block; padding: 23px; border: 1px solid var(--customer-border); border-radius: 20px; background: #fff; transition: border-color 150ms ease, box-shadow 150ms ease; }
 .customer-shipment:hover { border-color: #8da89c; box-shadow: 0 8px 24px #15383608; }
 .customer-shipment-top { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }

@@ -18,7 +18,6 @@ export default function DashboardLayout({
           <BrandLogo
             href="/dashboard"
             size="md"
-            wordmarkClassName="hidden min-[420px]:flex"
             ariaLabel="EzyGo dashboard"
             priority
           />

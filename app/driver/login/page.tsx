@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import BrandLogo from "@/components/BrandLogo";
+import LoginShell from "@/components/auth/LoginShell";
 import {
   replaceAfterAuth,
   safeInternalRedirect,
@@ -17,9 +17,11 @@ interface FieldErrors {
 
 export default function DriverLoginPage() {
   return (
-    <Suspense>
-      <DriverLoginForm />
-    </Suspense>
+    <LoginShell role="driver">
+      <Suspense fallback={<p role="status">Loading driver sign in…</p>}>
+        <DriverLoginForm />
+      </Suspense>
+    </LoginShell>
   );
 }
 
@@ -86,63 +88,7 @@ function DriverLoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* ── Left Brand Panel ── */}
-      <div
-        className="hidden lg:flex lg:w-[45%] xl:w-[40%] flex-col justify-between p-12 relative overflow-hidden"
-        style={{ backgroundColor: "var(--color-primary)" }}
-      >
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-10" style={{ backgroundColor: "var(--color-accent)" }} />
-          <div className="absolute bottom-0 -left-24 w-80 h-80 rounded-full opacity-10" style={{ backgroundColor: "var(--color-accent)" }} />
-          <div className="absolute inset-0 opacity-5" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
-        </div>
-
-        <BrandLogo
-          className="relative z-10"
-          variant="dark"
-          size="lg"
-          priority
-        />
-
-        <div className="relative z-10 space-y-8">
-          <div>
-            <h2 className="text-4xl xl:text-5xl font-black text-white leading-tight tracking-tight">
-              Driver
-              <br />
-              <span style={{ color: "var(--color-accent)" }}>Portal</span>
-            </h2>
-            <p className="mt-4 text-lg opacity-75 text-white leading-relaxed max-w-sm">
-              Manage your deliveries, update statuses, and earn on your own schedule.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { value: "Real-time", label: "Live job updates" },
-              { value: "Simple", label: "Easy status updates" },
-              { value: "Flexible", label: "Work your own hours" },
-              { value: "Trackable", label: "Full delivery history" },
-            ].map((stat) => (
-              <div key={stat.label} className="rounded-xl p-4" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
-                <div className="text-lg font-black" style={{ color: "var(--color-accent)" }}>{stat.value}</div>
-                <div className="text-xs text-white opacity-60 mt-0.5 font-medium">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <p className="relative z-10 text-xs opacity-40 text-white">
-          © {new Date().getFullYear()} EzyGo Couriers
-        </p>
-      </div>
-
-      {/* ── Right Form Panel ── */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10" style={{ backgroundColor: "var(--color-bg)" }}>
-        <div className="w-full max-w-md space-y-8">
-          {/* Mobile logo */}
-          <BrandLogo className="lg:hidden" size="sm" priority />
-
+        <div className="space-y-8">
           {/* Header */}
           <div>
             <h1 className="text-3xl font-black tracking-tight" style={{ color: "var(--color-primary)" }}>
@@ -158,7 +104,7 @@ function DriverLoginForm() {
 
           {/* Server error */}
           {serverError && (
-            <div className="flex items-start gap-3 p-4 rounded-xl text-sm font-medium" style={{ backgroundColor: "rgb(239 68 68 / 0.08)", color: "var(--color-error)", border: "1px solid rgb(239 68 68 / 0.2)" }}>
+            <div role="alert" className="flex items-start gap-3 p-4 rounded-xl text-sm font-medium" style={{ backgroundColor: "rgb(239 68 68 / 0.08)", color: "var(--color-error)", border: "1px solid rgb(239 68 68 / 0.2)" }}>
               <svg className="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
               </svg>
@@ -247,7 +193,5 @@ function DriverLoginForm() {
             </a>
           </p>
         </div>
-      </div>
-    </div>
   );
 }

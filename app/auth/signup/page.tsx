@@ -38,8 +38,8 @@ function PasswordStrength({ password }: { password: string }) {
           />
         ))}
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex gap-3">
+      <div className="brand-signup-strength">
+        <div className="brand-signup-checks">
           {checks.map((c) => (
             <span
               key={c.label}
@@ -119,7 +119,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="space-y-7">
+    <div className="brand-signup-form space-y-7">
       {/* Header */}
       <div>
         <h1
@@ -155,6 +155,7 @@ export default function SignupPage() {
       {/* Server error */}
       {serverError && (
         <div
+          role="alert"
           className="flex items-start gap-3 p-4 rounded-xl text-sm font-medium"
           style={{
             backgroundColor: "rgb(239 68 68 / 0.08)",
@@ -177,6 +178,8 @@ export default function SignupPage() {
           <input
             id="full_name"
             name="full_name"
+            aria-invalid={Boolean(fieldErrors.full_name)}
+            aria-describedby={fieldErrors.full_name ? "signup-full_name-error" : undefined}
             type="text"
             autoComplete="name"
             value={form.full_name}
@@ -185,7 +188,7 @@ export default function SignupPage() {
             className={`input ${fieldErrors.full_name ? "input-error" : ""}`}
             required
           />
-          {fieldErrors.full_name && <p className="error-text">{fieldErrors.full_name}</p>}
+          {fieldErrors.full_name && <p id="signup-full_name-error" className="error-text">{fieldErrors.full_name}</p>}
         </div>
 
         {/* Email */}
@@ -194,6 +197,8 @@ export default function SignupPage() {
           <input
             id="email"
             name="email"
+            aria-invalid={Boolean(fieldErrors.email)}
+            aria-describedby={fieldErrors.email ? "signup-email-error" : undefined}
             type="email"
             autoComplete="email"
             value={form.email}
@@ -202,7 +207,7 @@ export default function SignupPage() {
             className={`input ${fieldErrors.email ? "input-error" : ""}`}
             required
           />
-          {fieldErrors.email && <p className="error-text">{fieldErrors.email}</p>}
+          {fieldErrors.email && <p id="signup-email-error" className="error-text">{fieldErrors.email}</p>}
         </div>
 
         {/* Phone (optional) */}
@@ -216,6 +221,8 @@ export default function SignupPage() {
           <input
             id="phone"
             name="phone"
+            aria-invalid={Boolean(fieldErrors.phone)}
+            aria-describedby={fieldErrors.phone ? "signup-phone-error" : undefined}
             type="tel"
             autoComplete="tel"
             value={form.phone}
@@ -223,7 +230,7 @@ export default function SignupPage() {
             placeholder="072 123 4567"
             className={`input ${fieldErrors.phone ? "input-error" : ""}`}
           />
-          {fieldErrors.phone && <p className="error-text">{fieldErrors.phone}</p>}
+          {fieldErrors.phone && <p id="signup-phone-error" className="error-text">{fieldErrors.phone}</p>}
         </div>
 
         {/* Password */}
@@ -233,6 +240,8 @@ export default function SignupPage() {
             <input
               id="password"
               name="password"
+            aria-invalid={Boolean(fieldErrors.password)}
+            aria-describedby={fieldErrors.password ? "signup-password-error" : undefined}
               type={showPass ? "text" : "password"}
               autoComplete="new-password"
               value={form.password}
@@ -261,7 +270,7 @@ export default function SignupPage() {
             </button>
           </div>
           <PasswordStrength password={form.password} />
-          {fieldErrors.password && <p className="error-text mt-1">{fieldErrors.password}</p>}
+          {fieldErrors.password && <p id="signup-password-error" className="error-text mt-1">{fieldErrors.password}</p>}
         </div>
 
         {/* Confirm password */}
@@ -271,6 +280,8 @@ export default function SignupPage() {
             <input
               id="confirm_password"
               name="confirm_password"
+            aria-invalid={Boolean(fieldErrors.confirm_password)}
+            aria-describedby={fieldErrors.confirm_password ? "signup-confirm_password-error" : undefined}
               type={showConfirm ? "text" : "password"}
               autoComplete="new-password"
               value={form.confirm_password}
@@ -284,7 +295,7 @@ export default function SignupPage() {
               onClick={() => setShowConfirm(!showConfirm)}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-opacity hover:opacity-60"
               style={{ color: "var(--color-text-muted)" }}
-              aria-label={showConfirm ? "Hide password" : "Show password"}
+              aria-label={showConfirm ? "Hide confirmed password" : "Show confirmed password"}
             >
               {showConfirm ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -299,7 +310,7 @@ export default function SignupPage() {
             </button>
           </div>
           {fieldErrors.confirm_password && (
-            <p className="error-text">{fieldErrors.confirm_password}</p>
+            <p id="signup-confirm_password-error" className="error-text">{fieldErrors.confirm_password}</p>
           )}
         </div>
 

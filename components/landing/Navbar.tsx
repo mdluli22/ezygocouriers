@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import BrandLogo from "@/components/BrandLogo";
 import { ChevronDown, Moon, Sun, UserRound } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -29,10 +29,7 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
   return (
     <nav className={`landing-nav ${scrolled ? "is-scrolled" : ""}`} aria-label="Main navigation">
       <div className="landing-shell nav-inner">
-        <Link href="/" className="brand-lockup" aria-label="EzyGo home">
-          <Image className="navbar-logo" src="/navbar-logo.png" alt="" width={1036} height={364} priority />
-          <span className="brand-name">EzyGo</span>
-        </Link>
+        <BrandLogo priority />
 
         <div className="nav-links">
           <Link href="#how-it-works">How it works</Link>
@@ -50,6 +47,7 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
               type="button"
               className="signin-trigger"
               onClick={() => setDropdownOpen((open) => !open)}
+              aria-label="Sign in options"
               aria-haspopup="menu"
               aria-expanded={dropdownOpen}
             >

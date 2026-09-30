@@ -3,11 +3,13 @@
 import { useEffect, useState, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   STATUS_LABELS,
   type DeliveryStatus,
 } from "@ezygo/contracts";
-import { STATUS_COLORS } from "@/lib/constants/delivery-status";
+import { ArrowLeft, ArrowUpRight, Check, CircleAlert, Clock3, Package, Phone, ShieldCheck, Truck, UserRound } from "lucide-react";
+import "./tracking.css";
 
 interface StatusLog {
   id: number;
@@ -40,10 +42,13 @@ interface Delivery {
   dropoff_city: string;
   dropoff_province: string;
   dropoff_postal_code: string;
-  quote_amount: string;
+  quote_amount: string | null;
   quote_currency: string;
   driver_name: string | null;
   driver_phone: string | null;
+  driver_avatar_url: string | null;
+  driver_vehicle_type: string | null;
+  driver_vehicle_reg: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -72,128 +77,82 @@ function formatAddress(d: Delivery, type: "pickup" | "dropoff") {
   ].filter(Boolean).join(", ");
 }
 
-function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="card space-y-3">
-      <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
-        {title}
-      </h3>
-      {children}
-    </div>
-  );
-}
+const STATUS_COPY: Record<DeliveryStatus, { title: string; description: string }> = {
+  pending: { title: "Your delivery starts here.", description: "Your request is in. We’re preparing the details for your delivery." },
+  quoted: { title: "Your quote is ready.", description: "Your delivery has been quoted. Confirmation is the next step." },
+  confirmed: { title: "Ready when you are.", description: "Complete your payment so we can assign a driver to your delivery." },
+  paid: { title: "Let’s get you moving.", description: "Payment received. We’re finding a driver for your parcel." },
+  assigned: { title: "Meet your driver.", description: "A driver has been assigned. Your parcel is awaiting pickup." },
+  picked_up: { title: "In good hands.", description: "Your driver has collected your parcel. Next stop: your recipient." },
+  in_transit: { title: "On the way.", description: "Your parcel is on its way to the drop-off address." },
+  delivered: { title: "Delivered. Just like that.", description: "Your parcel has reached its destination. Thank you for choosing EzyGo." },
+  cancelled: { title: "Delivery cancelled.", description: "This delivery has been cancelled. You can book a new delivery from your dashboard." },
+  failed: { title: "Delivery unsuccessful.", description: "This delivery could not be completed. Check the activity below for details." },
+};
 
 function InfoRow({ label, value }: { label: string; value: string | null }) {
   if (!value) return null;
-  return (
-    <div className="flex justify-between gap-4 text-sm">
-      <span style={{ color: "var(--color-text-secondary)" }}>{label}</span>
-      <span className="font-medium text-right" style={{ color: "var(--color-text-primary)" }}>{value}</span>
-    </div>
+  return <div className="tracking-detail-row"><dt>{label}</dt><dd>{value}</dd></div>;
+}
+
+function DriverPhoto({ name, url }: { name: string; url: string | null }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const usableUrl = url && (/^https?:\/\//i.test(url) || (url.startsWith("/") && !url.startsWith("//")));
+  const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+
+  return usableUrl && failedUrl !== url ? (
+    <Image className="tracking-driver-photo" src={url} alt={`${name}, your delivery driver`} width={64} height={64} unoptimized onError={() => setFailedUrl(url)} />
+  ) : (
+    <span className="tracking-driver-initials" role="img" aria-label={`${name} — photo unavailable`}>{initials || "—"}</span>
   );
 }
 
-function StatusTimeline({
-  current,
-  logs,
-}: {
-  current: DeliveryStatus;
-  logs: StatusLog[];
-}) {
-  const isCancelled = current === "cancelled";
-  const isFailed    = current === "failed";
-  const isTerminal  = isCancelled || isFailed;
-
-  // Build a map of status → log for timestamps
-  const logMap = new Map(logs.map((l) => [l.status, l]));
+function StatusTimeline({ current, logs }: { current: DeliveryStatus; logs: StatusLog[] }) {
+  const terminal = current === "cancelled" || current === "failed";
+  const orderedLogs = [...logs].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const currentLog = orderedLogs.find((log) => log.status === current);
+  const history = orderedLogs.filter((log) => log !== currentLog);
   const currentIndex = TIMELINE_STEPS.indexOf(current);
+  const upcoming = terminal || currentIndex < 0 ? [] : TIMELINE_STEPS.slice(currentIndex + 1);
 
   return (
-    <div className="card">
-      <h3 className="text-sm font-bold uppercase tracking-wider mb-5" style={{ color: "var(--color-text-muted)" }}>
-        Delivery Timeline
-      </h3>
-
-      {isTerminal && (
-        <div
-          className="flex items-center gap-3 p-3 rounded-xl mb-5 text-sm font-semibold"
-          style={{
-            backgroundColor: isCancelled ? "rgb(100 116 139 / 0.1)" : "rgb(239 68 68 / 0.08)",
-            color: isCancelled ? "var(--color-text-secondary)" : "var(--color-error)",
-          }}
-        >
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-          </svg>
-          This delivery has been {isCancelled ? "cancelled" : "marked as failed"}.
-        </div>
-      )}
-
-      <div className="space-y-0">
-        {TIMELINE_STEPS.map((step, i) => {
-          const log        = logMap.get(step);
-          const isComplete = !isTerminal && currentIndex > i;
-          const isCurrent  = !isTerminal && current === step;
-          return (
-            <div key={step} className="flex gap-4">
-              {/* Dot + line */}
-              <div className="flex flex-col items-center">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 z-10"
-                  style={{
-                    backgroundColor: isComplete
-                      ? "var(--color-primary)"
-                      : isCurrent
-                      ? "var(--color-accent)"
-                      : "var(--color-surface-raised)",
-                    border: isCurrent ? "3px solid var(--color-primary)" : "none",
-                  }}
-                >
-                  {isComplete ? (
-                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : isCurrent ? (
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "var(--color-primary)" }} />
-                  ) : (
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--color-text-muted)", opacity: 0.4 }} />
-                  )}
-                </div>
-                {i < TIMELINE_STEPS.length - 1 && (
-                  <div
-                    className="w-0.5 flex-1 my-1 min-h-[20px] transition-all duration-300"
-                    style={{
-                      backgroundColor: isComplete ? "var(--color-primary)" : "var(--color-border)",
-                      opacity: isComplete ? 0.4 : 1,
-                    }}
-                  />
-                )}
-              </div>
-
-              {/* Label */}
-              <div className="pb-5 pt-1 flex-1">
-                <p
-                  className="text-sm font-semibold"
-                  style={{
-                    color: isComplete || isCurrent
-                      ? "var(--color-text-primary)"
-                      : "var(--color-text-muted)",
-                  }}
-                >
-                  {STATUS_LABELS[step]}
-                </p>
-                {log && (
-                  <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-                    {formatDate(log.created_at)}
-                    {log.note ? ` · ${log.note}` : ""}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
+    <section className="tracking-panel tracking-activity" aria-labelledby="delivery-activity-heading">
+      <div className="tracking-activity-heading">
+        <div><h2 id="delivery-activity-heading">Delivery activity</h2><p>Your parcel’s progress, step by step.</p></div>
+        <span className="tracking-activity-icon"><Clock3 size={21} aria-hidden="true" /></span>
       </div>
-    </div>
+
+      <div className={`tracking-activity-current${terminal ? " is-terminal" : ""}`}>
+        <span className="tracking-activity-current-icon" aria-hidden="true">{terminal ? <CircleAlert size={22} /> : current === "delivered" ? <Check size={22} /> : <Package size={22} />}</span>
+        <div className="tracking-activity-current-copy">
+          <span className="tracking-eyebrow">{terminal || current === "delivered" ? "FINAL STATUS" : "CURRENT STATUS"}</span>
+          <h3>{STATUS_LABELS[current]}</h3>
+          <p>{currentLog?.note || STATUS_COPY[current].description}</p>
+          {currentLog && <time dateTime={currentLog.created_at}>{formatDate(currentLog.created_at)}</time>}
+        </div>
+      </div>
+
+      <div className="tracking-activity-history-heading"><h3>Previous updates</h3><span>Newest first</span></div>
+      {history.length > 0 ? (
+        <ol className="tracking-activity-feed">
+          {history.map((log) => (
+            <li key={log.id}>
+              <time dateTime={log.created_at}>
+                <span>{new Date(log.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}</span>
+                <strong>{new Date(log.created_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}</strong>
+              </time>
+              <span className="tracking-activity-feed-dot" aria-hidden="true" />
+              <div><h4>{STATUS_LABELS[log.status]}</h4>{log.note && <p>{log.note}</p>}</div>
+            </li>
+          ))}
+        </ol>
+      ) : <p className="tracking-activity-empty">No earlier updates yet. Recorded delivery updates will appear here.</p>}
+
+      {upcoming.length > 0 && <details className="tracking-activity-upcoming">
+        <summary><span>Up next <strong>{STATUS_LABELS[upcoming[0]]}</strong></span><span className="tracking-activity-expand" aria-hidden="true">+</span></summary>
+        <ol aria-label="Upcoming delivery steps">{upcoming.map((step, index) => <li key={step}><span aria-hidden="true">{index + 1}</span>{STATUS_LABELS[step]}</li>)}</ol>
+      </details>}
+    </section>
   );
 }
 
@@ -201,9 +160,20 @@ function StatusTimeline({
 
 export default function TrackingPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<TrackingLoading />}>
       <TrackingContent />
     </Suspense>
+  );
+}
+
+function TrackingLoading() {
+  return (
+    <div className="tracking-page tracking-loading" role="status" aria-live="polite">
+      <span className="tracking-eyebrow">YOUR DELIVERY</span>
+      <h1>Getting your delivery details</h1>
+      <p>Just a moment while we check your parcel.</p>
+      <div className="tracking-loading-grid" aria-hidden="true"><div /><div /></div>
+    </div>
   );
 }
 
@@ -238,7 +208,7 @@ function TrackingContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Cancellation failed.");
 
-      setDelivery((current) => current ? { ...current, status: "cancelled" } : current);
+      setDelivery((current) => current ? { ...current, status: "cancelled", updated_at: new Date().toISOString() } : current);
       setLogs((current) => [
         ...current,
         {
@@ -257,234 +227,121 @@ function TrackingContent() {
   }
 
   useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
     async function load() {
       try {
-        const res  = await fetch(`/api/deliveries/${params.id}`);
+        const res = await fetch(`/api/deliveries/${params.id}`, { signal: controller.signal, cache: "no-store" });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Not found");
-        setDelivery(data.data.delivery);
-        setLogs(data.data.logs);
+        if (!res.ok) throw new Error(data.message || "Delivery not found.");
+        if (!controller.signal.aborted) {
+          setDelivery(data.data.delivery);
+          setLogs(data.data.logs);
+        }
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "Failed to load delivery.");
+        if (!controller.signal.aborted) setError(e instanceof Error ? e.message : "Failed to load delivery.");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
-    load();
+    void load();
+    return () => controller.abort();
   }, [params.id]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-primary)" }} viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-        </svg>
-      </div>
-    );
-  }
+  if (loading) return <TrackingLoading />;
 
   if (error || !delivery) {
     return (
-      <div className="max-w-lg mx-auto text-center py-20 space-y-4">
-        <p className="font-bold text-lg" style={{ color: "var(--color-primary)" }}>Delivery not found</p>
-        <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>{error}</p>
-        <Link href="/dashboard" className="btn-primary inline-flex">Back to dashboard</Link>
+      <div className="tracking-page">
+        <Link href="/dashboard" className="tracking-back"><ArrowLeft size={17} /> All deliveries</Link>
+        <section className="tracking-panel tracking-error" role="alert">
+          <CircleAlert size={32} aria-hidden="true" />
+          <h1>We couldn’t load this delivery.</h1>
+          <p>{error || "This delivery is unavailable. Return to your deliveries to try again."}</p>
+          <Link href="/dashboard" className="tracking-primary-button">Back to deliveries <ArrowUpRight size={18} /></Link>
+        </section>
       </div>
     );
   }
 
+  const terminal = delivery.status === "cancelled" || delivery.status === "failed";
+  const copy = STATUS_COPY[delivery.status];
+  const progress = TIMELINE_STEPS.indexOf(delivery.status);
+  const canCancel = (["pending", "quoted", "confirmed", "paid", "assigned"] as DeliveryStatus[]).includes(delivery.status);
+  const fee = delivery.quote_amount === null ? "Quote pending" : `${delivery.quote_currency} ${Number(delivery.quote_amount).toFixed(2)}`;
+  const milestones = [
+    { label: "Booked", reached: progress >= 2 },
+    { label: "Driver assigned", reached: progress >= 4 },
+    { label: "On the way", reached: progress >= 5 },
+    { label: "Delivered", reached: progress >= 7 },
+  ];
+
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Just confirmed banner */}
-      {justConfirmed && (
-        <div
-          className="flex items-center gap-3 p-4 rounded-xl text-sm font-semibold"
-          style={{
-            backgroundColor: "rgb(16 185 129 / 0.1)",
-            color: "var(--color-success)",
-            border: "1px solid rgb(16 185 129 / 0.2)",
-          }}
-        >
-          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Delivery confirmed! Proceed to payment to get a driver assigned.
-        </div>
-      )}
+    <div className="tracking-page">
+      <Link href="/dashboard" className="tracking-back"><ArrowLeft size={17} /> All deliveries</Link>
+      <header className="tracking-header">
+        <div><p className="tracking-eyebrow">YOUR DELIVERY</p><h1>Track your parcel</h1></div>
+        <div className="tracking-reference"><span>Tracking number</span><strong>{delivery.tracking_number}</strong></div>
+      </header>
 
-      {paymentResult === "success" && (
-        <div
-          className="flex items-center gap-3 p-4 rounded-xl text-sm font-semibold"
-          style={{
-            backgroundColor: "rgb(16 185 129 / 0.1)",
-            color: "var(--color-success)",
-            border: "1px solid rgb(16 185 129 / 0.2)",
-          }}
-        >
-          Checkout completed. Your payment provider is confirming the transaction.
-        </div>
-      )}
+      {justConfirmed && delivery.status === "confirmed" && <div className="tracking-notice" role="status"><Check size={18} />Delivery confirmed. Complete payment to get a driver assigned.</div>}
+      {paymentResult === "success" && <div className="tracking-notice" role="status">Checkout completed. Your payment provider is confirming the transaction.</div>}
+      {paymentResult === "cancelled" && <div className="tracking-notice" role="status">Payment was cancelled. You can try again when you are ready.</div>}
+      {paymentResult === "failed" && <div className="tracking-notice tracking-notice-error" role="alert"><CircleAlert size={18} />Payment failed. You can try Yoco again when you are ready.</div>}
 
-      {paymentResult === "cancelled" && (
-        <div
-          className="p-4 rounded-xl text-sm font-semibold"
-          style={{
-            backgroundColor: "rgb(245 158 11 / 0.1)",
-            color: "var(--color-warning)",
-            border: "1px solid rgb(245 158 11 / 0.2)",
-          }}
-        >
-          Payment was cancelled. You can try again when you are ready.
-        </div>
-      )}
+      <div className="tracking-grid">
+        <div className="tracking-main-column">
+          <section className="tracking-status" aria-labelledby="delivery-status-title">
+            <div className="tracking-status-top"><span className={`tracking-status-badge${terminal ? " is-terminal" : ""}`}><span />{STATUS_LABELS[delivery.status]}</span><Package size={28} strokeWidth={1.5} aria-hidden="true" /></div>
+            <h2 id="delivery-status-title">{copy.title}</h2><p>{copy.description}</p>
+            {!terminal && <ol className="tracking-progress" aria-label="Delivery progress">{milestones.map((milestone) => <li key={milestone.label} className={milestone.reached ? "is-reached" : ""}><span aria-hidden="true" /><span>{milestone.label}{milestone.reached && <span className="sr-only"> — completed</span>}</span></li>)}</ol>}
+            <div className="tracking-updated"><Clock3 size={14} aria-hidden="true" /> Last updated {formatDate(delivery.updated_at)}</div>
+          </section>
 
-      {paymentResult === "failed" && (
-        <div
-          className="p-4 rounded-xl text-sm font-semibold"
-          style={{
-            backgroundColor: "rgb(239 68 68 / 0.1)",
-            color: "var(--color-error)",
-            border: "1px solid rgb(239 68 68 / 0.2)",
-          }}
-        >
-          Payment failed. You can try Yoco again when you are ready.
-        </div>
-      )}
+          <section className="tracking-panel tracking-route">
+            <div className="tracking-section-title"><h2>The journey</h2><span>Pickup to drop-off</span></div>
+            <ol className="tracking-stops">
+              {(["pickup", "dropoff"] as const).map((stop) => <li key={stop}>
+                <span className={`tracking-stop-marker ${stop}`} aria-hidden="true" />
+                <div><p className="tracking-eyebrow">{stop === "pickup" ? "PICKUP" : "DROP-OFF"}</p><h3>{stop === "pickup" ? delivery.pickup_street : delivery.dropoff_street}</h3>
+                  <p>{formatAddress(delivery, stop)}</p>
+                  <div className="tracking-contact"><UserRound size={14} aria-hidden="true" /><span>{stop === "pickup" ? delivery.pickup_contact_name : delivery.recipient_name}</span><span>{stop === "pickup" ? delivery.pickup_contact_phone : delivery.recipient_phone}</span></div>
+                </div>
+              </li>)}
+            </ol>
+          </section>
 
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <Link
-            href="/dashboard"
-            className="text-sm font-semibold flex items-center gap-1 mb-2 hover:opacity-70 transition-opacity"
-            style={{ color: "var(--color-text-secondary)" }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Dashboard
-          </Link>
-          <h1 className="text-2xl font-black" style={{ color: "var(--color-primary)" }}>
-            {delivery.tracking_number}
-          </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
-            Created {formatDate(delivery.created_at)}
-          </p>
+          <section className="tracking-panel">
+            <div className="tracking-section-title"><h2>Parcel details</h2><Package size={20} aria-hidden="true" /></div>
+            <dl><InfoRow label="Description" value={delivery.parcel_description} /><InfoRow label="Special instructions" value={delivery.special_instructions} />{delivery.fragile && <InfoRow label="Handling" value="Fragile · handle with care" />}</dl>
+            {delivery.require_pin && <div className="tracking-security"><ShieldCheck size={21} aria-hidden="true" /><div><strong>Secure handover</strong><p>{delivery.delivery_pin_sent_at ? "Delivery PIN sent to the recipient." : "A delivery PIN will be sent after payment."}</p></div></div>}
+          </section>
         </div>
-        <span className={`badge text-sm px-3 py-1.5 ${STATUS_COLORS[delivery.status]}`}>
-          {STATUS_LABELS[delivery.status]}
-        </span>
+
+        <aside className="tracking-sidebar" aria-label="Driver and payment details">
+          <section className="tracking-panel">
+            <div className="tracking-section-title"><h2>Your driver</h2><Truck size={20} aria-hidden="true" /></div>
+            <div className="tracking-driver">
+              {delivery.driver_name ? <DriverPhoto name={delivery.driver_name} url={delivery.driver_avatar_url} /> : <div className="tracking-avatar"><UserRound size={25} aria-hidden="true" /></div>}
+              <div><h3>{delivery.driver_name || (terminal ? "No driver assigned" : "Awaiting assignment")}</h3><p>{delivery.driver_name ? "Your delivery partner" : terminal ? "This delivery has ended." : "Driver details will appear here."}</p></div>
+            </div>
+            {delivery.driver_name && <dl className="tracking-driver-vehicle">
+              <InfoRow label="Vehicle" value={delivery.driver_vehicle_type || "Not provided yet"} />
+              <div className="tracking-detail-row"><dt>Number plate</dt><dd>{delivery.driver_vehicle_reg ? <span className="tracking-number-plate">{delivery.driver_vehicle_reg}</span> : "Not provided yet"}</dd></div>
+            </dl>}
+            {delivery.driver_phone && delivery.driver_name && <a className="tracking-secondary-button" href={`tel:${delivery.driver_phone}`}><Phone size={16} />Call driver</a>}
+          </section>
+          <section className="tracking-panel tracking-payment">
+            <div className="tracking-section-title"><h2>Delivery summary</h2></div>
+            <div className="tracking-fee"><span>Delivery fee <small>Flat rate</small></span><strong>{fee}</strong></div>
+            <p className="tracking-booked">Booked {formatDate(delivery.created_at)}</p>
+            {delivery.status === "confirmed" && <><Link href={`/dashboard/tracking/${delivery.id}/pay`} className="tracking-primary-button">Pay now <ArrowUpRight size={18} /></Link><p className="tracking-payment-note"><ShieldCheck size={14} />Secure payment via Yoco</p></>}
+          </section>
+          {canCancel && <div className="tracking-cancel"><p>Change of plans? You can cancel before your parcel is picked up.</p>{cancelError && <p role="alert" className="tracking-cancel-error">{cancelError}</p>}<button type="button" onClick={handleCancel} disabled={cancelling}>{cancelling ? "Cancelling…" : "Cancel delivery"}</button></div>}
+        </aside>
+        <StatusTimeline current={delivery.status} logs={logs} />
       </div>
-
-      {/* Timeline */}
-      <StatusTimeline current={delivery.status} logs={logs} />
-
-      {/* Quote */}
-      <InfoCard title="Delivery Fee">
-        <div className="flex items-center justify-between">
-          <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>Flat rate</span>
-          <span className="text-2xl font-black" style={{ color: "var(--color-accent)" }}>
-            {delivery.quote_currency} {parseFloat(delivery.quote_amount).toFixed(2)}
-          </span>
-        </div>
-      </InfoCard>
-
-      {/* Addresses */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <InfoCard title="Pickup">
-          <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-            {delivery.pickup_contact_name}
-          </p>
-          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-            {formatAddress(delivery, "pickup")}
-          </p>
-          <InfoRow label="Phone" value={delivery.pickup_contact_phone} />
-        </InfoCard>
-
-        <InfoCard title="Drop-off">
-          <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-            {delivery.recipient_name}
-          </p>
-          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-            {formatAddress(delivery, "dropoff")}
-          </p>
-          <InfoRow label="Phone" value={delivery.recipient_phone} />
-        </InfoCard>
-      </div>
-
-      {/* Parcel */}
-      <InfoCard title="Parcel Details">
-        <InfoRow label="Description"         value={delivery.parcel_description} />
-        <InfoRow label="Special instructions" value={delivery.special_instructions} />
-        {delivery.fragile && <InfoRow label="Handling" value="Fragile · handle with care" />}
-        {delivery.require_pin && (
-          <InfoRow
-            label="Handover security"
-            value={delivery.delivery_pin_sent_at ? "PIN sent to recipient" : "PIN will be sent after payment"}
-          />
-        )}
-      </InfoCard>
-
-      {/* Driver (only if assigned) */}
-      {delivery.driver_name && (
-        <InfoCard title="Assigned Driver">
-          <InfoRow label="Name"  value={delivery.driver_name} />
-          <InfoRow label="Phone" value={delivery.driver_phone} />
-        </InfoCard>
-      )}
-
-      {/* Pay CTA — show when confirmed and not yet paid */}
-      {delivery.status === "confirmed" && (
-        <div
-          className="p-5 rounded-2xl flex items-center justify-between gap-4 flex-wrap"
-          style={{ backgroundColor: "var(--color-primary)" }}
-        >
-          <div>
-            <p className="font-bold text-white">Ready to pay?</p>
-            <p className="text-sm text-white opacity-70 mt-0.5">
-              Secure payment via Yoco · R{parseFloat(delivery.quote_amount).toFixed(2)}
-            </p>
-          </div>
-          <Link
-            href={`/dashboard/tracking/${delivery.id}/pay`}
-            className="btn-accent"
-          >
-            Pay now →
-          </Link>
-        </div>
-      )}
-
-      {(["pending", "quoted", "confirmed", "paid", "assigned"] as DeliveryStatus[]).includes(delivery.status) && (
-        <div
-          className="p-5 rounded-2xl space-y-3"
-          style={{
-            backgroundColor: "rgb(239 68 68 / 0.05)",
-            border: "1px solid rgb(239 68 68 / 0.16)",
-          }}
-        >
-          <div>
-            <p className="font-bold" style={{ color: "var(--color-text-primary)" }}>Need to cancel?</p>
-            <p className="text-sm mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
-              You can cancel this delivery until the parcel has been picked up.
-            </p>
-          </div>
-          {cancelError && (
-            <p className="text-sm font-semibold" role="alert" style={{ color: "var(--color-error)" }}>
-              {cancelError}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={cancelling}
-            className="px-4 py-2.5 rounded-xl text-sm font-bold transition-opacity disabled:opacity-60"
-            style={{ backgroundColor: "rgb(239 68 68 / 0.12)", color: "var(--color-error)" }}
-          >
-            {cancelling ? "Cancelling…" : "Cancel delivery"}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -39,7 +39,7 @@ export default function AdminSidebar({
       <div className="admin-sidebar-brand">
         <BrandLogo
           href={dashboardHref}
-          size="sm"
+          size="md"
           variant="dark"
           ariaLabel="EzyGo admin dashboard"
         />

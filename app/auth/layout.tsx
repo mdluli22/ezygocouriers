@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AuthLayoutSwitch from "@/components/auth/AuthLayoutSwitch";
 import BrandLogo from "@/components/BrandLogo";
 
 export const metadata: Metadata = {
@@ -11,6 +12,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
+    <AuthLayoutSwitch content={children}>
     <div className="min-h-screen flex">
       {/* ── Left Brand Panel ── */}
       <div
@@ -113,5 +115,6 @@ export default function AuthLayout({
         </div>
       </div>
     </div>
+    </AuthLayoutSwitch>
   );
 }

@@ -60,6 +60,7 @@ export default function DashboardNav() {
       <Link
         href="/dashboard/deliveries/new"
         className="portal-header-cta"
+        aria-label="New delivery"
       >
         <Plus size={17} strokeWidth={2.7} />
         <span className="hidden sm:inline">New delivery</span>
