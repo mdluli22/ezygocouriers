@@ -1,5 +1,7 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import { useState, useEffect } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { useRouter } from "next/navigation";
@@ -40,7 +42,7 @@ function AuthModal({ onSuccess, onClose }: { onSuccess: (user: User) => void; on
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useTimedMessage("", "");
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -92,7 +94,7 @@ function AuthModal({ onSuccess, onClose }: { onSuccess: (user: User) => void; on
           {tab === "login" ? "Welcome back" : "Create account"}
         </h2>
         <p className="text-sm mb-5" style={{ color: "var(--color-text-muted)" }}>
-          {tab === "login" ? "Sign in to confirm your delivery." : "Quick signup — takes 30 seconds."}
+          {tab === "login" ? "Sign in to confirm your delivery." : "Quick signup, takes 30 seconds."}
         </p>
 
         {/* Tab toggle */}
@@ -186,7 +188,7 @@ export default function NewDeliveryPage() {
 
   // Submission
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useTimedMessage("", "");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const paymentMethod: PaymentProvider = "yoco";
   const isProcessing = loading;
@@ -607,13 +609,13 @@ export default function NewDeliveryPage() {
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-text-muted)" }}>SENDER</span>
                 <span className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-                  {pickupContactName || user?.full_name || "—"}{pickupPhone ? ` · ${pickupPhone}` : ""}
+                  {pickupContactName || user?.full_name || "Not available"}{pickupPhone ? ` · ${pickupPhone}` : ""}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-text-muted)" }}>RECIPIENT</span>
                 <span className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-                  {recipientName || "—"}{recipientPhone ? ` · ${recipientPhone}` : ""}
+                  {recipientName || "Not available"}{recipientPhone ? ` · ${recipientPhone}` : ""}
                 </span>
               </div>
             </div>

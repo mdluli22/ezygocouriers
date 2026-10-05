@@ -1,5 +1,7 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -18,7 +20,7 @@ export default function PayDeliveryPage() {
   const params = useParams<{ id: string }>();
   const selectedProvider: PaymentProvider = "yoco";
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useTimedMessage("", "");
 
   async function initialisePayment() {
     if (!navigator.onLine) {

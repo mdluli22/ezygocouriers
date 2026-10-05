@@ -1,5 +1,7 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -59,7 +61,8 @@ export default function DriverDeliveryDetailPage() {
   const [error, setError]           = useState("");
   const [updating, setUpdating]     = useState<DeliveryStatus | null>(null);
   const [note, setNote]             = useState("");
-  const [updateError, setUpdateError] = useState("");
+  const [updateError, setUpdateError] = useTimedMessage("", "");
+  const [success, setSuccess] = useTimedMessage("", "");
   const [showNote, setShowNote]     = useState(false);
   const [deliveryPin, setDeliveryPin] = useState("");
   const [online, setOnline] = useState(true);
@@ -122,6 +125,7 @@ export default function DriverDeliveryDetailPage() {
       setDeliveryPin("");
       setShowNote(false);
       await load();
+      setSuccess(`Delivery updated: ${STATUS_LABELS[newStatus]}.`);
     } catch {
       setUpdateError("Something went wrong. Please try again.");
     } finally {
@@ -152,6 +156,7 @@ export default function DriverDeliveryDetailPage() {
   return (
     <div className="driver-detail">
       <Link href="/driver" className="trip-back"><ArrowLeft size={16} />All deliveries</Link>
+      {success && <div className="portal-notice is-success" role="status"><CheckCircle2 size={18} aria-hidden="true" />{success}</div>}
       <header className="trip-detail-header"><div><span className="trip-eyebrow">DELIVERY DETAILS</span><h1>{headline}</h1><p>{statusDescription}</p></div><div className="trip-reference"><span>Tracking number</span><strong>{delivery.tracking_number}</strong></div></header>
 
       <div className="trip-detail-grid">

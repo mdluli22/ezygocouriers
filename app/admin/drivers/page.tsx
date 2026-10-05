@@ -1,5 +1,7 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import { useEffect, useState } from "react";
 
 interface Driver {
@@ -28,7 +30,7 @@ export default function AdminDriversPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm]         = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast]       = useState({ msg: "", ok: true });
+  const [toast, setToast]       = useTimedMessage({ msg: "", ok: true }, { msg: "", ok: true });
 
   async function load() {
     setLoading(true);
@@ -42,7 +44,6 @@ export default function AdminDriversPage() {
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
-    setTimeout(() => setToast({ msg: "", ok: true }), 3500);
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -81,9 +82,6 @@ export default function AdminDriversPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>Drivers</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
-            Manage driver accounts and availability
-          </p>
         </div>
         <button className="btn-primary" onClick={() => setShowModal(true)}>
           + Create Driver
@@ -92,7 +90,7 @@ export default function AdminDriversPage() {
 
       {/* Toast */}
       {toast.msg && (
-        <div
+        <div role={toast.ok ? "status" : "alert"}
           className="p-3 rounded-xl text-sm font-semibold"
           style={{
             backgroundColor: toast.ok ? "rgb(16 185 129 / 0.1)" : "rgb(239 68 68 / 0.08)",

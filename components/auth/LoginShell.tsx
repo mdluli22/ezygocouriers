@@ -11,9 +11,8 @@ export default function LoginShell({ children, role, mode = "login" }: { childre
       <header className="brand-login-nav"><BrandLogo size="md" priority /><Link href="/" className="brand-login-home"><ArrowLeft size={15} aria-hidden="true" />Back to home</Link></header>
       <main className="brand-login-layout">
         <section className="brand-login-story" aria-label={driver ? "Deliver with EzyGo" : "Welcome to EzyGo"}>
-          <span className="brand-login-pill">{driver ? <Truck size={14} aria-hidden="true" /> : <Package size={14} aria-hidden="true" />}{driver ? "For the people on the move" : "Your local delivery partner"}</span>
+          {/* <span className="brand-login-pill">{driver ? <Truck size={14} aria-hidden="true" /> : <Package size={14} aria-hidden="true" />}{driver ? "For the people on the move" : "Your local delivery partner"}</span> */}
           <h2>{driver ? "Every delivery." : "From your door."}<span>{driver ? "A little easier." : "To theirs. Fast."}</span></h2>
-          <p>{driver ? "Your pickups, routes and handovers. All in one place, ready for the road ahead." : "Send a parcel, follow its journey and keep your day moving. Simple delivery starts here."}</p>
           <div className="brand-login-journey" aria-hidden="true">
             <div className="brand-login-journey-top"><span><Package size={20} /></span><div><small>{driver ? "Your delivery workspace" : "Delivery made simple"}</small><strong>{driver ? "Ready for your next stop" : "A little closer to their door"}</strong></div><i><Check size={16} /></i></div>
             <div className="brand-login-route"><div><span />Pickup</div><i /><Navigation size={19} /><i /><div><span />Drop-off</div></div>

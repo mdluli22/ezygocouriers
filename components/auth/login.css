@@ -15,9 +15,9 @@
   position: relative;
   isolation: isolate;
   color: #143836;
-  background: radial-gradient(circle at 5% 55%, #d7ece180, transparent 35%), linear-gradient(135deg, #f8fbf8 0%, #eef7f1 52%, #e4f2ec 100%);
+  background: #ffffff;
 }
-.brand-login::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: linear-gradient(#2f4f4f06 1px, transparent 1px), linear-gradient(90deg, #2f4f4f06 1px, transparent 1px); background-size: 34px 34px; mask-image: linear-gradient(to right, #000, transparent 75%); }
+.brand-login::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: none; background-size: 34px 34px; mask-image: none; }
 .brand-login :is(a, button, input):focus-visible { outline: 3px solid #c58312; outline-offset: 4px; }
 .brand-login button { cursor: pointer; }
 .brand-login button:disabled { cursor: wait; }

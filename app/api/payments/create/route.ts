@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Fetch delivery — verify ownership and status
+    // 1. Fetch delivery, verify ownership and status
     const result = await query<{
       id: number;
       tracking_number: string;

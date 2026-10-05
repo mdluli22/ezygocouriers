@@ -12,7 +12,6 @@ import {
   Navigation,
   PackageCheck,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import AddressAutocomplete, { PlaceResult } from "@/components/ui/AddressAutocomplete";
 
@@ -53,26 +52,16 @@ export default function HeroSection() {
       version="weekly"
     >
       <section className="landing-hero">
-        <div className="hero-noise" aria-hidden="true" />
         <div className="hero-orb hero-orb-one" aria-hidden="true" />
         <div className="hero-orb hero-orb-two" aria-hidden="true" />
 
         <div className="landing-shell hero-layout">
           <div className="hero-copy">
-            {/* <div className="eyebrow-pill">
-              <Sparkles size={15} strokeWidth={2.4} />
-              Cape Town&apos;s simple courier service
-            </div> */}
 
             <h1>
               From your door
               <span>to theirs. Fast.</span>
             </h1>
-
-            <p className="hero-lede">
-              Reliable same-city delivery without the complicated quotes. Book in minutes,
-              pay one flat fee, and follow your parcel all the way.
-            </p>
 
             <div className="hero-actions">
               <a href="#quick-quote" className="hero-primary-action">
@@ -92,7 +81,6 @@ export default function HeroSection() {
 
           <div className="hero-visual">
             <div className="route-backdrop" aria-hidden="true">
-              <div className="route-grid" />
               <div className="route-line route-line-one" />
               <div className="route-line route-line-two" />
               <span className="route-pin route-pin-start"><MapPin size={17} /></span>

@@ -53,7 +53,7 @@ export async function generateQuote(): Promise<QuoteResult> {
 }
 
 /**
- * Accept a quote — moves its status to 'accepted'.
+ * Accept a quote, moves its status to 'accepted'.
  */
 export async function acceptQuote(quoteId: number): Promise<void> {
   await query(

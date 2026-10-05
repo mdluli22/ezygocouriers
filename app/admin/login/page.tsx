@@ -1,5 +1,7 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -31,7 +33,7 @@ function AdminLoginForm() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useTimedMessage("", "");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
@@ -102,7 +104,7 @@ function AdminLoginForm() {
           <div
             className="absolute inset-0 opacity-5"
             style={{
-              backgroundImage: "linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)",
+              backgroundImage: "none",
               backgroundSize: "40px 40px",
             }}
           />
@@ -122,9 +124,6 @@ function AdminLoginForm() {
               <br />
               <span style={{ color: "var(--color-accent)" }}>Dashboard</span>
             </h2>
-            <p className="mt-4 text-lg opacity-75 text-white leading-relaxed max-w-sm">
-              Manage deliveries, drivers, users, and platform settings from one place.
-            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -143,7 +142,7 @@ function AdminLoginForm() {
         </div>
 
         <p className="relative z-10 text-xs opacity-40 text-white">
-          © {new Date().getFullYear()} EzyGo Couriers — Restricted access
+          © {new Date().getFullYear()} EzyGo Couriers, Restricted access
         </p>
       </div>
 

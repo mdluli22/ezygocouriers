@@ -1,5 +1,7 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import { useEffect, useState } from "react";
 
 interface User {
@@ -19,7 +21,7 @@ export default function AdminUsersPage() {
   const [users, setUsers]     = useState<User[]>([]);
   const [filter, setFilter]   = useState<typeof ROLE_FILTERS[number]>("all");
   const [loading, setLoading] = useState(true);
-  const [toast, setToast]     = useState({ msg: "", ok: true });
+  const [toast, setToast]     = useTimedMessage({ msg: "", ok: true }, { msg: "", ok: true });
 
   async function load(role: typeof ROLE_FILTERS[number]) {
     setLoading(true);
@@ -34,7 +36,6 @@ export default function AdminUsersPage() {
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
-    setTimeout(() => setToast({ msg: "", ok: true }), 3000);
   }
 
   async function handleToggle(userId: number) {
@@ -59,14 +60,11 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>Users</h1>
-        <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
-          View and manage all user accounts
-        </p>
       </div>
 
       {/* Toast */}
       {toast.msg && (
-        <div
+        <div role={toast.ok ? "status" : "alert"}
           className="p-3 rounded-xl text-sm font-semibold"
           style={{
             backgroundColor: toast.ok ? "rgb(16 185 129 / 0.1)" : "rgb(239 68 68 / 0.08)",
@@ -127,7 +125,7 @@ export default function AdminUsersPage() {
                 >
                   <td className="px-4 py-3 font-semibold" style={{ color: "var(--color-text-primary)" }}>{u.full_name}</td>
                   <td className="px-4 py-3" style={{ color: "var(--color-text-secondary)" }}>{u.email}</td>
-                  <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>{u.phone ?? "—"}</td>
+                  <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>{u.phone ?? "Not available"}</td>
                   <td className="px-4 py-3">
                     <span className={`badge text-xs px-2 py-0.5 ${ROLE_COLORS[u.role] ?? ""}`}>{u.role}</span>
                   </td>

@@ -89,14 +89,14 @@ export default function DriverDashboardPage() {
   return (
     <div className="dispatch-page">
       <header className="dispatch-header">
-        <div><p className="dispatch-eyebrow">DRIVER WORKSPACE</p><h1>Your deliveries</h1><p>{driverName ? `${driverName}, here’s what’s on your route.` : "Your assignments, from pickup to handover."}</p></div>
+        <div><p className="dispatch-eyebrow">DRIVER WORKSPACE</p><h1>{driverName ? `${driverName}’s deliveries` : "Your deliveries"}</h1></div>
         <button className="dispatch-refresh" onClick={() => setRefreshKey(value => value + 1)} disabled={loading}><RefreshCw size={16} aria-hidden="true" />{loading ? "Refreshing…" : "Refresh"}</button>
       </header>
 
       <dl className="dispatch-stats" aria-label="Delivery totals">
-        <div><dt><Navigation size={17} aria-hidden="true" />Active deliveries</dt><dd>{loading ? "—" : active.length}</dd></div>
-        <div><dt><Clock3 size={17} aria-hidden="true" />Awaiting pickup</dt><dd>{loading ? "—" : awaitingPickup.length}</dd></div>
-        <div><dt><CheckCircle2 size={17} aria-hidden="true" />Delivered</dt><dd>{loading ? "—" : completed.length}</dd></div>
+        <div><dt><Navigation size={17} aria-hidden="true" />Active deliveries</dt><dd>{loading ? "Loading" : active.length}</dd></div>
+        <div><dt><Clock3 size={17} aria-hidden="true" />Awaiting pickup</dt><dd>{loading ? "Loading" : awaitingPickup.length}</dd></div>
+        <div><dt><CheckCircle2 size={17} aria-hidden="true" />Delivered</dt><dd>{loading ? "Loading" : completed.length}</dd></div>
       </dl>
 
       {error && <div className="dispatch-error" role="alert"><p>{error} {deliveries.length > 0 && "Showing previously loaded deliveries."}</p><button onClick={() => setRefreshKey(value => value + 1)}>Try again</button></div>}

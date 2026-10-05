@@ -1,5 +1,7 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -19,9 +21,9 @@ function VerifyEmailForm() {
   const email = searchParams.get("email")?.trim() ?? "";
 
   const [otp, setOtp] = useState("");
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState(
-    email ? `We sent a six-digit code to ${email}.` : ""
+  const [error, setError] = useTimedMessage("", "");
+  const [notice, setNotice] = useTimedMessage(
+    email ? `We sent a six-digit code to ${email}.` : "", ""
   );
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
@@ -102,7 +104,7 @@ function VerifyEmailForm() {
       </div>
 
       {notice && (
-        <div
+        <div role="status"
           className="p-4 rounded-xl text-sm font-medium"
           style={{
             backgroundColor: "rgb(34 197 94 / 0.1)",
@@ -115,7 +117,7 @@ function VerifyEmailForm() {
       )}
 
       {error && (
-        <div
+        <div role="alert"
           className="p-4 rounded-xl text-sm font-medium"
           style={{
             backgroundColor: "rgb(239 68 68 / 0.08)",
