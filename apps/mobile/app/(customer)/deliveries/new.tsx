@@ -66,10 +66,10 @@ export default function NewDelivery() {
 const booking = StyleSheet.create({
   serviceNote: { flexDirection: "row", alignItems: "center", gap: 9, padding: 13, backgroundColor: "#f4f8f5", borderRadius: 13 },
   serviceText: { flex: 1, fontSize: 12, lineHeight: 18, color: colors.muted },
-  sizes: { flexDirection: "row", gap: 8 },
-  size: { flex: 1, minHeight: 117, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 17, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "space-between", gap: 9, backgroundColor: colors.surface },
+  sizes: { gap: 10 },
+  size: { flexDirection: "row", minHeight: 66, paddingVertical: 14, paddingHorizontal: 18, borderRadius: 24, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "space-between", gap: 9, backgroundColor: colors.surface },
   selectedSize: { backgroundColor: "#fff4d9", borderColor: colors.accent, borderWidth: 2 },
-  sizeLabel: { fontSize: 12, fontWeight: "700", textTransform: "capitalize", color: colors.ink },
+  sizeLabel: { flex: 1, fontSize: 14, fontWeight: "700", textTransform: "capitalize", color: colors.ink },
   pressed: { opacity: .8, transform: [{ scale: .97 }] },
   option: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, backgroundColor: "#f4f8f5", padding: 12, borderRadius: 14 },
 });

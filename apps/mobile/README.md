@@ -63,3 +63,49 @@ Google sign-in also requires a native development build with the registered
 `ezygo://` scheme; Expo Go cannot complete that return flow.
 
 Phase 6 push, duty controls, background tracking policy and customer map setup: [native operations](../../docs/mobile-native-operations.md).
+
+## Local iPhone development build (free Apple Personal Team)
+
+Install full Xcode from the Mac App Store, launch it, and install its iOS platform
+components. Select Xcode in Settings → Locations → Command Line Tools. Add your
+Apple Account in Xcode Settings → Accounts, connect and trust your iPhone, and
+enable Developer Mode on the phone when prompted.
+
+From the repository root:
+
+```sh
+npm run ios:device --workspace @ezygo/mobile
+```
+
+Select your physical iPhone and Personal Team when prompted. If signing needs
+manual setup, open `apps/mobile/ios/EzyGoCouriers.xcworkspace` in Xcode, select the
+app target's Signing & Capabilities, enable automatic signing, and select your
+Personal Team. If the bundle identifier is unavailable to your account, change
+`ios.bundleIdentifier` in `app.json` to an identifier you own and regenerate.
+
+For later JavaScript development:
+
+```sh
+npm run start:personal --workspace @ezygo/mobile -- --clear
+```
+
+Open the installed EzyGo app, not Expo Go. Keep the phone and Mac on the same
+network. The API remains `https://ezygocouriers.co.za`; a local API server isn't
+required. Use `ios:device` again after changing native dependencies or permissions.
+Free signing profiles expire after seven days, so rebuild/reinstall when needed.
+
+These scripts set `EZYGO_IOS_PERSONAL_TEAM=1` consistently for native generation
+and Metro. This removes the APNs signing entitlement and disables iOS push
+registration in this build, because free Personal Teams cannot provision APNs.
+It does not bypass login, email verification, or location permission prompts.
+Use `npm run ios:prepare --workspace @ezygo/mobile` to generate native sources
+without installing CocoaPods. Generated native directories stay gitignored.
+
+## EAS builds (optional, paid Apple membership for physical iPhones)
+
+`eas.json` contains `development` and `development-simulator` profiles. Use
+`npx eas-cli@latest build:configure` from this directory to link an Expo project,
+then supply its ID through `EXPO_PUBLIC_EAS_PROJECT_ID` (or `extra.eas.projectId`
+in app.json). Build with `npx eas-cli@latest build --platform ios --profile development`.
+The EAS profile retains push capability; configure APNs credentials separately.
+Run `npm run start:dev --workspace @ezygo/mobile` for this build variant.

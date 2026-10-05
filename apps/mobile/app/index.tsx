@@ -3,10 +3,11 @@ import { Text } from "react-native";
 import { useAuth } from "../lib/auth/provider";
 import { Action, AuthPage, Notice, styles } from "../components/auth/AuthUI";
 import { SessionGate } from "../components/auth/AuthGate";
+import { WelcomeScreen } from "../components/WelcomeScreen";
 
 export default function HomeScreen() {
   const auth = useAuth();
-  if (auth.phase === "signedOut") return <Redirect href="/auth/sign-in" />;
+  if (auth.phase === "signedOut") return <WelcomeScreen />;
   if (auth.phase !== "authenticated" || !auth.user) return <SessionGate />;
   if (auth.user.role === "customer") return <Redirect href="/dashboard" />;
   if (auth.user.role === "driver") return <Redirect href="/driver" />;

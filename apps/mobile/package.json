@@ -5,11 +5,15 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "export": "expo export --platform ios --platform android",
-    "test": "node --import ../web/tests/register.mjs --test tests/*.test.mjs"
+    "test": "node --import ../web/tests/register.mjs --test tests/*.test.mjs",
+    "start:dev": "expo start --dev-client",
+    "ios:device": "EZYGO_IOS_PERSONAL_TEAM=1 expo run:ios --device",
+    "ios:prepare": "EZYGO_IOS_PERSONAL_TEAM=1 expo prebuild --platform ios --no-install",
+    "start:personal": "EZYGO_IOS_PERSONAL_TEAM=1 expo start --dev-client"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
@@ -19,6 +23,7 @@
     "expo-blur": "~57.0.3",
     "expo-constants": "~57.0.18",
     "expo-crypto": "~57.0.3",
+    "expo-dev-client": "~57.0.19",
     "expo-device": "~57.0.2",
     "expo-linking": "~57.0.10",
     "expo-location": "~57.0.18",

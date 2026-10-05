@@ -60,11 +60,11 @@ export function BookingCardHeading({ title, subtitle, icon, amber = false }: { t
   return <View style={s.cardHeading}><View style={[s.cardIcon, amber && s.amber]}><Ionicons name={icon} size={23} color={colors.ink} /></View><View style={{ flex: 1 }}><Text style={s.cardTitle}>{title}</Text><Text style={s.cardSubtitle}>{subtitle}</Text></View></View>;
 }
 const s = StyleSheet.create({
-  hero: { padding: 23, borderRadius: 24, backgroundColor: "#edf5f0", borderWidth: 1, borderColor: "#d8e8de", gap: 12 },
-  top: { flexDirection: "row", gap: 12, alignItems: "center" }, heroIcon: { padding: 10, backgroundColor: colors.accent, borderRadius: 15 },
+  hero: { padding: 23, borderRadius: 28, backgroundColor: "#edf5f0", borderWidth: 1, borderColor: "#d8e8de", gap: 12 },
+  top: { flexDirection: "row", gap: 12, alignItems: "center" }, heroIcon: { padding: 10, backgroundColor: colors.accent, borderRadius: 24 },
   eyebrow: { fontSize: 9, letterSpacing: 1.4, fontWeight: "800", color: colors.primary },
   title: { fontSize: 27, fontWeight: "800", color: colors.ink, letterSpacing: -.8 }, subtitle: { fontSize: 13, lineHeight: 20, color: colors.muted },
-  track: { height: 8, borderRadius: 4, backgroundColor: "#d5e4da", overflow: "hidden", marginTop: 8 }, fill: { height: "100%", borderRadius: 4, backgroundColor: colors.primary },
+  track: { height: 8, borderRadius: 4, backgroundColor: "#d5e4da", overflow: "hidden", marginTop: 8 }, fill: { height: "100%", borderRadius: 4, backgroundColor: colors.accent },
   labels: { flexDirection: "row", justifyContent: "space-between", gap: 8 }, stage: { flexDirection: "row", gap: 5, alignItems: "center" }, label: { fontSize: 11, color: colors.muted }, current: { fontWeight: "800", color: colors.ink },
-  cardHeading: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 }, cardIcon: { padding: 11, borderRadius: 14, backgroundColor: "#e3f1e9" }, amber: { backgroundColor: colors.cream }, cardTitle: { fontSize: 17, fontWeight: "800", color: colors.ink }, cardSubtitle: { fontSize: 11, lineHeight: 17, color: colors.muted, marginTop: 3 },
+  cardHeading: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 }, cardIcon: { padding: 11, borderRadius: 24, backgroundColor: "#e3f1e9" }, amber: { backgroundColor: colors.cream }, cardTitle: { fontSize: 17, fontWeight: "800", color: colors.ink }, cardSubtitle: { fontSize: 11, lineHeight: 17, color: colors.muted, marginTop: 3 },
 });

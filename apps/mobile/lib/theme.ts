@@ -3,7 +3,7 @@ export const colors = {
   ink: "#153836",
   primary: "#2f4f4f",
   accent: "#f59e0b",
-  background: "#ffffff",
+  background: "#f4f7f3",
   surface: "#ffffff",
   muted: "#657d77",
   border: "rgba(47, 79, 79, 0.12)",

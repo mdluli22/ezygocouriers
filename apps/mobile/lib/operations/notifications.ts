@@ -11,7 +11,8 @@ const removalKey = "ezygo.notifications.pending-removal";
 let registrationGeneration = 0;
 let activeRegistration: Promise<void> = Promise.resolve();
 const preference = "ezygo.notifications.enabled";
-export const nativePushAvailable = Device.isDevice && Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
+export const personalTeamPushUnavailable = Platform.OS === "ios" && Constants.expoConfig?.extra?.iosPersonalTeam === true;
+export const nativePushAvailable = Device.isDevice && Constants.executionEnvironment !== ExecutionEnvironment.StoreClient && !personalTeamPushUnavailable;
 async function identity() {
   const raw = await secureStorage.read(key);
   if (raw) return JSON.parse(raw) as { installation_id: string; installation_secret: string };

@@ -3,7 +3,7 @@ import * as Notifications from "expo-notifications";
 import { AppState } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "../../lib/auth/provider";
-import { flushNotificationRemoval, nativePushAvailable, registerNotifications, unregisterNotifications } from "../../lib/operations/notifications";
+import { flushNotificationRemoval, nativePushAvailable, personalTeamPushUnavailable, registerNotifications, unregisterNotifications } from "../../lib/operations/notifications";
 import { Card, Notice, Action } from "../customer/UI";
 Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldPlaySound: true, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }) });
 export function NotificationRuntime() {
@@ -44,5 +44,6 @@ export function NotificationsPanel() {
     catch (error) { setMessage(error instanceof Error ? error.message : "Please retry."); }
     finally { setBusy(false); }
   }
+  if (personalTeamPushUnavailable) return <Card><Notice message="Push notifications require a paid Apple Developer membership. You can follow delivery updates inside the app with this local development build." /></Card>;
   return <Card><Notice message={message} /><Action label="Enable notifications" disabled={busy} onPress={() => void change(true)} /><Action label="Disable notifications" secondary disabled={busy} onPress={() => void change(false)} /></Card>;
 }
