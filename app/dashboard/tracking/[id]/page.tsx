@@ -1,5 +1,9 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
+import TimedNotice from "@/components/ui/TimedNotice";
+
 import { useEffect, useState, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -103,7 +107,7 @@ function DriverPhoto({ name, url }: { name: string; url: string | null }) {
   return usableUrl && failedUrl !== url ? (
     <Image className="tracking-driver-photo" src={url} alt={`${name}, your delivery driver`} width={64} height={64} unoptimized onError={() => setFailedUrl(url)} />
   ) : (
-    <span className="tracking-driver-initials" role="img" aria-label={`${name} — photo unavailable`}>{initials || "—"}</span>
+    <span className="tracking-driver-initials" role="img" aria-label={`${name}, photo unavailable`}>{initials || "Not available"}</span>
   );
 }
 
@@ -188,7 +192,7 @@ function TrackingContent() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState("");
   const [cancelling, setCancelling] = useState(false);
-  const [cancelError, setCancelError] = useState("");
+  const [cancelError, setCancelError] = useTimedMessage("", "");
 
   async function handleCancel() {
     if (!delivery) return;
@@ -285,17 +289,17 @@ function TrackingContent() {
         <div className="tracking-reference"><span>Tracking number</span><strong>{delivery.tracking_number}</strong></div>
       </header>
 
-      {justConfirmed && delivery.status === "confirmed" && <div className="tracking-notice" role="status"><Check size={18} />Delivery confirmed. Complete payment to get a driver assigned.</div>}
-      {paymentResult === "success" && <div className="tracking-notice" role="status">Checkout completed. Your payment provider is confirming the transaction.</div>}
-      {paymentResult === "cancelled" && <div className="tracking-notice" role="status">Payment was cancelled. You can try again when you are ready.</div>}
-      {paymentResult === "failed" && <div className="tracking-notice tracking-notice-error" role="alert"><CircleAlert size={18} />Payment failed. You can try Yoco again when you are ready.</div>}
+      {justConfirmed && delivery.status === "confirmed" && <TimedNotice key={`${justConfirmed}-${paymentResult}`}><div className="tracking-notice" role="status"><Check size={18} />Delivery confirmed. Complete payment to get a driver assigned.</div></TimedNotice>}
+      {paymentResult === "success" && <TimedNotice key={`${justConfirmed}-${paymentResult}`}><div className="tracking-notice" role="status">Checkout completed. Your payment provider is confirming the transaction.</div></TimedNotice>}
+      {paymentResult === "cancelled" && <TimedNotice key={`${justConfirmed}-${paymentResult}`}><div className="tracking-notice" role="status">Payment was cancelled. You can try again when you are ready.</div></TimedNotice>}
+      {paymentResult === "failed" && <TimedNotice key={`${justConfirmed}-${paymentResult}`}><div className="tracking-notice tracking-notice-error" role="alert"><CircleAlert size={18} />Payment failed. You can try Yoco again when you are ready.</div></TimedNotice>}
 
       <div className="tracking-grid">
         <div className="tracking-main-column">
           <section className="tracking-status" aria-labelledby="delivery-status-title">
             <div className="tracking-status-top"><span className={`tracking-status-badge${terminal ? " is-terminal" : ""}`}><span />{STATUS_LABELS[delivery.status]}</span><Package size={28} strokeWidth={1.5} aria-hidden="true" /></div>
             <h2 id="delivery-status-title">{copy.title}</h2><p>{copy.description}</p>
-            {!terminal && <ol className="tracking-progress" aria-label="Delivery progress">{milestones.map((milestone) => <li key={milestone.label} className={milestone.reached ? "is-reached" : ""}><span aria-hidden="true" /><span>{milestone.label}{milestone.reached && <span className="sr-only"> — completed</span>}</span></li>)}</ol>}
+            {!terminal && <ol className="tracking-progress" aria-label="Delivery progress">{milestones.map((milestone) => <li key={milestone.label} className={milestone.reached ? "is-reached" : ""}><span aria-hidden="true" /><span>{milestone.label}{milestone.reached && <span className="sr-only">, completed</span>}</span></li>)}</ol>}
             <div className="tracking-updated"><Clock3 size={14} aria-hidden="true" /> Last updated {formatDate(delivery.updated_at)}</div>
           </section>
 

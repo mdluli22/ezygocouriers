@@ -1,5 +1,5 @@
 /* Landing-page palette, scoped to the customer tracking layout. */
-.portal-shell:has(.tracking-page) { background: linear-gradient(135deg, #f8fbf8 0%, #eef7f1 52%, #e4f2ec 100%); color: #143836; }
+.portal-shell:has(.tracking-page) { background: #ffffff; color: #143836; }
 .portal-shell:has(.tracking-page)::before { display: none; }
 .portal-shell:has(.tracking-page) .portal-topbar { background: #fff; border-color: rgba(47,79,79,.14); box-shadow: none; }
 .tracking-page { color: #143836; max-width: 1160px; margin: 0 auto; font-size: 14px; line-height: 1.6; }

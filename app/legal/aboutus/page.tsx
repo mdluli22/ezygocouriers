@@ -6,7 +6,7 @@ import ScrollToTop from "@/components/scrollToTop";
 export const metadata: Metadata = {
   title: "About Us | EzyGo Couriers",
   description:
-    "We reimagine how South Africa moves packages — for the better. Born in Cape Town, built for the way our communities actually live, work, and shop.",
+    "We reimagine how South Africa moves packages, for the better. Born in Cape Town, built for the way our communities actually live, work, and shop.",
 };
 
 const pillars = [
@@ -132,7 +132,7 @@ export default function AboutPage() {
         </h1>
 
         <p className="text-[15px] font-light text-white/55 max-w-[480px] leading-[1.75]">
-          Delivery is what powers us. It's in our DNA. Born in Cape Town — built for the way our
+          Delivery is what powers us. It's in our DNA. Born in Cape Town, built for the way our
           communities actually live, work, and shop.
         </p>
 
@@ -186,7 +186,7 @@ export default function AboutPage() {
           </p>
           <blockquote className="font-light italic text-[clamp(16px,2.5vw,20px)] leading-[1.72] text-[#3A3530] border-l-[3px] border-[#E85A1B] pl-6 my-7">
             "We&apos;re constantly rethinking how to make sending anything from A to B faster, more
-            transparent, and more accessible — for senders, for receivers, for drivers, right here
+            transparent, and more accessible, for senders, for receivers, for drivers, right here
             in Cape Town. In real time. At the speed life demands."
           </blockquote>
           <div className="flex items-center gap-3.5 mt-7">
@@ -251,7 +251,7 @@ export default function AboutPage() {
       {/* ── WHO WE SERVE ── */}
       <section className="bg-[#1A1714] px-10 py-16">
         <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[rgba(232,90,27,0.85)] mb-3">
-          Delivery — and so much more
+          Delivery, and so much more
         </p>
         <h2
           style={{ fontFamily: "'Syne', sans-serif" }}
@@ -261,7 +261,7 @@ export default function AboutPage() {
         </h2>
         <p className="text-[14px] font-light leading-[1.85] text-white/45 max-w-[560px]">
           We started with parcels. Now we enable fast, secure last-mile delivery for e-commerce,
-          personal needs, urgent documents — while creating flexible earning opportunities for
+          personal needs, urgent documents, while creating flexible earning opportunities for
           drivers.
         </p>
 
@@ -305,17 +305,17 @@ export default function AboutPage() {
           style={{ fontFamily: "'Syne', sans-serif" }}
           className="text-[clamp(22px,4vw,32px)] font-extrabold text-white max-w-[480px] leading-[1.2]"
         >
-          Moving forward — together
+          Moving forward, together
         </h2>
         <div className="flex gap-3 flex-wrap">
           <a
-            href="/quote"
+            href="/dashboard/deliveries/new"
             className="text-[13px] font-medium px-6 py-3 rounded-lg bg-white text-[#0d2424] hover:opacity-88 transition-opacity"
           >
             Send a parcel
           </a>
           <a
-            href="/driver/register"
+            href="mailto:support@ezygocouriers.co.za?subject=Driver%20application"
             className="text-[13px] font-medium px-6 py-3 rounded-lg bg-white/15 text-white border border-white/30 hover:opacity-88 transition-opacity"
           >
             Become a driver

@@ -1,5 +1,7 @@
 "use client";
 
+import TimedNotice from "@/components/ui/TimedNotice";
+
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -122,7 +124,6 @@ function DashboardContent() {
           <div className="customer-welcome-copy">
             <span className="customer-eyebrow">Deliver anywhere in Cape Town</span>
             <h1 id="customer-greeting">Hello, {firstName}.</h1>
-            <p>Send, track and receive.<br />A little less effort. A lot more EzyGo.</p>
           </div>
           <div className="customer-parcel-art" aria-hidden="true">
             <div className="customer-orbit" />
@@ -145,12 +146,12 @@ function DashboardContent() {
         <Link href={destination("history")} onClick={() => setQuery("")}><span><History size={24} /></span>History</Link>
       </nav>
 
-      {(paymentResult || isNewCustomer) && <div className="portal-notices" role="status">
+      {(paymentResult || isNewCustomer) && <TimedNotice key={`${paymentResult}-${isNewCustomer}`}><div className="portal-notices" role="status">
         {paymentResult === "success" && <div className="portal-notice is-success"><CheckCircle2 size={19} /><span><strong>Payment submitted.</strong> Your provider is confirming the transaction.</span></div>}
         {isNewCustomer && <div className="portal-notice is-info"><Sparkles size={19} /><span><strong>Welcome to EzyGo.</strong> Your account is verified and ready to go.</span></div>}
-        {paymentResult === "cancelled" && <div className="portal-notice is-warning"><Clock3 size={19} /><span><strong>Payment paused.</strong> Your booking is safe—open it below to try again.</span></div>}
+        {paymentResult === "cancelled" && <div className="portal-notice is-warning"><Clock3 size={19} /><span><strong>Payment paused.</strong> Your booking is safe, open it below to try again.</span></div>}
         {paymentResult === "failed" && <div className="portal-notice is-error"><Clock3 size={19} /><span><strong>Payment failed.</strong> Open your booking below to try another payment option.</span></div>}
-      </div>}
+      </div></TimedNotice>}
 
       <div className="customer-content">
         <section className="customer-shipments" id="shipments" aria-labelledby="shipments-heading" aria-busy={loading}>

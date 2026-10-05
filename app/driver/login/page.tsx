@@ -1,5 +1,7 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -33,7 +35,7 @@ function DriverLoginForm() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useTimedMessage("", "");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   // Show error if redirected back with a query param

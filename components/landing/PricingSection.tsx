@@ -21,10 +21,6 @@ export default function PricingSection() {
             <span className="section-kicker section-kicker-light">Transparent pricing</span>
             <h2>One delivery.<br /><em>One clear price.</em></h2>
           </div>
-          <p>
-            No quote calculators or unexpected additions. Eligible deliveries within our
-            Cape Town service area stay refreshingly simple.
-          </p>
         </div>
 
         <div className="price-bento">
@@ -59,7 +55,6 @@ export default function PricingSection() {
               <span className="price-bento-icon"><MapPinned size={20} /></span>
               <small>Cape Town-wide simplicity</small>
               <h3>No distance calculations.</h3>
-              <p>One rate wherever your eligible delivery starts and ends inside our service area.</p>
             </div>
             <div className="coverage-route" aria-hidden="true">
               <MapPin size={15} /><i /><span><PackageCheck size={16} /></span><i /><MapPin size={15} />
@@ -70,7 +65,6 @@ export default function PricingSection() {
             <span className="price-bento-icon"><CreditCard size={21} /></span>
             <small>Ready when you are</small>
             <h3>Send it for R99.</h3>
-            <p>Create your account free and book your first delivery.</p>
             <Link href="/auth/signup">
               Get started <ArrowRight size={18} />
             </Link>

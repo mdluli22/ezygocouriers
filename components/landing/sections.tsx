@@ -24,7 +24,6 @@ export function WhyEzyGo() {
         <div className="value-heading">
           <span className="section-kicker">Built around your peace of mind</span>
           <h2>The city moves fast.<br /><em>So does EzyGo.</em></h2>
-          <p>Clear pricing, useful updates, and a delivery experience designed for everyday Cape Town life.</p>
         </div>
 
         <div className="value-grid">
@@ -33,7 +32,6 @@ export function WhyEzyGo() {
               <span className="value-icon"><MapPin size={21} /></span>
               <span className="value-label">Live visibility</span>
               <h3>Know where it is.<br />Every step of the way.</h3>
-              <p>Follow progress from collection through to the final handover.</p>
             </div>
             <div className="tracking-preview" aria-hidden="true">
               <div className="tracking-preview-top">
@@ -59,14 +57,12 @@ export function WhyEzyGo() {
             <span className="value-icon"><Clock3 size={21} /></span>
             <span className="value-label">Less friction</span>
             <h3>Book in minutes.</h3>
-            <p>A focused flow that gets your parcel moving without unnecessary calls or calculations.</p>
           </article>
 
           <article className="value-card value-card-cream">
             <span className="value-icon"><ShieldCheck size={21} /></span>
             <span className="value-label">Protected checkout</span>
             <h3>Pay with confidence.</h3>
-            <p>Secure Yoco payment and a clear total before you confirm.</p>
             <span className="secure-pill"><LockKeyhole size={13} /> Secure checkout</span>
           </article>
 
@@ -74,7 +70,6 @@ export function WhyEzyGo() {
             <span className="value-icon"><BellRing size={21} /></span>
             <span className="value-label">Useful updates</span>
             <h3>No wondering.<br />No chasing.</h3>
-            <p>See the milestones that matter, from pickup to doorstep.</p>
           </article>
         </div>
 
@@ -102,7 +97,6 @@ export function CTABanner() {
         <div className="closing-copy">
           <span className="section-kicker">Ready when you are</span>
           <h2>Your parcel has places to be.</h2>
-          <p>Create your free EzyGo account and book your first Cape Town delivery in minutes.</p>
         </div>
         <div className="closing-actions">
           <Link href="/auth/signup" className="closing-primary">

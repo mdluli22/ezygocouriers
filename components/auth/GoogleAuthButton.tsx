@@ -1,5 +1,7 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
 
@@ -11,7 +13,7 @@ export default function GoogleAuthButton({
   label = "Continue with Google",
 }: GoogleAuthButtonProps) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useTimedMessage("", "");
 
   async function handleClick() {
     setLoading(true);
