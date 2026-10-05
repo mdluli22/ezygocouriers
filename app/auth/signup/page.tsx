@@ -1,7 +1,5 @@
 "use client";
 
-import { useTimedMessage } from "@/components/ui/useTimedMessage";
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -75,7 +73,7 @@ export default function SignupPage() {
   const [showPass, setShowPass]         = useState(false);
   const [showConfirm, setShowConfirm]   = useState(false);
   const [loading, setLoading]           = useState(false);
-  const [serverError, setServerError]   = useTimedMessage("", "");
+  const [serverError, setServerError]   = useState("");
   const [fieldErrors, setFieldErrors]   = useState<FieldErrors>({});
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {

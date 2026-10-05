@@ -80,6 +80,7 @@ export default async function AdminDashboardPage() {
         <div className="admin-overview-copy">
           <span className="portal-eyebrow"><ShieldCheck size={14} /> Operations command centre</span>
           <h1>Good overview.<br /><em>Better decisions.</em></h1>
+          <p>A clear view of deliveries, drivers, customers and revenue across EzyGo.</p>
         </div>
         <div className="admin-revenue-card">
           <span><Sparkles size={15} /> Total revenue</span>

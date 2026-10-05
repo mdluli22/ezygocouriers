@@ -1,8 +1,5 @@
 "use client";
 
-import { useTimedMessage } from "@/components/ui/useTimedMessage";
-
-import { CheckCircle2, CircleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   DELIVERY_STATUSES,
@@ -45,7 +42,7 @@ export default function AdminDeliveriesPage() {
   const [loading, setLoading]       = useState(true);
   const [assigning, setAssigning]   = useState<number | null>(null);
   const [selectedDriver, setSelectedDriver] = useState<Record<number, number>>({});
-  const [toast, setToast]           = useTimedMessage({ msg: "", ok: true }, { msg: "", ok: true });
+  const [toast, setToast]           = useState("");
 
   async function load(status: DeliveryStatus | "all") {
     setLoading(true);
@@ -72,12 +69,13 @@ export default function AdminDeliveriesPage() {
       body: JSON.stringify({ delivery_id: deliveryId, driver_id: driverId }),
     });
     if (res.ok) {
-      setToast({ msg: "Driver assigned successfully!", ok: true });
+      setToast("Driver assigned successfully!");
       load(filter);
     } else {
-      setToast({ msg: "Failed to assign driver.", ok: false });
+      setToast("Failed to assign driver.");
     }
     setAssigning(null);
+    setTimeout(() => setToast(""), 3000);
   }
 
   return (
@@ -85,13 +83,15 @@ export default function AdminDeliveriesPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>Deliveries</h1>
+        <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
+          Manage all deliveries and assign drivers
+        </p>
       </div>
 
       {/* Toast */}
-      {toast.msg && (
-        <div role={toast.ok ? "status" : "alert"} className="flex items-center gap-2 p-3 rounded-xl text-sm font-semibold" style={{ backgroundColor: toast.ok ? "rgb(16 185 129 / 0.1)" : "rgb(239 68 68 / 0.08)", color: toast.ok ? "var(--color-success)" : "var(--color-error)" }}>
-          {toast.ok ? <CheckCircle2 size={18} aria-hidden="true" /> : <CircleAlert size={18} aria-hidden="true" />}
-          {toast.msg}
+      {toast && (
+        <div className="p-3 rounded-xl text-sm font-semibold" style={{ backgroundColor: "rgb(16 185 129 / 0.1)", color: "var(--color-success)" }}>
+          {toast}
         </div>
       )}
 
@@ -159,7 +159,7 @@ export default function AdminDeliveriesPage() {
                     <option value="">Select a driver…</option>
                     {drivers.map((dr) => (
                       <option key={dr.id} value={dr.id}>
-                        {dr.full_name}, {dr.vehicle_type} ({dr.vehicle_reg})
+                        {dr.full_name} — {dr.vehicle_type} ({dr.vehicle_reg})
                       </option>
                     ))}
                   </select>

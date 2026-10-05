@@ -1,7 +1,5 @@
 "use client";
 
-import { useTimedMessage } from "@/components/ui/useTimedMessage";
-
 import { useEffect, useState } from "react";
 
 interface PricingRule {
@@ -18,7 +16,7 @@ export default function AdminPricingPage() {
   const [loading, setLoading]   = useState(true);
   const [editing, setEditing]   = useState<Record<number, string>>({});
   const [saving, setSaving]     = useState<number | null>(null);
-  const [toast, setToast]       = useTimedMessage({ msg: "", ok: true }, { msg: "", ok: true });
+  const [toast, setToast]       = useState({ msg: "", ok: true });
 
   async function load() {
     setLoading(true);
@@ -32,6 +30,7 @@ export default function AdminPricingPage() {
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
+    setTimeout(() => setToast({ msg: "", ok: true }), 3000);
   }
 
   async function handleSave(ruleId: number) {
@@ -61,6 +60,9 @@ export default function AdminPricingPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>Pricing</h1>
+        <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
+          Manage delivery pricing rules
+        </p>
       </div>
 
       {/* Warning banner */}
@@ -82,7 +84,7 @@ export default function AdminPricingPage() {
 
       {/* Toast */}
       {toast.msg && (
-        <div role={toast.ok ? "status" : "alert"}
+        <div
           className="p-3 rounded-xl text-sm font-semibold"
           style={{
             backgroundColor: toast.ok ? "rgb(16 185 129 / 0.1)" : "rgb(239 68 68 / 0.08)",

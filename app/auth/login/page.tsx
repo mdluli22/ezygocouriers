@@ -1,7 +1,5 @@
 "use client";
 
-import { useTimedMessage } from "@/components/ui/useTimedMessage";
-
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -38,8 +36,8 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
-  const [serverError, setServerError] = useTimedMessage("", "");
-  const [notice, setNotice] = useTimedMessage("", "");
+  const [serverError, setServerError] = useState("");
+  const [notice, setNotice] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   // Handle OAuth error params from Google callback redirect
@@ -51,7 +49,7 @@ function LoginForm() {
     if (searchParams.get("verified") === "1") {
       setNotice("Email verified successfully. You can now sign in.");
     }
-  }, [searchParams, setNotice, setServerError]);
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -192,11 +190,11 @@ function LoginForm() {
               Password
             </label>
             <Link
-              href="mailto:support@ezygocouriers.co.za?subject=Account%20access%20help"
+              href="/auth/forgot-password"
               className="text-xs font-semibold hover:opacity-80 transition-opacity"
               style={{ color: "var(--color-primary)" }}
             >
-              Need help signing in?
+              Forgot password?
             </Link>
           </div>
           <div className="relative">
