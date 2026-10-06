@@ -30,7 +30,7 @@ export default function LegalPage({ title, path, sections, contactTitle, summary
         <section className="legal-hero" aria-labelledby="policy-title">
           <span className="section-kicker">Legal</span>
           <h1 id="policy-title">{title}</h1>
-          <span className="legal-updated"><CalendarDays size={15} aria-hidden="true" />Last updated: 5 October 2026</span>
+          <span className="legal-updated"><CalendarDays size={15} aria-hidden="true" />Last updated: 6 October 2026</span>
         </section>
         <nav className="legal-policy-nav" aria-label="Legal policies">
           {policies.map(policy => <Link key={policy.href} href={policy.href} aria-current={path === policy.href ? "page" : undefined}>{policy.label}</Link>)}

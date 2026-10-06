@@ -3,244 +3,75 @@ import LegalPage from "@/components/legal/LegalPage";
 
 export const metadata: Metadata = {
   title: "Cookie Policy | EzyGo Couriers",
-  description:
-    "How EzyGo Couriers uses cookies and similar technologies on our website and app, and how you can manage them.",
+  description: "How EzyGo uses cookies and browser storage for sign-in, app features, and delivery updates, and how to manage them.",
 };
 
-interface CookieType {
-  name: string;
-  purpose: string;
-  duration: string;
-  essential: boolean;
-}
-
-const cookieTypes: CookieType[] = [
-  {
-    name: "Session cookies",
-    purpose: "Keep you logged in while you navigate the app. Required for core functionality.",
-    duration: "End of browser session",
-    essential: true,
-  },
-  {
-    name: "Authentication token",
-    purpose: "Store your secure JWT session so you stay authenticated between page visits.",
-    duration: "7 days",
-    essential: true,
-  },
-  {
-    name: "CSRF protection",
-    purpose: "Prevent cross-site request forgery attacks on form submissions.",
-    duration: "Session",
-    essential: true,
-  },
-  {
-    name: "Preference cookies",
-    purpose: "Remember your settings such as language and display preferences.",
-    duration: "30 days",
-    essential: false,
-  },
-  {
-    name: "Analytics cookies",
-    purpose: "Help us understand how visitors use our platform so we can improve the experience.",
-    duration: "Up to 12 months",
-    essential: false,
-  },
-  {
-    name: "Performance cookies",
-    purpose: "Measure page load times and errors to keep the platform running smoothly.",
-    duration: "Up to 6 months",
-    essential: false,
-  },
+const storageTypes = [
+  { name: "Sign-in cookies", purpose: "Keep you signed in and connect your browser to your EzyGo account. Signing out ends your session.", duration: "Sessions last up to 7 days and may renew while you use the app." },
+  { name: "Sign-in security", purpose: "Support account verification and secure sign-in, including Google sign-in when you choose it.", duration: "Temporary data used during sign-in." },
+  { name: "App installation preference", purpose: "Remember when you dismiss the prompt to install EzyGo on your device.", duration: "Until you clear the stored site data." },
+  { name: "Offline app files", purpose: "Store images and an offline page so the app can show basic content without a connection. This cache does not store account pages, API responses, or payment callbacks.", duration: "Until the app refreshes its cache or you clear site data." },
+  { name: "Driver location retry", purpose: "When a driver enables location sharing, the app may store the latest location on the device if a network request fails, then retry when a connection is available.", duration: "Cleared after a successful sync. Locations older than 15 minutes are discarded when the app retries." },
 ];
 
-interface PolicySection {
-  id: string;
-  title: string;
-  content: React.ReactNode;
-}
-
-const sections: PolicySection[] = [
+const sections = [
   {
     id: "what-are-cookies",
-    title: "What are cookies?",
-    content: (
-      <>
-        <p>
-          Cookies are small text files placed on your device when you visit a website or use a web
-          app. They allow the site to remember information about your visit, such as whether
-          you&apos;re logged in, your preferences, or how you interact with our platform.
-        </p>
-        <p className="mt-3">
-          Similar technologies like local storage and session storage work in a comparable way and
-          are covered by this policy. We refer to all of these collectively as &quot;cookies&quot;.
-        </p>
-      </>
-    ),
+    title: "Cookies and browser storage",
+    content: <p>Cookies are small files stored by your browser. EzyGo also uses local storage and an app cache to support features such as sign-in, installation prompts, and offline access. This policy covers these forms of browser storage.</p>,
   },
   {
     id: "how-we-use",
-    title: "How we use cookies",
-    content: (
-      <>
-        <p>EzyGo uses cookies to:</p>
-        <ul className="list-none mt-3 space-y-1.5">
-          {[
-            "Keep you securely signed in during your session",
-            "Protect your account from unauthorised actions",
-            "Remember your preferences across visits",
-            "Understand how our platform is used so we can improve it",
-            "Measure and improve page load performance",
-            "Comply with legal and security obligations",
-          ].map((i) => (
-            <li key={i} className="flex items-start gap-2.5">
-              <span className="inline-block w-1 h-1 rounded-full bg-[var(--legal-accent)] mt-[7px] flex-shrink-0" />
-              {i}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 text-[13px] text-[var(--legal-muted)]">
-          We do not use cookies to serve third-party advertising or sell your data to any external
-          parties.
-        </p>
-      </>
-    ),
+    title: "What we use storage for",
+    content: <>
+      <p>We use browser storage to keep you signed in, support secure account access, and keep app features working. The entries below explain what is stored and why.</p>
+      <p className="mt-3">The EzyGo web app does not currently include its own advertising or analytics cookie tools. Your light or dark theme follows your device setting automatically.</p>
+    </>,
   },
   {
     id: "types-of-cookies",
-    title: "Types of cookies we use",
-    content: (
-      <div className="space-y-3 -mx-1">
-        {cookieTypes.map((c) => (
-          <div
-            key={c.name}
-            className="rounded-lg border border-[var(--legal-line)] p-4 flex flex-col sm:flex-row sm:items-start gap-3"
-          >
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <p className="text-[13px] font-medium text-[var(--legal-ink)]">{c.name}</p>
-                <span
-                  className={`text-[10px] font-semibold tracking-[0.1em] uppercase rounded-full px-2.5 py-0.5 ${
-                    c.essential
-                      ? "bg-[var(--legal-soft)] text-[var(--legal-accent)]"
-                      : "bg-[var(--legal-soft)] text-[var(--legal-muted)]"
-                  }`}
-                >
-                  {c.essential ? "Essential" : "Optional"}
-                </span>
-              </div>
-              <p className="text-[13px] text-[var(--legal-muted)] leading-[1.65]">{c.purpose}</p>
-            </div>
-            <div className="flex-shrink-0 text-right max-sm:text-left">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--legal-muted)] mb-0.5">
-                Duration
-              </p>
-              <p className="text-[12px] text-[var(--legal-ink)] font-medium whitespace-nowrap">
-                {c.duration}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    ),
+    title: "What is stored on your device",
+    content: <div className="legal-storage-list">{storageTypes.map(item => <div key={item.name} className="legal-storage-item">
+      <h3>{item.name}</h3><p>{item.purpose}</p>
+      <p className="legal-storage-duration"><strong>Duration: </strong>{item.duration}</p>
+    </div>)}</div>,
   },
   {
     id: "third-party",
-    title: "Third-party cookies",
-    content: (
-      <>
-        <p>
-          Some cookies may be set by trusted third-party services we use to run EzyGo, such as
-          payment processors (Ozow) and cloud infrastructure providers. These third parties have
-          their own privacy and cookie policies, and we recommend reviewing them.
-        </p>
-        <p className="mt-3">
-          We do not permit third-party advertising networks to place cookies through our platform.
-        </p>
-      </>
-    ),
+    title: "Services provided by other companies",
+    content: <>
+      <p>EzyGo uses Yoco for checkout and Google for address search, maps, and optional Google sign-in. These services may use their own cookies or browser storage when you use them.</p>
+      <p className="mt-3">Their handling of that information is explained in their own privacy and cookie policies. EzyGo does not operate an advertising network.</p>
+    </>,
   },
   {
     id: "managing-cookies",
-    title: "Managing your cookies",
-    content: (
-      <>
-        <p>
-          You have control over non-essential cookies. You can manage or disable cookies through
-          your browser settings. Note that disabling essential cookies will affect your ability to
-          sign in and use the platform.
-        </p>
-        <div className="mt-5 grid grid-cols-2 gap-3 max-sm:grid-cols-1">
-          {[
-            {
-              browser: "Google Chrome",
-              path: "Settings → Privacy and security → Cookies",
-            },
-            {
-              browser: "Mozilla Firefox",
-              path: "Settings → Privacy & Security → Cookies",
-            },
-            {
-              browser: "Safari",
-              path: "Preferences → Privacy → Manage Website Data",
-            },
-            {
-              browser: "Microsoft Edge",
-              path: "Settings → Cookies and site permissions",
-            },
-          ].map((b) => (
-            <div key={b.browser} className="bg-[var(--legal-soft)] rounded-lg p-4">
-              <p className="text-[12px] font-semibold text-[var(--legal-ink)] mb-1">{b.browser}</p>
-              <p className="text-[12px] text-[var(--legal-muted)] leading-snug">{b.path}</p>
-            </div>
-          ))}
-        </div>
-      </>
-    ),
+    title: "Managing stored data",
+    content: <>
+      <p>Use your browser&apos;s privacy or site-data settings to view, block, or delete cookies and stored data for EzyGo. The setting names vary by browser and device.</p>
+      <ul className="legal-bullet-list">
+        <li>Blocking sign-in cookies may prevent you from accessing your account.</li>
+        <li>Clearing site data can sign you out, reset installation prompts, and remove offline files or a queued driver location.</li>
+        <li>Location and notification permissions are separate settings. Manage them in your browser or device settings.</li>
+        <li>Change your device theme to switch EzyGo between light and dark mode.</li>
+      </ul>
+    </>,
   },
   {
     id: "consent",
-    title: "Your consent",
-    content: (
-      <>
-        <p>
-          When you first visit EzyGo, we ask for your consent to use non-essential cookies. You
-          may withdraw this consent at any time by adjusting your browser settings or contacting
-          us directly.
-        </p>
-        <p className="mt-3">
-          Essential cookies do not require your consent as they are strictly necessary for the
-          platform to function securely and correctly. This is consistent with POPIA and the
-          Electronic Communications and Transactions Act (ECTA).
-        </p>
-      </>
-    ),
+    title: "Your choices",
+    content: <>
+      <p>You choose whether to install the app, enable notifications, use Google sign-in, or share your location as a driver. Your browser asks for the relevant permissions where required.</p>
+      <p className="mt-3">You can manage cookies and site data through your browser. Contact <a className="text-[var(--legal-accent)] underline" href="mailto:support@ezygocouriers.co.za">support@ezygocouriers.co.za</a> if you have questions about how EzyGo uses stored information.</p>
+    </>,
   },
   {
     id: "changes",
     title: "Changes to this policy",
-    content: (
-      <p>
-        We may update this Cookie Policy from time to time to reflect changes in technology, law,
-        or how we operate. Any updates will be posted on this page with a revised &quot;last updated&quot;
-        date. Continued use of EzyGo after changes are posted constitutes your acceptance.
-      </p>
-    ),
+    content: <p>We may update this policy when our services or storage practices change. The latest version and its update date will appear on this page.</p>,
   },
 ];
 
 export default function CookiesPage() {
-  return (
-    <LegalPage
-      title="Cookie Policy"
-      path="/legal/cookies"
-      sections={sections}
-      contactTitle="Questions about cookies?"
-      summary={<dl>{[
-        { label: "Essential cookies", value: "3 types" },
-        { label: "Optional cookies", value: "3 types" },
-        { label: "Ad cookies", value: "None" },
-        { label: "Data sold", value: "Never" },
-      ].map(item => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}</dl>}
-    />
-  );
+  return <LegalPage title="Cookie Policy" path="/legal/cookies" sections={sections} contactTitle="Questions about cookies?" />;
 }

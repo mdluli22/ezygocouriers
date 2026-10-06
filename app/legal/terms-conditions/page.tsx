@@ -66,7 +66,7 @@ const termSections: TermSection[] = [
           ].map((i) => (
             <li key={i} className="flex items-start gap-2.5">
               <span className="inline-block w-1 h-1 rounded-full bg-[var(--legal-accent)] mt-[7px] flex-shrink-0" />
-              {i}
+              <span>{i}</span>
             </li>
           ))}
         </ul>
@@ -106,7 +106,7 @@ const termSections: TermSection[] = [
           ].map((i) => (
             <li key={i} className="flex items-start gap-2.5">
               <span className="inline-block w-1 h-1 rounded-full bg-[var(--legal-accent)] mt-[7px] flex-shrink-0" />
-              {i}
+              <span>{i}</span>
             </li>
           ))}
         </ul>
@@ -126,7 +126,7 @@ const termSections: TermSection[] = [
           ].map((i) => (
             <li key={i} className="flex items-start gap-2.5">
               <span className="inline-block w-1 h-1 rounded-full bg-[var(--legal-accent)] mt-[7px] flex-shrink-0" />
-              {i}
+              <span>{i}</span>
             </li>
           ))}
         </ul>
