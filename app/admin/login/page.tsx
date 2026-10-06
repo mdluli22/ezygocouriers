@@ -167,7 +167,7 @@ function AdminLoginForm() {
               </svg>
               Restricted
             </div>
-            <h1 className="text-3xl font-black tracking-tight" style={{ color: "var(--color-primary)" }}>
+            <h1 className="text-3xl font-black tracking-tight" style={{ color: "var(--color-link)" }}>
               Admin sign in
             </h1>
             <p className="mt-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
@@ -175,7 +175,7 @@ function AdminLoginForm() {
               <Link
                 href="/auth/login"
                 className="font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity"
-                style={{ color: "var(--color-primary)" }}
+                style={{ color: "var(--color-link)" }}
               >
                 Customer login →
               </Link>

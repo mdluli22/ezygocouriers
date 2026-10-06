@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { southAfricanPhoneSchema } from "./common";
+import { normalizeSignupPhone } from "../phone";
 
 export const signupSchema = z
   .object({
@@ -11,7 +11,16 @@ export const signupSchema = z
       .string()
       .email("Please enter a valid email address")
       .toLowerCase(),
-    phone: southAfricanPhoneSchema.optional().or(z.literal("")),
+    phone: z.string({ error: "Phone number is required" }).trim()
+      .min(1, "Phone number is required")
+      .transform((value, ctx) => {
+        const normalized = normalizeSignupPhone(value);
+        if (!normalized) {
+          ctx.addIssue({ code: "custom", message: "Enter a valid phone number with its country code" });
+          return z.NEVER;
+        }
+        return normalized;
+      }),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")

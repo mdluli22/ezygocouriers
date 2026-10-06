@@ -3,7 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { phoneCountries, getCountryCallingCode, normalizeSignupPhone, type PhoneCountry } from "@ezygo/contracts";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
+
+const countryNames = new Intl.DisplayNames(["en"], { type: "region" });
+const countryOptions = [...phoneCountries].sort((a, b) => {
+  if (a === "ZA") return -1;
+  if (b === "ZA") return 1;
+  return (countryNames.of(a) || a).localeCompare(countryNames.of(b) || b);
+});
 
 interface FieldErrors {
   full_name?: string;
@@ -70,6 +78,7 @@ export default function SignupPage() {
     password: "",
     confirm_password: "",
   });
+  const [phoneCountry, setPhoneCountry] = useState<PhoneCountry>("ZA");
   const [showPass, setShowPass]         = useState(false);
   const [showConfirm, setShowConfirm]   = useState(false);
   const [loading, setLoading]           = useState(false);
@@ -86,6 +95,11 @@ export default function SignupPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const phone = normalizeSignupPhone(form.phone, phoneCountry);
+    if (!phone) {
+      setFieldErrors(prev => ({ ...prev, phone: form.phone.trim() ? "Enter a valid phone number for the selected country" : "Phone number is required" }));
+      return;
+    }
     setLoading(true);
     setServerError("");
     setFieldErrors({});
@@ -94,7 +108,7 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, phone }),
       });
 
       const data = await res.json();
@@ -124,7 +138,7 @@ export default function SignupPage() {
       <div>
         <h1
           className="text-3xl font-black tracking-tight"
-          style={{ color: "var(--color-primary)" }}
+          style={{ color: "var(--color-link)" }}
         >
           Create your account
         </h1>
@@ -133,7 +147,7 @@ export default function SignupPage() {
           <Link
             href="/auth/login"
             className="font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity"
-            style={{ color: "var(--color-primary)" }}
+            style={{ color: "var(--color-link)" }}
           >
             Sign in
           </Link>
@@ -210,26 +224,36 @@ export default function SignupPage() {
           {fieldErrors.email && <p id="signup-email-error" className="error-text">{fieldErrors.email}</p>}
         </div>
 
-        {/* Phone (optional) */}
+        {/* Required phone number */}
         <div>
-          <label htmlFor="phone" className="label">
-            Phone number{" "}
-            <span style={{ color: "var(--color-text-muted)", fontWeight: 400 }}>
-              (optional)
-            </span>
-          </label>
-          <input
-            id="phone"
-            name="phone"
-            aria-invalid={Boolean(fieldErrors.phone)}
-            aria-describedby={fieldErrors.phone ? "signup-phone-error" : undefined}
-            type="tel"
-            autoComplete="tel"
-            value={form.phone}
-            onChange={handleChange}
-            placeholder="072 123 4567"
-            className={`input ${fieldErrors.phone ? "input-error" : ""}`}
-          />
+          <label htmlFor="phone" className="label">Phone number</label>
+          <div className="signup-phone-fields">
+            <select
+              aria-label="Country calling code"
+              autoComplete="tel-country-code"
+              className="input"
+              value={phoneCountry}
+              onChange={event => {
+                setPhoneCountry(event.target.value as PhoneCountry);
+                setFieldErrors(prev => ({ ...prev, phone: undefined }));
+              }}
+            >
+              {countryOptions.map(country => <option key={country} value={country}>{countryNames.of(country)} (+{getCountryCallingCode(country)})</option>)}
+            </select>
+            <input
+              id="phone"
+              name="phone"
+              aria-invalid={Boolean(fieldErrors.phone)}
+              aria-describedby={fieldErrors.phone ? "signup-phone-error" : undefined}
+              type="tel"
+              autoComplete="tel-national"
+              value={form.phone}
+              onChange={handleChange}
+              placeholder={phoneCountry === "ZA" ? "072 123 4567" : "Phone number"}
+              className={`input ${fieldErrors.phone ? "input-error" : ""}`}
+              required
+            />
+          </div>
           {fieldErrors.phone && <p id="signup-phone-error" className="error-text">{fieldErrors.phone}</p>}
         </div>
 

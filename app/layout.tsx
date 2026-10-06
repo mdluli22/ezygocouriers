@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 
-const inter = Inter({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-body",
   display: "swap",
 });
 
@@ -66,7 +66,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: 'document.documentElement.classList.toggle("dark", window.matchMedia("(prefers-color-scheme: dark)").matches);' }} />
       </head>
       <body
-        className={`${inter.variable} font-sans antialiased transition-colors duration-300`}
+        className={`${dmSans.variable} font-sans antialiased transition-colors duration-300`}
         style={{ backgroundColor: "var(--color-bg)", color: "var(--color-text-primary)" }}
       >
         <ThemeProvider>

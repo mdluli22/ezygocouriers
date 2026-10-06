@@ -44,7 +44,7 @@ export default function DisabledPaymentDemoPage() {
 //   if (!validIds) {
 //     return (
 //       <div className="max-w-md mx-auto py-20 text-center space-y-4">
-//         <h1 className="text-2xl font-black" style={{ color: "var(--color-primary)" }}>Invalid demo payment</h1>
+//         <h1 className="text-2xl font-black" style={{ color: "var(--color-link)" }}>Invalid demo payment</h1>
 //         <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>This payment link is missing its delivery details.</p>
 //         <Link href="/dashboard" className="btn-primary inline-flex">Back to dashboard</Link>
 //       </div>
@@ -64,7 +64,7 @@ export default function DisabledPaymentDemoPage() {
 //             <div className="text-center space-y-4">
 //               <CheckCircle2 size={52} className="mx-auto" style={{ color: "var(--color-success)" }} />
 //               <div>
-//                 <h2 className="text-xl font-black" style={{ color: "var(--color-primary)" }}>Payment confirmed</h2>
+//                 <h2 className="text-xl font-black" style={{ color: "var(--color-link)" }}>Payment confirmed</h2>
 //                 <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>Your delivery is paid and ready for dispatch.</p>
 //               </div>
 //               <Link href="/dashboard?payment=success" className="btn-primary w-full inline-flex justify-center">View deliveries</Link>

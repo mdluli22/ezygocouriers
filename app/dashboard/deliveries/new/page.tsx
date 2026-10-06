@@ -90,7 +90,7 @@ function AuthModal({ onSuccess, onClose }: { onSuccess: (user: User) => void; on
         {/* Handle bar (mobile) */}
         <div className="w-10 h-1 rounded-full mx-auto mb-5 sm:hidden" style={{ backgroundColor: "var(--color-border)" }} />
 
-        <h2 className="text-lg font-black mb-1" style={{ color: "var(--color-primary)" }}>
+        <h2 className="text-lg font-black mb-1" style={{ color: "var(--color-link)" }}>
           {tab === "login" ? "Welcome back" : "Create account"}
         </h2>
         <p className="text-sm mb-5" style={{ color: "var(--color-text-muted)" }}>
@@ -317,7 +317,7 @@ export default function NewDeliveryPage() {
 
         {/* Page header */}
         <div className="mb-4">
-          <h1 className="text-2xl font-black" style={{ color: "var(--color-primary)" }}>
+          <h1 className="text-2xl font-black" style={{ color: "var(--color-link)" }}>
             {step === 1 ? "Where to?" : step === 2 ? "Parcel details" : "Confirm & pay"}
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "var(--color-text-muted)" }}>
@@ -412,14 +412,14 @@ export default function NewDeliveryPage() {
                   <span className="truncate font-medium" style={{ color: "var(--color-text-primary)" }}>{dropoffText}</span>
                 </div>
               </div>
-              <button type="button" onClick={() => setStep(1)} className="text-xs font-bold shrink-0 px-3 py-1.5 rounded-lg" style={{ backgroundColor: "var(--color-bg)", color: "var(--color-primary)", border: "1px solid var(--color-border)" }}>
+              <button type="button" onClick={() => setStep(1)} className="text-xs font-bold shrink-0 px-3 py-1.5 rounded-lg" style={{ backgroundColor: "var(--color-bg)", color: "var(--color-link)", border: "1px solid var(--color-border)" }}>
                 Edit
               </button>
             </div>
 
             {/* What are you sending */}
             <div className="rounded-2xl p-4 space-y-4" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>What are you sending?</h3>
+              <h3 className="font-black text-sm" style={{ color: "var(--color-link)" }}>What are you sending?</h3>
               <select
                 value={parcelDescription}
                 onChange={(e) => {
@@ -498,7 +498,7 @@ export default function NewDeliveryPage() {
 
             {/* Sender */}
             <div className="rounded-2xl p-4 space-y-3" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>Your contact (sender)</h3>
+              <h3 className="font-black text-sm" style={{ color: "var(--color-link)" }}>Your contact (sender)</h3>
               <input type="text" placeholder="Your name" value={pickupContactName} onChange={(e) => setPickupContactName(e.target.value)} className={`input ${fieldErrors.pickup_contact_name ? "input-error" : ""}`} />
               {fieldErrors.pickup_contact_name && <p className="error-text">{fieldErrors.pickup_contact_name}</p>}
               <input type="tel" placeholder="Your phone number" value={pickupPhone} onChange={(e) => setPickupPhone(e.target.value)} className={`input ${fieldErrors.pickup_contact_phone ? "input-error" : ""}`} />
@@ -508,7 +508,7 @@ export default function NewDeliveryPage() {
 
             {/* Recipient */}
             <div className="rounded-2xl p-4 space-y-3" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>Recipient details</h3>
+              <h3 className="font-black text-sm" style={{ color: "var(--color-link)" }}>Recipient details</h3>
               <input type="text" placeholder="Recipient name" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} className={`input ${fieldErrors.recipient_name ? "input-error" : ""}`} />
               {fieldErrors.recipient_name && <p className="error-text">{fieldErrors.recipient_name}</p>}
               <input type="tel" placeholder="Recipient phone number" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} className={`input ${fieldErrors.recipient_phone ? "input-error" : ""}`} />
@@ -579,7 +579,7 @@ export default function NewDeliveryPage() {
                 </div>
               </div>
               <div className="px-4 py-2.5 flex justify-end" style={{ borderTop: "1px solid var(--color-border)", backgroundColor: "var(--color-bg)" }}>
-                <button type="button" onClick={() => setStep(1)} className="text-xs font-bold" style={{ color: "var(--color-primary)" }}>Edit addresses</button>
+                <button type="button" onClick={() => setStep(1)} className="text-xs font-bold" style={{ color: "var(--color-link)" }}>Edit addresses</button>
               </div>
             </div>
 
@@ -600,7 +600,7 @@ export default function NewDeliveryPage() {
                 </div>
               </div>
               <div className="px-4 py-2.5 flex justify-end" style={{ borderTop: "1px solid var(--color-border)", backgroundColor: "var(--color-bg)" }}>
-                <button type="button" onClick={() => setStep(2)} className="text-xs font-bold" style={{ color: "var(--color-primary)" }}>Edit details</button>
+                <button type="button" onClick={() => setStep(2)} className="text-xs font-bold" style={{ color: "var(--color-link)" }}>Edit details</button>
               </div>
             </div>
 
@@ -667,7 +667,7 @@ export default function NewDeliveryPage() {
             ) : (
               <button type="button" onClick={() => setShowAuth(true)}
                 className="w-full p-4 rounded-2xl text-sm font-bold flex items-center justify-between"
-                style={{ backgroundColor: "var(--color-surface)", border: "1.5px dashed var(--color-primary)", color: "var(--color-primary)" }}
+                style={{ backgroundColor: "var(--color-surface)", border: "1.5px dashed var(--color-primary)", color: "var(--color-link)" }}
               >
                 <span>Sign in to complete your order</span>
                 <span>→</span>
@@ -688,7 +688,7 @@ export default function NewDeliveryPage() {
           <div className="max-w-lg mx-auto">
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>Flat fee · No hidden costs</span>
-              <span className="text-2xl font-black" style={{ color: "var(--color-primary)" }}>R99.00</span>
+              <span className="text-2xl font-black" style={{ color: "var(--color-link)" }}>R99.00</span>
             </div>
             <button
               type="button"

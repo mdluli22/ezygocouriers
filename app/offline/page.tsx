@@ -10,8 +10,8 @@ export default function OfflinePage() {
     <main
       style={{
         alignItems: "center",
-        background: "#f5f7f6",
-        color: "#173d38",
+        background: "var(--color-bg)",
+        color: "var(--color-text-primary)",
         display: "flex",
         justifyContent: "center",
         minHeight: "100svh",
@@ -20,8 +20,8 @@ export default function OfflinePage() {
     >
       <section
         style={{
-          background: "white",
-          border: "1px solid #dce5e2",
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-border)",
           borderRadius: "24px",
           boxShadow: "0 18px 50px rgba(23,61,56,0.12)",
           maxWidth: "460px",
@@ -41,7 +41,7 @@ export default function OfflinePage() {
         <h1 style={{ fontSize: "28px", lineHeight: 1.2, margin: "0 0 12px" }}>
           You’re offline
         </h1>
-        <p style={{ color: "#5f726e", lineHeight: 1.7, margin: "0 0 28px" }}>
+        <p style={{ color: "var(--color-text-secondary)", lineHeight: 1.7, margin: "0 0 28px" }}>
           Reconnect to book a delivery, refresh tracking, or make a payment.
           EzyGo never shows cached account or payment information while offline.
         </p>

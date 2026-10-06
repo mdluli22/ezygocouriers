@@ -77,7 +77,7 @@ function VerifyEmailForm() {
   if (!email) {
     return (
       <div className="space-y-5 text-center">
-        <h1 className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>
+        <h1 className="text-3xl font-black" style={{ color: "var(--color-link)" }}>
           Email address required
         </h1>
         <p style={{ color: "var(--color-text-secondary)" }}>
@@ -93,7 +93,7 @@ function VerifyEmailForm() {
   return (
     <div className="space-y-7">
       <div>
-        <h1 className="text-3xl font-black tracking-tight" style={{ color: "var(--color-primary)" }}>
+        <h1 className="text-3xl font-black tracking-tight" style={{ color: "var(--color-link)" }}>
           Verify your email
         </h1>
         <p className="mt-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
@@ -163,7 +163,7 @@ function VerifyEmailForm() {
           onClick={handleResend}
           disabled={resending || cooldown > 0}
           className="font-semibold underline underline-offset-2 disabled:no-underline disabled:opacity-60"
-          style={{ color: "var(--color-primary)" }}
+          style={{ color: "var(--color-link)" }}
         >
           {resending
             ? "Sending…"

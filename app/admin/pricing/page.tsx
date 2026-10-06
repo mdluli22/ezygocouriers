@@ -59,7 +59,7 @@ export default function AdminPricingPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>Pricing</h1>
+        <h1 className="text-3xl font-black" style={{ color: "var(--color-link)" }}>Pricing</h1>
         <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
           Manage delivery pricing rules
         </p>
@@ -98,7 +98,7 @@ export default function AdminPricingPage() {
       {/* Rules */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-primary)" }} viewBox="0 0 24 24" fill="none">
+          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-link)" }} viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>

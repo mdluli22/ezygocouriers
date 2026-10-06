@@ -80,7 +80,7 @@ export default function AdminDriversPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>Drivers</h1>
+          <h1 className="text-3xl font-black" style={{ color: "var(--color-link)" }}>Drivers</h1>
           <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
             Manage driver accounts and availability
           </p>
@@ -106,7 +106,7 @@ export default function AdminDriversPage() {
       {/* Driver Cards */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-primary)" }} viewBox="0 0 24 24" fill="none">
+          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-link)" }} viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
@@ -164,7 +164,7 @@ export default function AdminDriversPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgb(0 0 0 / 0.5)" }}>
           <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto" style={{ backgroundColor: "var(--color-bg)" }}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-black" style={{ color: "var(--color-primary)" }}>Create Driver Account</h2>
+              <h2 className="text-lg font-black" style={{ color: "var(--color-link)" }}>Create Driver Account</h2>
               <button onClick={() => setShowModal(false)} style={{ color: "var(--color-text-muted)" }}>✕</button>
             </div>
 

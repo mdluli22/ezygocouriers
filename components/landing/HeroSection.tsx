@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { APIProvider } from "@vis.gl/react-google-maps";
@@ -71,6 +72,8 @@ export default function HeroSection() {
                 See how it works
               </a>
             </div>
+
+            <Image className="hero-life-photo" src="/images/courier-handover.webp" alt="A courier handing a parcel to a customer at her shop doorway" width={1672} height={941} sizes="(max-width: 900px) 100vw, 50vw" />
 
             <div className="hero-assurances" aria-label="Service benefits">
               <span><ShieldCheck size={17} /> Secure payment</span>

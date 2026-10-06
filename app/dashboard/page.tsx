@@ -125,11 +125,6 @@ function DashboardContent() {
             <span className="customer-eyebrow">Deliver anywhere in Cape Town</span>
             <h1 id="customer-greeting">Hello, {firstName}.</h1>
           </div>
-          <div className="customer-parcel-art" aria-hidden="true">
-            <div className="customer-orbit" />
-            <div className="customer-box customer-box-back"><i /><span>↑ ↑</span></div>
-            <div className="customer-box customer-box-front"><i /><span>EzyGo</span></div>
-          </div>
         </div>
         <form className="customer-search" role="search" onSubmit={event => { event.preventDefault(); document.getElementById("shipments")?.scrollIntoView({ block: "start" }); }}>
           <Search size={21} aria-hidden="true" />
@@ -163,7 +158,7 @@ function DashboardContent() {
             </nav>
           </div>
           <div className="customer-list-intro">
-            <div><h3>{query.trim() ? "Search results" : history ? "Delivery history" : "Active shipments"}</h3><p>{query.trim() ? `Matching ${history ? "past" : "active"} parcels.` : history ? "Completed, cancelled and unsuccessful deliveries." : "Follow every step, from collection to their door."}</p></div>
+            <div><h3>{query.trim() ? "Search results" : history ? "Delivery history" : "Active shipments"}</h3></div>
             <button type="button" className="customer-refresh" onClick={() => setRefreshKey(key => key + 1)} disabled={loading} aria-label="Refresh shipments"><RefreshCw size={17} /></button>
           </div>
           {loading ? <div className="customer-empty" role="status"><Package size={30} /><h3>Gathering your shipments</h3><p>One moment while we bring everything into view.</p></div>

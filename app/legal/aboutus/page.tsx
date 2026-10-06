@@ -1,6 +1,7 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, CreditCard, MapPin, Navigation, Package, Route, ShieldCheck, Truck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CreditCard, MapPin, Package, Route, ShieldCheck, Truck } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import "./about.css";
 
@@ -36,12 +37,7 @@ export default function AboutPage() {
             <span className="about-location"><MapPin size={16} aria-hidden="true" />Cape Town, South Africa</span>
             <Link className="about-primary" href="/dashboard/deliveries/new">Send a parcel<ArrowRight size={18} aria-hidden="true" /></Link>
           </div>
-          <div className="about-route-card" aria-hidden="true">
-            <div className="about-route-top"><span><Package size={24} /></span><strong>From your door<br />to theirs.</strong></div>
-            <div className="about-route"><span><MapPin size={21} /></span><i /><span className="about-route-vehicle"><Truck size={30} /></span><i /><span><Navigation size={21} /></span></div>
-            <div className="about-route-labels"><span>Pickup</span><span>Delivery</span></div>
-            <div className="about-route-status"><Check size={16} />One connected journey</div>
-          </div>
+          <Image className="about-life-photo" src="/images/courier-handover.webp" alt="A friendly courier delivering a parcel to a local shop owner" width={1672} height={941} sizes="(max-width: 760px) 100vw, 50vw" />
         </section>
         <section className="about-story" aria-labelledby="about-purpose">
           <div><span className="section-kicker">Our purpose</span><h2 id="about-purpose">Keep your day moving.</h2></div>

@@ -101,7 +101,7 @@ function LoginForm() {
       <div>
         <h1
           className="text-3xl font-black tracking-tight"
-          style={{ color: "var(--color-primary)" }}
+          style={{ color: "var(--color-link)" }}
         >
           Welcome back
         </h1>
@@ -110,7 +110,7 @@ function LoginForm() {
           <Link
             href="/auth/signup"
             className="font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity"
-            style={{ color: "var(--color-primary)" }}
+            style={{ color: "var(--color-link)" }}
           >
             Sign up free
           </Link>
@@ -192,7 +192,7 @@ function LoginForm() {
             <Link
               href="/auth/forgot-password"
               className="text-xs font-semibold hover:opacity-80 transition-opacity"
-              style={{ color: "var(--color-primary)" }}
+              style={{ color: "var(--color-link)" }}
             >
               Forgot password?
             </Link>

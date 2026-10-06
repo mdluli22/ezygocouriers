@@ -60,7 +60,7 @@ export default function PayDeliveryPage() {
   return (
     <div className="max-w-md mx-auto py-16 space-y-5">
       <div>
-        <h1 className="text-xl font-black" style={{ color: "var(--color-primary)" }}>
+        <h1 className="text-xl font-black" style={{ color: "var(--color-link)" }}>
           Choose how to pay
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>

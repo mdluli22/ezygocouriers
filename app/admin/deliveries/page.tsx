@@ -82,7 +82,7 @@ export default function AdminDeliveriesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>Deliveries</h1>
+        <h1 className="text-3xl font-black" style={{ color: "var(--color-link)" }}>Deliveries</h1>
         <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
           Manage all deliveries and assign drivers
         </p>
@@ -115,7 +115,7 @@ export default function AdminDeliveriesPage() {
       {/* Table */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-primary)" }} viewBox="0 0 24 24" fill="none">
+          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-link)" }} viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
@@ -130,7 +130,7 @@ export default function AdminDeliveriesPage() {
             <div key={d.id} className="card space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-black text-sm" style={{ color: "var(--color-primary)" }}>{d.tracking_number}</p>
+                  <p className="font-black text-sm" style={{ color: "var(--color-link)" }}>{d.tracking_number}</p>
                   <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
                     {d.pickup_city} → {d.dropoff_city} · {d.customer_name}
                   </p>
