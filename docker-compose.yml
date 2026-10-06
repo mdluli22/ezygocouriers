@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-        NEXT_PUBLIC_GOOGLE_ROUTES_API_KEY: ${GOOGLE_ROUTES_API_KEY}
+        GOOGLE_ROUTES_API_KEY: ${GOOGLE_ROUTES_API_KEY}
     container_name: ezygo_app
     restart: unless-stopped
     # Host Nginx forwards public and admin traffic to this loopback port.
