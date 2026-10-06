@@ -294,7 +294,10 @@ without changing customer records.
 Configure `GOOGLE_ROUTES_API_KEY` in `.env.local` for local development or the
 production server's environment (`.env` for Docker). Enable Google Routes API
 and billing for this server key. It must allow server requests; browser-referrer
-restricted Maps keys cannot be used. Restart the app after configuring it.
+restricted Maps keys cannot be used. Routes requests use IPv4 explicitly, so allow
+the app server's public outbound IPv4 address on the key. This avoids a dual-stack
+connection choosing an unlisted IPv6 address. Other app traffic is unchanged.
+Restart the app after configuring it.
 The application calls [Google Routes computeRoutes](https://developers.google.com/maps/documentation/routes/reference/rest/v2/TopLevel/computeRoutes)
 for the collection-to-delivery driving distance at booking, with a retry on
 completion. This is the verified planned road route, not GPS odometer mileage

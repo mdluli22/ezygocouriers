@@ -10,8 +10,8 @@ function load(file){const filename=resolve(__dirname,'..',file);if(cache.has(fil
  console.log({pendingDeliveries:pending.rowCount,missingCompletionDate:pending.rows.filter(row=>!row.completed_at).length,apply:process.argv.includes('--apply')});
  if(!process.argv.includes('--apply'))return;
  const {refreshEarningDistance}=load('lib/earnings/service.ts');
- let calculated=0;
- for(const row of pending.rows){try{await refreshEarningDistance(row.delivery_id);calculated++;}catch(error){console.error('Backfill paused:',error.message);process.exitCode=1;break;}}
- console.log({routesVerified:calculated});
+ let calculated=0,unresolved=0;
+ for(const row of pending.rows){try{await refreshEarningDistance(row.delivery_id);calculated++;}catch(error){console.error('Delivery still needs review:',{deliveryId:row.delivery_id,reason:error.message});unresolved++;process.exitCode=1;}}
+ console.log({routesVerified:calculated,unresolved});
  console.log('Distances over 30 km and missing completion dates still require admin review.');
 }catch(error){console.error('Backfill failed:',error.code||error.message);process.exitCode=1;}finally{await pool.end();}})();

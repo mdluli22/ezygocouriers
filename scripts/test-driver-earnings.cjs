@@ -90,13 +90,22 @@ test('Payment rejects a changed amount and an unfinished week',async()=>{
  assert.equal(inserted,false);
 });
 test('Routing failures remain pending instead of being paid as zero distance',async()=>{
- const before=process.env.GOOGLE_ROUTES_API_KEY;const fetchBefore=global.fetch;
+ const before=process.env.GOOGLE_ROUTES_API_KEY;
  try {
   delete process.env.GOOGLE_ROUTES_API_KEY;
   let writes=0;
-  const route=load('lib/earnings/route-distance.ts',{'@/lib/db/server':{query:async sql=>{if(sql.startsWith('UPDATE'))writes++;return {rows:[{route_distance_meters:null,plat:-33.9,plng:18.4,dlat:-33.8,dlng:18.5}]};}}});
+  const route=load('lib/earnings/route-distance.ts',{'./google-routes':{requestGoogleRoute:async()=>new Response(JSON.stringify({routes:[]}))},'@/lib/db/server':{query:async sql=>{if(sql.startsWith('UPDATE'))writes++;return {rows:[{route_distance_meters:null,plat:-33.9,plng:18.4,dlat:-33.8,dlng:18.5}]};}}});
   assert.equal(await route.verifyRouteDistance(1),null);
-  process.env.GOOGLE_ROUTES_API_KEY='test-only-key';global.fetch=async()=>({ok:true,json:async()=>({routes:[]})});
+  process.env.GOOGLE_ROUTES_API_KEY='test-only-key';
   assert.equal(await route.verifyRouteDistance(1),null);assert.equal(writes,0);
- }finally{if(before===undefined)delete process.env.GOOGLE_ROUTES_API_KEY;else process.env.GOOGLE_ROUTES_API_KEY=before;global.fetch=fetchBefore;}
+ }finally{if(before===undefined)delete process.env.GOOGLE_ROUTES_API_KEY;else process.env.GOOGLE_ROUTES_API_KEY=before;}
+});
+test('Real Routes transport pins IPv4, keeps TLS and forwards the response',async()=>{
+ const {EventEmitter}=require('node:events');let optionsSeen,bodySeen;
+ const transport=load('lib/earnings/google-routes.ts',{'node:https':{request:(url,options,callback)=>{
+  assert.equal(url,'https://routes.googleapis.com/directions/v2:computeRoutes');optionsSeen=options;
+  const req=new EventEmitter();req.end=body=>{bodySeen=body;const response=new EventEmitter();response.statusCode=200;callback(response);response.emit('data',Buffer.from('{"routes":[{"distanceMeters":5464}]}'));response.emit('end');};return req;
+ }}});
+ const response=await transport.requestGoogleRoute('test-key','{}');
+ assert.equal(optionsSeen.family,4);assert.equal(optionsSeen.headers['X-Goog-Api-Key'],'test-key');assert.equal(optionsSeen.rejectUnauthorized,undefined);assert.ok(optionsSeen.signal);assert.equal(bodySeen,'{}');assert.equal((await response.json()).routes[0].distanceMeters,5464);
 });

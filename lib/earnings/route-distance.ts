@@ -1,3 +1,4 @@
+import { requestGoogleRoute } from "./google-routes";
 import { query } from "@/lib/db/server";
 /** Server-verified pickup-to-drop-off driving route, not straight-line or driver-to-pickup distance. */
 export async function verifyRouteDistance(deliveryId: number): Promise<number | null> {
@@ -15,11 +16,11 @@ export async function verifyRouteDistance(deliveryId: number): Promise<number | 
     return lat !== null && lng !== null ? {location:{latLng:{latitude:Number(lat),longitude:Number(lng)}}} : {address};
   }
   try {
-    const response=await fetch("https://routes.googleapis.com/directions/v2:computeRoutes",{
-      method:"POST", headers:{"Content-Type":"application/json","X-Goog-Api-Key":key,"X-Goog-FieldMask":"routes.distanceMeters"},
-      body:JSON.stringify({origin:waypoint(row.plat,row.plng,row.pickup),destination:waypoint(row.dlat,row.dlng,row.dropoff),travelMode:"DRIVE",routingPreference:"TRAFFIC_UNAWARE",computeAlternativeRoutes:false}),
-      signal:AbortSignal.timeout(8000),cache:"no-store",
-    });
+    const response=await requestGoogleRoute(key, JSON.stringify({
+      origin:waypoint(row.plat,row.plng,row.pickup),
+      destination:waypoint(row.dlat,row.dlng,row.dropoff),
+      travelMode:"DRIVE",routingPreference:"TRAFFIC_UNAWARE",computeAlternativeRoutes:false,
+    }));
     if(!response.ok) { console.warn("Route verification unavailable",{deliveryId,status:response.status}); return null; }
     const data=await response.json(); const meters=data.routes?.[0]?.distanceMeters;
     if(!Number.isSafeInteger(meters)||meters<0) return null;
