@@ -1,3 +1,4 @@
+import EarningsPanel from "@/components/earnings/EarningsPanel";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -100,6 +101,8 @@ export default async function AdminDashboardPage() {
         <StatCard label="Customers" value={users.customers} sub={`${users.total} total accounts`} icon="users" />
         <StatCard label="Active users" value={users.active} icon="activeUsers" tone="green" />
       </section>
+
+      <EarningsPanel admin />
 
       <div className="admin-overview-grid">
         <section className="admin-pipeline-card">

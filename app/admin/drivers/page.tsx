@@ -1,5 +1,6 @@
 "use client";
 
+import EarningsPanel from "@/components/earnings/EarningsPanel";
 import { useEffect, useState } from "react";
 
 interface Driver {
@@ -102,6 +103,8 @@ export default function AdminDriversPage() {
           {toast.msg}
         </div>
       )}
+
+      <EarningsPanel admin />
 
       {/* Driver Cards */}
       {loading ? (

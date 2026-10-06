@@ -1,3 +1,6 @@
+import { verifyRouteDistance } from "@/lib/earnings/route-distance";
+import { recordCompletion } from "@/lib/earnings/service";
+import { deliveryPayCents } from "@/lib/earnings/calculation";
 import { query, getClient } from "@/lib/db/server";
 import {
   DeliveryStatus,
@@ -31,6 +34,9 @@ export async function getDriverDeliveries(driverUserId: number) {
        d.scheduled_time,
        d.created_at,
        d.updated_at,
+       COALESCE(e.distance_meters,d.route_distance_meters) AS distance_meters,
+       e.amount_cents AS earning_cents,
+       e.completed_at,
        pa.street_address  AS pickup_street,
        pa.suburb          AS pickup_suburb,
        pa.city            AS pickup_city,
@@ -42,6 +48,7 @@ export async function getDriverDeliveries(driverUserId: number) {
        q.amount           AS quote_amount,
        q.currency         AS quote_currency
      FROM deliveries d
+     LEFT JOIN driver_delivery_earnings e ON e.delivery_id=d.id
      JOIN drivers dr   ON dr.id = d.assigned_driver_id
      JOIN addresses pa ON pa.id = d.pickup_address_id
      JOIN addresses da ON da.id = d.dropoff_address_id
@@ -50,7 +57,7 @@ export async function getDriverDeliveries(driverUserId: number) {
      ORDER BY d.updated_at DESC`,
     [driverUserId]
   );
-  return result.rows;
+  return result.rows.map(row => ({...row, estimated_earning_cents: deliveryPayCents(row.distance_meters)}));
 }
 
 /**
@@ -64,6 +71,9 @@ export async function getDriverDeliveryById(
   const result = await query(
     `SELECT
        d.*,
+       COALESCE(e.distance_meters,d.route_distance_meters) AS distance_meters,
+       e.amount_cents AS earning_cents,
+       e.completed_at,
        pa.street_address  AS pickup_street,
        pa.suburb          AS pickup_suburb,
        pa.city            AS pickup_city,
@@ -81,6 +91,7 @@ export async function getDriverDeliveryById(
        cu.full_name       AS customer_name,
        cu.phone           AS customer_phone
      FROM deliveries d
+     LEFT JOIN driver_delivery_earnings e ON e.delivery_id=d.id
      JOIN drivers dr   ON dr.id = d.assigned_driver_id
      JOIN addresses pa ON pa.id = d.pickup_address_id
      JOIN addresses da ON da.id = d.dropoff_address_id
@@ -90,7 +101,8 @@ export async function getDriverDeliveryById(
      LIMIT 1`,
     [deliveryId, driverUserId]
   );
-  return result.rows[0] ?? null;
+  const row=result.rows[0];
+  return row ? {...row,estimated_earning_cents:deliveryPayCents(row.distance_meters)} : null;
 }
 
 /**
@@ -104,6 +116,12 @@ export async function updateDeliveryStatus(
   note?: string,
   pin?: string
 ): Promise<void> {
+  let meters: number | null = null;
+  if (newStatus === "delivered") {
+    const assigned = await query("SELECT d.id FROM deliveries d JOIN drivers dr ON dr.id=d.assigned_driver_id WHERE d.id=$1 AND dr.user_id=$2",[deliveryId,driverUserId]);
+    if (!assigned.rowCount) throw new Error("Delivery not found or not assigned to you.");
+    meters = await verifyRouteDistance(deliveryId);
+  }
   const client = await getClient();
   try {
     await client.query("BEGIN");
@@ -164,6 +182,8 @@ export async function updateDeliveryStatus(
        VALUES ($1, $2, $3, $4)`,
       [deliveryId, newStatus, note || null, driverUserId]
     );
+
+    if (newStatus === "delivered") await recordCompletion(client,deliveryId,delivery.driver_id,meters);
 
     await client.query("COMMIT");
 

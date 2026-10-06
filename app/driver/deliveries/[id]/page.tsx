@@ -1,5 +1,6 @@
 "use client";
 
+import DeliveryEarnings, { type DeliveryEarningsData } from "@/components/earnings/DeliveryEarnings";
 import { useTimedMessage } from "@/components/ui/useTimedMessage";
 
 import { useCallback, useEffect, useState } from "react";
@@ -13,7 +14,7 @@ import {
 import { ArrowLeft, ArrowRight, CheckCircle2, Navigation, Package, Phone, ShieldCheck, Truck } from "lucide-react";
 import "./delivery.css";
 
-interface Delivery {
+interface Delivery extends DeliveryEarningsData {
   id: number;
   tracking_number: string;
   status: DeliveryStatus;
@@ -158,6 +159,8 @@ export default function DriverDeliveryDetailPage() {
       <Link href="/driver" className="trip-back"><ArrowLeft size={16} />All deliveries</Link>
       {success && <div className="portal-notice is-success" role="status"><CheckCircle2 size={18} aria-hidden="true" />{success}</div>}
       <header className="trip-detail-header"><div><span className="trip-eyebrow">DELIVERY DETAILS</span><h1>{headline}</h1><p>{statusDescription}</p></div><div className="trip-reference"><span>Tracking number</span><strong>{delivery.tracking_number}</strong></div></header>
+
+      <DeliveryEarnings delivery={delivery} />
 
       <div className="trip-detail-grid">
         <div className="trip-detail-main">

@@ -1771,3 +1771,5 @@ button, input, textarea, select { font-family: inherit; }
 .signup-phone-fields { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 10px; }
 .signup-phone-fields .input { min-width: 0; width: 100%; }
 @media (max-width: 380px) { .signup-phone-fields { grid-template-columns: 1fr; } }
+.delivery-earnings { display: flex; flex-wrap: wrap; gap: 6px 18px; padding-block: 14px; font-size: 13px; line-height: 1.6; }
+.delivery-earnings strong { font-weight: 600; }

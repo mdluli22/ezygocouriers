@@ -88,12 +88,14 @@ export async function assignDriver(
   try {
     await client.query("BEGIN");
 
-    await client.query(
+    const assigned = await client.query(
       `UPDATE deliveries
        SET assigned_driver_id = $1, status = 'assigned', updated_at = NOW()
-       WHERE id = $2`,
+       WHERE id = $2 AND status NOT IN ('delivered','failed','cancelled') RETURNING id`,
       [driverId, deliveryId]
     );
+
+    if (!assigned.rowCount) throw new Error("Completed or closed deliveries cannot be reassigned.");
 
     await client.query(
       `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)

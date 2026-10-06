@@ -270,3 +270,57 @@ sudo certbot --nginx -d admin.ezygocouriers.co.za
 ```bash
 npm run build
 ```
+
+
+## Driver earnings and Monday payouts
+
+The rider-pay schedule is stored in `lib/earnings/calculation.ts` (version
+`rider-pay-v1`). Completed deliveries earn R32 up to 5 km, R35 up to 10 km,
+R39 up to 15 km, R44 up to 20 km, R50 up to 25 km and R57 up to 30 km.
+Over 30 km requires an admin-approved amount. Distances are stored in whole
+metres; a distance just above a band limit enters the next band. Displayed
+kilometres round up to one decimal, matching the PDF's 5.1 km-style labels.
+
+Run `node scripts/apply-driver-earnings.cjs` for a local database. Docker's
+migration service also applies `012_driver_earnings.sql` to existing volumes.
+The migration backfills completed-delivery records using the first delivered
+status log, preserving unknown dates and distances as pending review. After
+configuring the Routes key, run `node scripts/backfill-driver-earnings.cjs` to
+inspect pending records, then add `--apply` to calculate their road distances.
+This only calculates earnings; it never records or initiates a payment.
+`node scripts/check-driver-routing.cjs` tests the key with public landmarks
+without changing customer records.
+
+Configure `GOOGLE_ROUTES_API_KEY` in `.env.local` for local development or the
+production server's environment (`.env` for Docker). Enable Google Routes API
+and billing for this server key. It must allow server requests; browser-referrer
+restricted Maps keys cannot be used. Restart the app after configuring it.
+The application calls [Google Routes computeRoutes](https://developers.google.com/maps/documentation/routes/reference/rest/v2/TopLevel/computeRoutes)
+for the collection-to-delivery driving distance at booking, with a retry on
+completion. This is the verified planned road route, not GPS odometer mileage
+or distance driven to reach the collection point. Missing routes do not block
+delivery completion and do not silently produce a R0 payout.
+
+Admin's overview and Drivers page include weekly statements, delivery details,
+route recalculation and manual distance/rate verification with an audit note.
+Historical and unverified deliveries need review before a week's payment can
+be recorded. Payout periods run Monday 00:00 inclusive to the following Monday
+00:00 exclusive in Africa/Johannesburg (UTC+02:00), with payment due that Monday.
+The default admin view is the latest closed week; driver view starts with the
+current week. Both can browse previous weeks.
+
+The payment-record action records a bank payment already made, with its
+reference. It does not initiate a bank transfer or schedule automatic bank
+payments. A week can only be marked paid after it closes and all its deliveries
+are verified. Payment amounts are recomputed on the server, checked against
+the displayed amount, and locked against duplicate recording and later edits.
+
+Monthly bonuses remain separate from weekly pay. The progressive bands match
+the PDF example: deliveries 150-249 add R2 each, 250-349 add R4 each, 350-449
+add R6 each, and 450 onward add R8 each. Therefore 275 completed deliveries
+produce R304, not 275 times R4. Month-to-date bonuses are provisional. Missing
+historical completion dates must be verified before they can count for a month.
+
+Checks:
+- `node --test scripts/test-driver-earnings.cjs`
+- `node scripts/test-driver-earnings-db.cjs` (session-local temporary tables only)

@@ -1,12 +1,14 @@
 "use client";
 
+import EarningsPanel from "@/components/earnings/EarningsPanel";
+import DeliveryEarnings, { type DeliveryEarningsData } from "@/components/earnings/DeliveryEarnings";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Clock3, Navigation, Package, RefreshCw, Search, ShieldCheck, Truck } from "lucide-react";
 import { STATUS_LABELS, type DeliveryStatus } from "@ezygo/contracts";
 import "./deliveries.css";
 
-interface Delivery {
+interface Delivery extends DeliveryEarningsData {
   id: number;
   tracking_number: string;
   status: DeliveryStatus;
@@ -99,6 +101,8 @@ export default function DriverDashboardPage() {
         <div><dt><CheckCircle2 size={17} aria-hidden="true" />Delivered</dt><dd>{loading ? "Loading" : completed.length}</dd></div>
       </dl>
 
+      <EarningsPanel />
+
       {error && <div className="dispatch-error" role="alert"><p>{error} {deliveries.length > 0 && "Showing previously loaded deliveries."}</p><button onClick={() => setRefreshKey(value => value + 1)}>Try again</button></div>}
       {loading && deliveries.length === 0 ? <div className="dispatch-empty" role="status"><Truck size={30} aria-hidden="true" /><h2>Loading your deliveries</h2><p>Checking your assignments and recent updates.</p></div> : error && deliveries.length === 0 ? null :
       <div className="dispatch-layout">
@@ -111,6 +115,7 @@ export default function DriverDashboardPage() {
             <RouteStops delivery={currentTrip} />
             <div className="dispatch-parcel"><small>Deliver to</small><strong>{currentTrip.recipient_name}</strong>{currentTrip.parcel_description && <p>{currentTrip.parcel_description}</p>}</div>
             <Handling delivery={currentTrip} />
+            <DeliveryEarnings delivery={currentTrip} />
             <Link className="dispatch-primary" href={`/driver/deliveries/${currentTrip.id}`}>{currentTrip.status === "assigned" ? "View pickup" : "Continue delivery"}<ArrowRight size={18} aria-hidden="true" /></Link>
           </> : <div className="dispatch-off-duty"><CheckCircle2 size={32} aria-hidden="true" /><h2>You’re all caught up.</h2><p>New assignments will appear here when a delivery is assigned to you.</p></div>}
         </aside>
@@ -124,6 +129,7 @@ export default function DriverDashboardPage() {
               <div className="dispatch-job-heading"><strong>{delivery.tracking_number}</strong><span className={`dispatch-status${delivery.status === "failed" || delivery.status === "cancelled" ? " is-ended" : ""}`}>{STATUS_LABELS[delivery.status]}</span></div>
               <RouteStops delivery={delivery} />
               <Handling delivery={delivery} />
+              <DeliveryEarnings delivery={delivery} />
               <div className="dispatch-job-footer"><span>{delivery.recipient_name}</span><strong>View delivery <ArrowRight size={15} aria-hidden="true" /></strong></div>
             </Link>
           </li>)}</ul> : <div className="dispatch-empty"><Package size={28} aria-hidden="true" /><h3>{query ? "No matching deliveries" : filter === "active" ? "No active deliveries" : "No deliveries here yet"}</h3><p>{query ? "Try another address, recipient or tracking number." : "Your deliveries will appear here as they are assigned and updated."}</p>{query && <button onClick={() => setQuery("")}>Clear search</button>}</div>}

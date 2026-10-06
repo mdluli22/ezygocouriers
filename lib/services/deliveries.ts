@@ -1,3 +1,4 @@
+import { verifyRouteDistance } from "@/lib/earnings/route-distance";
 import { query, getClient } from "@/lib/db/server";
 import { generateQuote, acceptQuote } from "./quotes";
 import type { CreateDeliveryInput } from "@ezygo/contracts";
@@ -144,6 +145,7 @@ export async function createDelivery(
     );
 
     await client.query("COMMIT");
+    try { await verifyRouteDistance(delivery.id); } catch { console.warn("Delivery route pending verification",{deliveryId:delivery.id}); }
 
     return {
       id:             delivery.id,
