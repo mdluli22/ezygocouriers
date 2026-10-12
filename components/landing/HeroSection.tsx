@@ -1,5 +1,6 @@
 "use client";
 
+import { createQuoteDraft, BOOKING_DRAFT_KEY } from "@/lib/booking/quote-draft";
 import PublishedPrice from "@/components/PublishedPrice";
 import Image from "next/image";
 import { useState } from "react";
@@ -24,20 +25,22 @@ export default function HeroSection() {
   const [pickupPlace, setPickupPlace] = useState<PlaceResult | null>(null);
   const [dropoffPlace, setDropoffPlace] = useState<PlaceResult | null>(null);
 
+  const [error, setError] = useState("");
+
   function handleQuote(e: React.FormEvent) {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (pickup) params.set("pickup", pickup);
-    if (dropoff) params.set("dropoff", dropoff);
-    if (pickupPlace) {
-      params.set("pickupLat", String(pickupPlace.lat));
-      params.set("pickupLng", String(pickupPlace.lng));
+    setError("");
+    if (!pickupPlace || !dropoffPlace) {
+      setError("Choose both addresses from the suggestions before continuing.");
+      return;
     }
-    if (dropoffPlace) {
-      params.set("dropoffLat", String(dropoffPlace.lat));
-      params.set("dropoffLng", String(dropoffPlace.lng));
+    try {
+      sessionStorage.setItem(BOOKING_DRAFT_KEY, JSON.stringify(createQuoteDraft(pickupPlace, dropoffPlace)));
+    } catch {
+      setError("Your browser could not save these addresses. Allow site storage and try again.");
+      return;
     }
-    router.push(`/auth/signup?${params.toString()}`);
+    router.push("/dashboard/deliveries/new");
   }
 
   function swapAddresses() {
@@ -124,7 +127,7 @@ export default function HeroSection() {
                     <span>Pick-up address</span>
                     <AddressAutocomplete
                       value={pickup}
-                      onChange={setPickup}
+                      onChange={(value) => { setPickup(value); setPickupPlace(null); setError(""); }}
                       onPlaceSelect={(place) => {
                         setPickupPlace(place);
                         setPickup(place.address);
@@ -147,7 +150,7 @@ export default function HeroSection() {
                     <span>Drop-off address</span>
                     <AddressAutocomplete
                       value={dropoff}
-                      onChange={setDropoff}
+                      onChange={(value) => { setDropoff(value); setDropoffPlace(null); setError(""); }}
                       onPlaceSelect={(place) => {
                         setDropoffPlace(place);
                         setDropoff(place.address);
@@ -157,6 +160,8 @@ export default function HeroSection() {
                     />
                   </label>
                 </div>
+
+                {error && <p role="alert" className="quote-error">{error}</p>}
 
                 <button type="submit" className="quote-submit">
                   Get started for <PublishedPrice /> <ArrowRight size={19} />

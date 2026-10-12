@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import BrandLogo from "@/components/BrandLogo";
 import {
   ArrowRight,
@@ -57,6 +58,7 @@ export function WhyEzyGo() {
             <span className="value-icon"><Clock3 size={21} /></span>
             <span className="value-label">Less friction</span>
             <h3>Book in minutes.</h3>
+            <Image className="value-booking-photo" src="/images/parcel-exchange.jpg" alt="A parcel being handed over for delivery" width={1200} height={800} sizes="(max-width: 600px) 100vw, 45vw" />
           </article>
 
           <article className="value-card value-card-cream">
@@ -70,6 +72,7 @@ export function WhyEzyGo() {
             <span className="value-icon"><BellRing size={21} /></span>
             <span className="value-label">Useful updates</span>
             <h3>No wondering.<br />No chasing.</h3>
+            <Image className="value-updates-photo" src="/images/courier-handover.webp" alt="A customer receiving her parcel from a courier" width={1672} height={941} sizes="(max-width: 600px) 100vw, 50vw" />
           </article>
         </div>
 

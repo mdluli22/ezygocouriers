@@ -29,21 +29,21 @@ interface Delivery {
 const PAST_STATUSES: DeliveryStatus[] = ["delivered", "failed", "cancelled"];
 const STEPS = ["Booked", "Picked up", "In transit", "Delivered"];
 
-function ShipmentCard({ delivery }: { delivery: Delivery }) {
+function DeliveryCard({ delivery }: { delivery: Delivery }) {
   const current = delivery.status === "delivered" ? 3 : delivery.status === "in_transit" ? 2 : delivery.status === "picked_up" ? 1 : 0;
   const stopped = delivery.status === "failed" || delivery.status === "cancelled";
   return (
-    <Link href={`/dashboard/tracking/${delivery.id}`} className="customer-shipment" aria-label={`View ${delivery.tracking_number}, ${STATUS_LABELS[delivery.status]}`}>
-      <div className="customer-shipment-top">
+    <Link href={`/dashboard/tracking/${delivery.id}`} className="customer-delivery" aria-label={`View ${delivery.tracking_number}, ${STATUS_LABELS[delivery.status]}`}>
+      <div className="customer-delivery-top">
         <span className="customer-parcel-icon"><Package size={24} /></span>
-        <div className="customer-shipment-copy">
+        <div className="customer-delivery-copy">
           <h3>{delivery.tracking_number}</h3>
           <p>{delivery.pickup_city} <ArrowRight size={12} aria-label="to" /> {delivery.dropoff_city}</p>
         </div>
         <span className={`badge ${STATUS_COLORS[delivery.status]}`}>{STATUS_LABELS[delivery.status]}</span>
       </div>
       {!stopped && (
-        <ol className="customer-progress" aria-label="Shipment progress">
+        <ol className="customer-progress" aria-label="Delivery progress">
           {STEPS.map((label, index) => (
             <li key={label} className={index <= current ? "is-complete" : ""} aria-current={index === current ? "step" : undefined}>
               <span className="customer-progress-dot">{index <= current && <Check size={12} aria-hidden="true" />}</span>
@@ -53,11 +53,11 @@ function ShipmentCard({ delivery }: { delivery: Delivery }) {
         </ol>
       )}
       {PAST_STATUSES.includes(delivery.status) && (
-        <p className="customer-shipment-meta">{delivery.recipient_name} · Booked {new Date(delivery.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}</p>
+        <p className="customer-delivery-meta">{delivery.recipient_name} · Booked {new Date(delivery.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}</p>
       )}
-      <div className="customer-shipment-footer">
+      <div className="customer-delivery-footer">
         <span>{formatMoney(delivery.quote_amount, delivery.quote_currency)}</span>
-        <strong>View shipment <ArrowRight size={15} /></strong>
+        <strong>View delivery <ArrowRight size={15} /></strong>
       </div>
     </Link>
   );
@@ -95,7 +95,7 @@ function DashboardContent() {
   function destination(next: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("section", next);
-    return `/dashboard?${params.toString()}#shipments`;
+    return `/dashboard?${params.toString()}#deliveries`;
   }
 
   return (
@@ -107,18 +107,18 @@ function DashboardContent() {
             <h1 id="customer-greeting">Hello, {firstName}.</h1>
           </div>
         </div>
-        <form className="customer-search" role="search" onSubmit={event => { event.preventDefault(); document.getElementById("shipments")?.scrollIntoView({ block: "start" }); }}>
+        <form className="customer-search" role="search" onSubmit={event => { event.preventDefault(); document.getElementById("deliveries")?.scrollIntoView({ block: "start" }); }}>
           <Search size={21} aria-hidden="true" />
           <input ref={search} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Tracking number or city" aria-label="Search by tracking number or city" autoCapitalize="none" autoComplete="off" spellCheck={false} />
           {query && <button type="button" onClick={() => { setQuery(""); search.current?.focus(); }} aria-label="Clear search"><X size={18} /></button>}
-          <button type="submit" aria-label="Search shipments"><ArrowRight size={21} /></button>
+          <button type="submit" aria-label="Search deliveries"><ArrowRight size={21} /></button>
         </form>
       </section>
 
       <nav className="customer-shortcuts" aria-label="Quick actions">
         <Link href="/dashboard/deliveries/new"><span className="is-featured"><Send size={24} /></span>Send parcel</Link>
         <button type="button" onClick={() => search.current?.focus()}><span><Search size={24} /></span>Track order</button>
-        <Link href={destination("orders")} onClick={() => setQuery("")}><span><Package size={24} /></span>Active shipments</Link>
+        <Link href={destination("orders")} onClick={() => setQuery("")}><span><Package size={24} /></span>Active deliveries</Link>
         <Link href={destination("history")} onClick={() => setQuery("")}><span><History size={24} /></span>History</Link>
       </nav>
 
@@ -130,22 +130,22 @@ function DashboardContent() {
       </div></TimedNotice>}
 
       <div className="customer-content">
-        <section className="customer-shipments" id="shipments" aria-labelledby="shipments-heading" aria-busy={loading}>
+        <section className="customer-deliveries" id="deliveries" aria-labelledby="deliveries-heading" aria-busy={loading}>
           <div className="customer-section-heading">
-            <h2 id="shipments-heading">Your deliveries</h2>
-            <nav className="customer-tabs" aria-label="Shipment views">
+            <h2 id="deliveries-heading">Your deliveries</h2>
+            <nav className="customer-tabs" aria-label="Delivery views">
               <Link href={destination("orders")} aria-current={!history ? "page" : undefined}>Active{!loading && !error ? ` (${summary.data?.data.active ?? "…"})` : ""}</Link>
               <Link href={destination("history")} aria-current={history ? "page" : undefined}>History{!loading && !error ? ` (${summary.data?.data.history ?? "…"})` : ""}</Link>
             </nav>
           </div>
           <div className="customer-list-intro">
-            <div><h3>{query.trim() ? "Search results" : history ? "Delivery history" : "Active shipments"}</h3></div>
-            <button type="button" className="customer-refresh" onClick={() => list.reload()} disabled={loading} aria-label="Refresh shipments"><RefreshCw size={17} /></button>
+            <div><h3>{query.trim() ? "Search results" : history ? "Delivery history" : "Active deliveries"}</h3></div>
+            <button type="button" className="customer-refresh" onClick={() => list.reload()} disabled={loading} aria-label="Refresh deliveries"><RefreshCw size={17} /></button>
           </div>
-          {loading ? <div className="customer-empty" role="status"><Package size={30} /><h3>Gathering your shipments</h3><p>One moment while we bring everything into view.</p></div>
-            : error ? <div className="customer-empty" role="alert"><PackageOpen size={30} /><h3>Shipments unavailable</h3><p>{error}</p><button className="portal-primary-button" onClick={() => list.reload()}>Try again <RefreshCw size={16} /></button></div>
-            : filtered.length === 0 ? <div className="customer-empty"><PackageOpen size={32} /><h3>{query.trim() ? "No matching parcels" : history ? "No past shipments yet." : "Ready when you are."}</h3><p>{query.trim() ? "Try another tracking number or city." : history ? "Your completed deliveries will appear here." : "Book a pickup and follow your parcel right here."}</p>{query.trim() ? <button className="portal-primary-button" onClick={() => setQuery("")}>Clear search <X size={16} /></button> : !history && <Link href="/dashboard/deliveries/new" className="portal-primary-button">{deliveries.length ? "Send a parcel" : "Send your first parcel"} <ArrowRight size={16} /></Link>}</div>
-            : <div className="customer-shipment-list" tabIndex={0} role="region" aria-label="Your deliveries list">{filtered.map(delivery => <ShipmentCard key={delivery.id} delivery={delivery} />)}</div>}
+          {loading ? <div className="customer-empty" role="status"><Package size={30} /><h3>Gathering your deliveries</h3><p>One moment while we bring everything into view.</p></div>
+            : error ? <div className="customer-empty" role="alert"><PackageOpen size={30} /><h3>Deliveries unavailable</h3><p>{error}</p><button className="portal-primary-button" onClick={() => list.reload()}>Try again <RefreshCw size={16} /></button></div>
+            : filtered.length === 0 ? <div className="customer-empty"><PackageOpen size={32} /><h3>{query.trim() ? "No matching parcels" : history ? "No past deliveries yet." : "Ready when you are."}</h3><p>{query.trim() ? "Try another tracking number or city." : history ? "Your completed deliveries will appear here." : "Book a pickup and follow your parcel right here."}</p>{query.trim() ? <button className="portal-primary-button" onClick={() => setQuery("")}>Clear search <X size={16} /></button> : !history && <Link href="/dashboard/deliveries/new" className="portal-primary-button">{deliveries.length ? "Send a parcel" : "Send your first parcel"} <ArrowRight size={16} /></Link>}</div>
+            : <div className="customer-delivery-list" tabIndex={0} role="region" aria-label="Your deliveries list">{filtered.map(delivery => <DeliveryCard key={delivery.id} delivery={delivery} />)}</div>}
           <ListControls {...list} />
         </section>
 

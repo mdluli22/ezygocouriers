@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { phoneCountries, getCountryCallingCode, normalizeSignupPhone, type PhoneCountry } from "@ezygo/contracts";
+import { safeInternalRedirect } from "@/lib/auth/navigation";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 const countryNames = new Intl.DisplayNames(["en"], { type: "region" });
@@ -69,6 +70,12 @@ function PasswordStrength({ password }: { password: string }) {
 }
 
 export default function SignupPage() {
+  return <Suspense><SignupForm /></Suspense>;
+}
+
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const redirect = safeInternalRedirect(searchParams.get("redirect"), "/dashboard?welcome=1");
   const router = useRouter();
 
   const [form, setForm] = useState({
@@ -123,7 +130,7 @@ export default function SignupPage() {
       }
 
       router.push(
-        `/auth/verify-email?redirect=${encodeURIComponent(new URLSearchParams(window.location.search).get("redirect") || "/dashboard?welcome=1")}&email=${encodeURIComponent(data.data?.email || form.email)}`
+        `/auth/verify-email?redirect=${encodeURIComponent(redirect)}&email=${encodeURIComponent(data.data?.email || form.email)}`
       );
     } catch {
       setServerError("Something went wrong. Please check your connection.");
@@ -145,7 +152,7 @@ export default function SignupPage() {
         <p className="mt-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
           Already have an account?{" "}
           <Link
-            href="/auth/login"
+            href={`/auth/login?redirect=${encodeURIComponent(redirect)}`}
             className="font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity"
             style={{ color: "var(--color-link)" }}
           >

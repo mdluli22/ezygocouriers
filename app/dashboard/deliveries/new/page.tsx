@@ -1,5 +1,7 @@
 "use client";
 
+import { BOOKING_DRAFT_KEY } from "@/lib/booking/quote-draft";
+
 import { useTimedMessage } from "@/components/ui/useTimedMessage";
 
 import { useState, useEffect } from "react";
@@ -96,7 +98,7 @@ export default function NewDeliveryPage() {
   }, []);
 
   function resumeSignIn() {
-    try { sessionStorage.setItem("ezygo-booking-draft", JSON.stringify({ savedAt: Date.now(), step, pickupText, dropoffText, pickupGeo, dropoffGeo, pickupContactName, pickupPhone, pickupNote, recipientName, recipientPhone, recipientEmail, dropoffNote, parcelDescription, packageType, fragile, requirePin, dropoffMeeting })); }
+    try { sessionStorage.setItem(BOOKING_DRAFT_KEY, JSON.stringify({ savedAt: Date.now(), step, pickupText, dropoffText, pickupGeo, dropoffGeo, pickupContactName, pickupPhone, pickupNote, recipientName, recipientPhone, recipientEmail, dropoffNote, parcelDescription, packageType, fragile, requirePin, dropoffMeeting })); }
     catch { setError("Your browser could not save the draft. Allow site storage and try again."); return; }
     router.push("/auth/login?redirect=%2Fdashboard%2Fdeliveries%2Fnew");
   }
@@ -104,9 +106,9 @@ export default function NewDeliveryPage() {
     // Restore after a full auth navigation, never store credentials or auth tokens.
     Promise.resolve().then(() => {
       try {
-        const saved = sessionStorage.getItem("ezygo-booking-draft");
+        const saved = sessionStorage.getItem(BOOKING_DRAFT_KEY);
         if (!saved) return;
-        sessionStorage.removeItem("ezygo-booking-draft");
+        sessionStorage.removeItem(BOOKING_DRAFT_KEY);
         const draft = JSON.parse(saved);
         if (Date.now() - draft.savedAt > 30 * 60 * 1000) return;
         if (draft.step !== undefined) setStep(draft.step);
@@ -269,7 +271,7 @@ export default function NewDeliveryPage() {
                 </label>
                 <AddressAutocomplete
                   value={pickupText}
-                  onChange={setPickupText}
+                  onChange={(value) => { setPickupText(value); setPickupGeo(null); }}
                   onPlaceSelect={handlePickupSelect}
                   placeholder="Search Cape Town pickup address…"
                   className="w-full"
@@ -294,7 +296,7 @@ export default function NewDeliveryPage() {
                 </label>
                 <AddressAutocomplete
                   value={dropoffText}
-                  onChange={setDropoffText}
+                  onChange={(value) => { setDropoffText(value); setDropoffGeo(null); }}
                   onPlaceSelect={handleDropoffSelect}
                   placeholder="Search Cape Town drop-off address…"
                   className="w-full"

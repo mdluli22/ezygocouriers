@@ -103,3 +103,26 @@ test('Customer, driver and admin query builders bound records and preserve owner
  await admin.getAdminDrivers(page);assert.deepEqual(calls.at(-1).params,[10,'%Cape%',3]);
  for(const call of calls) {assert.match(call.sql,/ORDER BY (d\.|dr\.)?id DESC LIMIT \$\d+/);assert.equal(call.sql.includes('Cape'),false);}
 });
+
+
+test('Quick quote serializes both selected addresses and coordinates into the booking draft', () => {
+ const {createQuoteDraft,BOOKING_DRAFT_KEY}=loader()('lib/booking/quote-draft.ts');
+ const pickup={address:'Cape Town City Hall, Cape Town',lat:-33.925,lng:18.424,placeId:'pickup'};
+ const dropoff={address:'Green Point, Cape Town',lat:-33.906,lng:18.409,placeId:'dropoff'};
+ const storage=new Map();
+ storage.set(BOOKING_DRAFT_KEY,JSON.stringify(createQuoteDraft(pickup,dropoff,1234)));
+ const restored=JSON.parse(storage.get('ezygo-booking-draft'));
+ assert.equal(restored.step,1);
+ assert.equal(restored.savedAt,1234);
+ assert.equal(restored.pickupText,pickup.address);
+ assert.equal(restored.dropoffText,dropoff.address);
+ assert.equal(restored.pickupGeo.formatted_address,pickup.address);
+ assert.equal(restored.pickupGeo.latitude,pickup.lat);
+ assert.equal(restored.pickupGeo.longitude,pickup.lng);
+ assert.equal(restored.dropoffGeo.formatted_address,dropoff.address);
+ assert.equal(restored.dropoffGeo.latitude,dropoff.lat);
+ assert.equal(restored.dropoffGeo.longitude,dropoff.lng);
+ const swapped=createQuoteDraft(dropoff,pickup);
+ assert.deepEqual(swapped.pickupGeo,restored.dropoffGeo);
+ assert.deepEqual(swapped.dropoffGeo,restored.pickupGeo);
+});
