@@ -1,10 +1,14 @@
 "use client";
 
+import { formatMoney } from "@/lib/currency";
+import { requestJson, RequestError } from "@/lib/api/client";
 import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
+import DeliveryRecovery from "@/components/dashboard/DeliveryRecovery";
 
 import TimedNotice from "@/components/ui/TimedNotice";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -191,6 +195,9 @@ function TrackingContent() {
   const [logs, setLogs]         = useState<StatusLog[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState("");
+  const refresh = useRef<() => void>(() => {});
+  const [lastChecked, setLastChecked] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useTimedMessage("", "");
 
@@ -212,6 +219,7 @@ function TrackingContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Cancellation failed.");
 
+      refresh.current();
       setDelivery((current) => current ? { ...current, status: "cancelled", updated_at: new Date().toISOString() } : current);
       setLogs((current) => [
         ...current,
@@ -231,37 +239,74 @@ function TrackingContent() {
   }
 
   useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    async function load() {
+    let disposed = false;
+    let terminal = false;
+    let inFlight = false;
+    let failures = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    let controller: AbortController | undefined;
+    async function load(force = false) {
+      if (disposed || (inFlight && !force)) return;
+      clearTimeout(timer);
+      if (!navigator.onLine) {
+        await Promise.resolve();
+        if (disposed) return;
+        setError("You are offline. Updates will resume when you reconnect.");
+        setLoading(false); setRefreshing(false);
+        timer = setTimeout(() => void load(), 15000);
+        return;
+      }
+      if (document.hidden) {
+        timer = setTimeout(() => void load(), 15000);
+        return;
+      }
+      if (force) controller?.abort();
+      const current = new AbortController();
+      controller = current;
+      inFlight = true;
       try {
-        const res = await fetch(`/api/deliveries/${params.id}`, { signal: controller.signal, cache: "no-store" });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Delivery not found.");
-        if (!controller.signal.aborted) {
-          setDelivery(data.data.delivery);
-          setLogs(data.data.logs);
+        const data = await requestJson<{ data: { delivery: Delivery; logs: StatusLog[] } }>(`/api/deliveries/${params.id}`, { signal: current.signal });
+        if (disposed || current.signal.aborted) return;
+        setDelivery(data.data.delivery); setLogs(data.data.logs); setError("");
+        setLastChecked(new Date().toLocaleTimeString("en-ZA"));
+        terminal = ["delivered", "failed", "cancelled"].includes(data.data.delivery.status);
+        failures = 0;
+      } catch (error) {
+        if (disposed || current.signal.aborted) return;
+        failures++;
+        setError(error instanceof Error ? error.message : "Unable to refresh delivery.");
+        if (error instanceof RequestError && [401, 403, 404].includes(error.status)) {
+          setDelivery(null); terminal = true;
         }
-      } catch (e: unknown) {
-        if (!controller.signal.aborted) setError(e instanceof Error ? e.message : "Failed to load delivery.");
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!disposed && !current.signal.aborted) {
+          inFlight = false; setLoading(false); setRefreshing(false);
+          if (!terminal) timer = setTimeout(() => void load(), Math.min(60000, 15000 * 2 ** failures));
+        }
       }
     }
+    const resume = () => { if (!document.hidden && navigator.onLine) void load(true); };
+    refresh.current = () => { setRefreshing(true); void load(true); };
+    window.addEventListener("online", resume);
+    window.addEventListener("focus", resume);
+    document.addEventListener("visibilitychange", resume);
     void load();
-    return () => controller.abort();
+    return () => {
+      disposed = true; clearTimeout(timer); controller?.abort();
+      window.removeEventListener("online", resume); window.removeEventListener("focus", resume);
+      document.removeEventListener("visibilitychange", resume);
+    };
   }, [params.id]);
 
   if (loading) return <TrackingLoading />;
 
-  if (error || !delivery) {
+  if (!delivery) {
     return (
       <div className="tracking-page">
         <Link href="/dashboard" className="tracking-back"><ArrowLeft size={17} /> All deliveries</Link>
         <section className="tracking-panel tracking-error" role="alert">
           <CircleAlert size={32} aria-hidden="true" />
-          <h1>We couldn’t load this delivery.</h1>
+          <h1>We couldn’t load this delivery.</h1><button className="btn-secondary" onClick={() => refresh.current()}>Try again</button>
           <p>{error || "This delivery is unavailable. Return to your deliveries to try again."}</p>
           <Link href="/dashboard" className="tracking-primary-button">Back to deliveries <ArrowUpRight size={18} /></Link>
         </section>
@@ -273,7 +318,7 @@ function TrackingContent() {
   const copy = STATUS_COPY[delivery.status];
   const progress = TIMELINE_STEPS.indexOf(delivery.status);
   const canCancel = (["pending", "quoted", "confirmed", "paid", "assigned"] as DeliveryStatus[]).includes(delivery.status);
-  const fee = delivery.quote_amount === null ? "Quote pending" : `${delivery.quote_currency} ${Number(delivery.quote_amount).toFixed(2)}`;
+  const fee = formatMoney(delivery.quote_amount, delivery.quote_currency);
   const milestones = [
     { label: "Booked", reached: progress >= 2 },
     { label: "Driver assigned", reached: progress >= 4 },
@@ -284,6 +329,12 @@ function TrackingContent() {
   return (
     <div className="tracking-page">
       <Link href="/dashboard" className="tracking-back"><ArrowLeft size={17} /> All deliveries</Link>
+      <div className="flex flex-wrap items-center gap-3 py-3 text-sm">
+        <button className="btn-secondary" disabled={refreshing} onClick={() => refresh.current()}>{refreshing ? "Refreshing…" : "Refresh status"}</button>
+        <span role="status">{lastChecked ? `Last checked ${lastChecked}` : "Checking for updates"}</span>
+        {error && <p role="alert">{error} Showing the last received update.</p>}
+      </div>
+      <DeliveryRecovery deliveryId={delivery.id} canResend={delivery.require_pin && ["paid","assigned","picked_up","in_transit"].includes(delivery.status)} />
       <header className="tracking-header">
         <div><p className="tracking-eyebrow">YOUR DELIVERY</p><h1>Track your parcel</h1></div>
         <div className="tracking-reference"><span>Tracking number</span><strong>{delivery.tracking_number}</strong></div>

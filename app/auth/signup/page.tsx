@@ -123,7 +123,7 @@ export default function SignupPage() {
       }
 
       router.push(
-        `/auth/verify-email?email=${encodeURIComponent(data.data?.email || form.email)}`
+        `/auth/verify-email?redirect=${encodeURIComponent(new URLSearchParams(window.location.search).get("redirect") || "/dashboard?welcome=1")}&email=${encodeURIComponent(data.data?.email || form.email)}`
       );
     } catch {
       setServerError("Something went wrong. Please check your connection.");

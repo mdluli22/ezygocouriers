@@ -1,5 +1,6 @@
 "use client";
 
+import PublishedPrice from "@/components/PublishedPrice";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -64,7 +65,7 @@ export default function HowItWorks() {
             <span className="how-card-label">Secure checkout</span>
             <h3>Confirm your price.</h3>
             <div className="payment-preview" aria-hidden="true">
-              <span>Flat delivery fee</span><strong>R99.00</strong>
+              <span>Flat delivery fee</span><strong><PublishedPrice /></strong>
             </div>
           </article>
 

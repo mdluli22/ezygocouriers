@@ -1,3 +1,5 @@
+import { defaultPage, pageWhere, pageResult, type PageQuery } from "@/lib/api/pagination";
+import { BusinessError } from "@/lib/api/errors";
 import { query, getClient } from "@/lib/db/server";
 import type { DeliveryStatus, UserRole } from "@ezygo/contracts";
 import { notifyAssignedDriver } from "@/lib/services/push-notifications";
@@ -38,11 +40,13 @@ export async function getAdminStats() {
 
 // ─── Deliveries ───────────────────────────────────────────────────────────────
 
-export async function getAdminDeliveries(status?: DeliveryStatus | "all") {
+export async function getAdminDeliveries(status?: DeliveryStatus | "all", page: PageQuery = defaultPage) {
   const filter = status && status !== "all" ? "WHERE d.status = $1" : "";
-  const params = status && status !== "all" ? [status] : [];
+  const params: unknown[] = status && status !== "all" ? [status] : [];
 
-  const result = await query(
+  const extra = pageWhere(page, params, "d.id", "concat_ws(' ',d.tracking_number,cu.full_name,cu.email,pa.city,da.city)", "d.status");
+  params.push(page.limit + 1);
+  const result = await query<{ id: number; [key: string]: unknown }>(
     `SELECT
        d.id,
        d.tracking_number,
@@ -73,46 +77,42 @@ export async function getAdminDeliveries(status?: DeliveryStatus | "all") {
      LEFT JOIN users cu         ON cu.id = d.customer_id
      LEFT JOIN drivers dr       ON dr.id = d.assigned_driver_id
      LEFT JOIN users dr_user    ON dr_user.id = dr.user_id
-     ${filter}
-     ORDER BY d.created_at DESC`,
+     ${filter || "WHERE TRUE"} ${extra}
+     ORDER BY d.id DESC LIMIT $${params.length}`,
     params
   );
-  return result.rows;
+  return pageResult(result.rows, page);
 }
 
 export async function assignDriver(
   deliveryId: number,
-  driverId: number
+  driverId: number,
+  actorId: number
 ): Promise<void> {
   const client = await getClient();
   try {
     await client.query("BEGIN");
 
-    const assigned = await client.query(
-      `UPDATE deliveries
-       SET assigned_driver_id = $1, status = 'assigned', updated_at = NOW()
-       WHERE id = $2 AND status NOT IN ('delivered','failed','cancelled') RETURNING id`,
-      [driverId, deliveryId]
-    );
-
-    if (!assigned.rowCount) throw new Error("Completed or closed deliveries cannot be reassigned.");
+    await client.query("SELECT pg_advisory_xact_lock($1)",[584701219]);
+    const delivery = await client.query("SELECT status,assigned_driver_id FROM deliveries WHERE id=$1 FOR UPDATE", [deliveryId]);
+    if (!delivery.rows[0] || !["paid","assigned"].includes(delivery.rows[0].status)) throw new BusinessError("Only paid deliveries awaiting pickup can be assigned.");
+    const driver = await client.query(`SELECT dr.id FROM drivers dr JOIN users u ON u.id=dr.user_id
+      WHERE dr.id=$1 AND dr.status='active' AND u.is_active=TRUE AND u.email_verified=TRUE FOR UPDATE OF dr,u`, [driverId]);
+    if (!driver.rowCount) throw new BusinessError("Driver is inactive or unavailable.");
+    const busy = await client.query("SELECT id FROM deliveries WHERE assigned_driver_id=$1 AND id<>$2 AND status IN ('assigned','picked_up','in_transit')", [driverId,deliveryId]);
+    if (busy.rowCount) throw new BusinessError("Driver already has an active delivery.");
+    const payment = await client.query("SELECT id FROM payments WHERE delivery_id=$1 AND status='complete'", [deliveryId]);
+    if (!payment.rowCount) throw new BusinessError("A verified payment is required before assignment.");
+    await client.query("UPDATE deliveries SET assigned_driver_id=$1,status='assigned',updated_at=NOW() WHERE id=$2", [driverId,deliveryId]);
 
     await client.query(
       `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)
-       VALUES ($1, 'assigned', 'Driver assigned by admin', NULL)`,
-      [deliveryId]
+       VALUES ($1, 'assigned', 'Driver assigned by admin', $2)`,
+      [deliveryId,actorId]
     );
 
+    await notifyAssignedDriver({driverId,deliveryId},client);
     await client.query("COMMIT");
-    try {
-      await notifyAssignedDriver({ driverId, deliveryId });
-    } catch (error) {
-      console.error("[Admin assignment push] Delivery failed", {
-        driverId,
-        deliveryId,
-        error,
-      });
-    }
   } catch (e) {
     await client.query("ROLLBACK");
     throw e;
@@ -123,8 +123,11 @@ export async function assignDriver(
 
 // ─── Drivers ──────────────────────────────────────────────────────────────────
 
-export async function getAdminDrivers() {
-  const result = await query(
+export async function getAdminDrivers(page: PageQuery = defaultPage) {
+  const params: unknown[] = [];
+  const extra = pageWhere(page, params, "dr.id", "concat_ws(' ',u.full_name,u.email,dr.vehicle_reg)");
+  params.push(page.limit + 1);
+  const result = await query<{ id: number; [key: string]: unknown }>(
     `SELECT
        dr.id,
        dr.license_number,
@@ -143,10 +146,11 @@ export async function getAdminDrivers() {
      FROM drivers dr
      JOIN users u ON u.id = dr.user_id
      LEFT JOIN deliveries d ON d.assigned_driver_id = dr.id
+     WHERE TRUE ${extra}
      GROUP BY dr.id, u.id
-     ORDER BY dr.created_at DESC`
+     ORDER BY dr.id DESC LIMIT $${params.length}`, params
   );
-  return result.rows;
+  return pageResult(result.rows, page);
 }
 
 export async function createDriver(data: {
@@ -196,28 +200,31 @@ export async function createDriver(data: {
 }
 
 export async function toggleDriverStatus(driverId: number): Promise<void> {
-  await query(
-    `UPDATE drivers
-     SET status = CASE WHEN status = 'active' THEN 'inactive' ELSE 'active' END,
-         updated_at = NOW()
-     WHERE id = $1`,
-    [driverId]
-  );
+  const client = await getClient();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(`UPDATE drivers SET status=CASE WHEN status='active' THEN 'inactive'::driver_status ELSE 'active'::driver_status END,
+      updated_at=NOW() WHERE id=$1 RETURNING user_id,status`, [driverId]);
+    if (result.rows[0]?.status === "inactive") await client.query("DELETE FROM auth_sessions WHERE user_id=$1", [result.rows[0].user_id]);
+    await client.query("COMMIT");
+  } catch (error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); }
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
-export async function getAdminUsers(role?: UserRole) {
+export async function getAdminUsers(role?: UserRole, page: PageQuery = defaultPage) {
   const filter = role ? "WHERE role = $1" : "";
-  const params = role ? [role] : [];
-  const result = await query(
+  const params: unknown[] = role ? [role] : [];
+  const extra = pageWhere(page, params, "id", "concat_ws(' ',full_name,email,phone)");
+  params.push(page.limit + 1);
+  const result = await query<{ id: number; [key: string]: unknown }>(
     `SELECT id, full_name, email, phone, role, is_active, auth_provider, created_at
      FROM users
-     ${filter}
-     ORDER BY created_at DESC`,
+     ${filter || "WHERE TRUE"} ${extra}
+     ORDER BY id DESC LIMIT $${params.length}`,
     params
   );
-  return result.rows;
+  return pageResult(result.rows, page);
 }
 
 export async function toggleUserStatus(

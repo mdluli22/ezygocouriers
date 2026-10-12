@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
+import RememberSession from "@/components/auth/RememberSession";
 import { useRouter, useSearchParams } from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
 import {
@@ -29,16 +30,11 @@ function AdminLoginForm() {
 
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState(searchParams.get("error") === "unauthorized" ? "You must be logged in as admin to access that page." : "");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-
-  useEffect(() => {
-    if (searchParams.get("error") === "unauthorized") {
-      setServerError("You must be logged in as an admin to access that page.");
-    }
-  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,7 +46,7 @@ function AdminLoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await res.json();
@@ -252,6 +248,8 @@ function AdminLoginForm() {
               </div>
               {fieldErrors.password && <p className="error-text">{fieldErrors.password}</p>}
             </div>
+
+            <RememberSession checked={rememberMe} onChange={setRememberMe} disabled={loading} />
 
             {/* Submit */}
             <button

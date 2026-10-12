@@ -1,3 +1,5 @@
+import { parseQuery } from "@/lib/api/validation";
+import { pageSchema, paginatedResponse } from "@/lib/api/pagination";
 import { getSession } from "@/lib/auth/session";
 import { getAdminDrivers, createDriver, toggleDriverStatus } from "@/lib/services/admin";
 import { hashPassword } from "@/lib/auth/password";
@@ -17,14 +19,16 @@ import {
 } from "@ezygo/contracts";
 import { parseJsonRequest } from "@/lib/api/validation";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
     if (session.role !== "admin") return forbiddenResponse();
 
-    const drivers = await getAdminDrivers();
-    return successResponse("Drivers fetched.", drivers);
+    const page = parseQuery(req.nextUrl.searchParams, pageSchema);
+    if (!page.success) return page.response;
+    const drivers = await getAdminDrivers(page.data);
+    return paginatedResponse("Drivers fetched.", drivers);
   } catch (error) {
     console.error("[GET /api/admin/drivers]", error);
     return serverErrorResponse();

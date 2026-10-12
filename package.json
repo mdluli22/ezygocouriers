@@ -7,10 +7,15 @@
   ],
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint",
-    "typecheck:contracts": "npm run typecheck --workspace @ezygo/contracts"
+    "lint": "eslint --max-warnings=0",
+    "typecheck:contracts": "npm run typecheck --workspace @ezygo/contracts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test scripts/test-driver-earnings.cjs scripts/test-yoco-checkout.cjs scripts/test-security-integrity.cjs scripts/test-web-sessions.cjs scripts/test-service-worker.mjs scripts/test-customer-completion.cjs",
+    "test:restore": "node scripts/restore-drill.mjs",
+    "check": "npm run lint && npm run typecheck && npm run typecheck:contracts && npm test",
+    "test:smoke": "node scripts/smoke-release.mjs"
   },
   "dependencies": {
     "@ezygo/contracts": "file:packages/contracts",
@@ -18,12 +23,13 @@
     "bcryptjs": "^3.0.3",
     "better-auth": "^1.6.24",
     "lucide-react": "^1.7.0",
-    "next": "^16.3.5",
+    "next": "^16.4.0",
     "nodemailer": "^10.0.10",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "web-push": "^3.6.7",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -35,11 +41,12 @@
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
-    "eslint-config-next": "^16.3.5",
-    "install": "^0.13.0",
-    "npm": "^11.11.0",
-    "pg": "^8.20.0",
+    "eslint-config-next": "^16.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "sharp": "^0.35.5",
+    "source-map-js": "^1.2.2"
   }
 }

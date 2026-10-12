@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useRemote } from "@/components/ui/useRemote";
+import ListControls from "@/components/ui/ListControls";
+import { requestJson } from "@/lib/api/client";
 
 interface PricingRule {
   id: number;
@@ -12,21 +15,13 @@ interface PricingRule {
 }
 
 export default function AdminPricingPage() {
-  const [rules, setRules]       = useState<PricingRule[]>([]);
-  const [loading, setLoading]   = useState(true);
   const [editing, setEditing]   = useState<Record<number, string>>({});
   const [saving, setSaving]     = useState<number | null>(null);
   const [toast, setToast]       = useState({ msg: "", ok: true });
 
-  async function load() {
-    setLoading(true);
-    const res  = await fetch("/api/admin/pricing");
-    const data = await res.json();
-    setRules(data.data ?? []);
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, []);
+  const list = useRemote<{ data: PricingRule[] }>("/api/admin/pricing");
+  const rules = list.data?.data ?? [];
+  const { loading, reload: load } = list;
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -34,29 +29,31 @@ export default function AdminPricingPage() {
   }
 
   async function handleSave(ruleId: number) {
-    const newFee = parseFloat(editing[ruleId]);
-    if (isNaN(newFee) || newFee < 0) {
-      showToast("Please enter a valid non-negative fee.", false);
-      return;
-    }
-    setSaving(ruleId);
-    const res = await fetch("/api/admin/pricing", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rule_id: ruleId, flat_fee: newFee }),
-    });
-    setSaving(null);
-    if (res.ok) {
-      showToast("Flat fee updated successfully!");
-      setEditing((p) => { const n = { ...p }; delete n[ruleId]; return n; });
-      load();
-    } else {
-      showToast("Failed to update fee.", false);
-    }
+    try {
+      const newFee = parseFloat(editing[ruleId]);
+      if (isNaN(newFee) || newFee < 0) {
+        showToast("Please enter a valid non-negative fee.", false);
+        return;
+      }
+      setSaving(ruleId);
+      await requestJson<{ message: string }>("/api/admin/pricing", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rule_id: ruleId, flat_fee: newFee }),
+      });
+      setSaving(null);
+      {
+        showToast("Flat fee updated successfully!");
+        window.dispatchEvent(new Event("ezygo:pricing-updated"));
+        setEditing((p) => { const n = { ...p }; delete n[ruleId]; return n; });
+        load();
+      }
+    } catch (error) { showToast(error instanceof Error ? error.message : "Request failed.", false); } finally { setSaving(null); }
   }
 
   return (
     <div className="space-y-6">
+      <ListControls {...list} />
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black" style={{ color: "var(--color-link)" }}>Pricing</h1>
@@ -103,7 +100,7 @@ export default function AdminPricingPage() {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
         </div>
-      ) : rules.length === 0 ? (
+      ) : list.error ? null : rules.length === 0 ? (
         <div className="card text-center py-12 text-sm" style={{ color: "var(--color-text-muted)" }}>No pricing rules found.</div>
       ) : (
         <div className="space-y-4">

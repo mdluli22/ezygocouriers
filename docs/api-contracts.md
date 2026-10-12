@@ -508,3 +508,11 @@ Provider webhook bodies and signatures must be processed exactly as received. Do
 - Do not mark a payment complete because the hosted browser returned. Reload the delivery or payment state from the server.
 - Retry GET requests after transient failures. Retry mutations only when the endpoint is documented as idempotent or after reloading server state.
 - Never send payment-provider secret keys, SMTP credentials or database credentials from a client.
+
+## Security and payment integrity update (11 October 2026)
+
+Booking now requires a UUID `Idempotency-Key` header and supports safe replay. Web/mobile authentication returns 429 with `Retry-After` when limits are exceeded. See [the API changes and release guide](security-payment-integrity.md#clientapi-changes) before updating native clients.
+
+### Bounded list responses
+
+Delivery and admin list endpoints now return an additive `pagination` object alongside the existing `data` array. Follow `pagination.nextCursor` until null; requests accept `cursor`, `limit` (1–100, default 25), and `q`. Delivery lists accept `view=active|history|all`. See [the complete list contract](customer-completion.md). The API version header remains present.

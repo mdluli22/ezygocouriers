@@ -92,20 +92,6 @@ function assignmentLogNote(distanceKm: number | null): string {
     : `Automatically assigned to the nearest available driver (${distanceKm.toFixed(1)} km from pickup)`;
 }
 
-async function notifyAssignment(assignment: AutomaticAssignment | null) {
-  if (!assignment) return;
-  try {
-    await notifyAssignedDriver(assignment);
-  } catch (error) {
-    // Assignment is authoritative; notification delivery is best effort.
-    console.error("[Assignment push] Delivery failed", {
-      deliveryId: assignment.deliveryId,
-      driverId: assignment.driverId,
-      error,
-    });
-  }
-}
-
 /** Run delivery assignment in its own transaction (safe after payment commit). */
 export async function autoAssignDelivery(
   deliveryId: number
@@ -122,7 +108,6 @@ export async function autoAssignDelivery(
   } finally {
     client.release();
   }
-  await notifyAssignment(assignment);
   return assignment;
 }
 
@@ -161,9 +146,10 @@ export async function assignDriverToDelivery(
      JOIN users driver_user ON driver_user.id = dr.user_id
      WHERE delivery.id = $1
        AND delivery.status = 'paid'
+       AND EXISTS (SELECT 1 FROM payments p WHERE p.delivery_id=delivery.id AND p.status='complete')
        AND delivery.assigned_driver_id IS NULL
        AND dr.status = 'active'
-       AND driver_user.is_active = TRUE
+       AND driver_user.is_active = TRUE AND driver_user.email_verified = TRUE
        AND NOT EXISTS (
          SELECT 1
          FROM deliveries busy_delivery
@@ -215,6 +201,7 @@ export async function assignDriverToDelivery(
     ]
   );
 
+  await notifyAssignedDriver({deliveryId,driverId:selected.driver_id},client);
   return { deliveryId, driverId: selected.driver_id, distanceKm };
 }
 
@@ -231,7 +218,7 @@ export async function assignNextPaidDeliveryToDriver(
      JOIN users driver_user ON driver_user.id = dr.user_id
      WHERE dr.id = $1
        AND dr.status = 'active'
-       AND driver_user.is_active = TRUE
+       AND driver_user.is_active = TRUE AND driver_user.email_verified = TRUE
        AND NOT EXISTS (
          SELECT 1
          FROM deliveries busy_delivery
@@ -255,6 +242,7 @@ export async function assignNextPaidDeliveryToDriver(
      JOIN addresses pa ON pa.id = delivery.pickup_address_id
      JOIN drivers dr ON dr.id = $1
      WHERE delivery.status = 'paid'
+       AND EXISTS (SELECT 1 FROM payments p WHERE p.delivery_id=delivery.id AND p.status='complete')
        AND delivery.assigned_driver_id IS NULL
        AND pa.latitude IS NOT NULL
        AND pa.longitude IS NOT NULL
@@ -287,6 +275,7 @@ export async function assignNextPaidDeliveryToDriver(
     ]
   );
 
+  await notifyAssignedDriver({deliveryId:selected.delivery_id,driverId},client);
   return {
     deliveryId: selected.delivery_id,
     driverId,
@@ -310,7 +299,6 @@ export async function autoAssignNextPaidDeliveryToDriver(
   } finally {
     client.release();
   }
-  await notifyAssignment(assignment);
   return assignment;
 }
 
@@ -331,7 +319,7 @@ export async function updateDriverLocation(params: {
            current_longitude = $2,
            location_updated_at = NOW(),
            updated_at = NOW()
-       WHERE user_id = $3
+       WHERE user_id = $3 AND status='active'
        RETURNING id`,
       [params.latitude, params.longitude, params.driverUserId]
     );

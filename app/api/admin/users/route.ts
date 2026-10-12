@@ -1,3 +1,4 @@
+import { pageSchema, paginatedResponse } from "@/lib/api/pagination";
 import { getSession } from "@/lib/auth/session";
 import { getAdminUsers, toggleUserStatus } from "@/lib/services/admin";
 import {
@@ -23,8 +24,10 @@ export async function GET(req: NextRequest) {
     const parsed = parseQuery(req.nextUrl.searchParams, adminUserQuerySchema);
     if (!parsed.success) return parsed.response;
 
-    const users = await getAdminUsers(parsed.data.role);
-    return successResponse("Users fetched.", users);
+    const page = parseQuery(req.nextUrl.searchParams, pageSchema);
+    if (!page.success) return page.response;
+    const users = await getAdminUsers(parsed.data.role, page.data);
+    return paginatedResponse("Users fetched.", users);
   } catch (error) {
     console.error("[GET /api/admin/users]", error);
     return serverErrorResponse();

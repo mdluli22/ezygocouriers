@@ -327,3 +327,13 @@ historical completion dates must be verified before they can count for a month.
 Checks:
 - `node --test scripts/test-driver-earnings.cjs`
 - `node scripts/test-driver-earnings-db.cjs` (session-local temporary tables only)
+
+## Security and payment integrity
+
+See [the release guide](docs/security-payment-integrity.md) for migration 013, production test-account protection, notification-worker configuration, the booking Idempotency-Key requirement and the admin payment-review workflow.
+
+## Release and customer completion
+
+Run `npm run check`, `npm run build`, `npm run test:smoke`, and `npm run test:restore` before release. The restore drill needs Docker and uses a disposable database. CI enforces these checks before deployment.
+
+See [release checks and recovery](docs/release-reliability.md) and [customer flows and paginated API contract](docs/customer-completion.md). Apply `014_list_pagination.sql` through the migration service on existing installations. Production PostgreSQL is no longer published on a host port; use the local Compose override only when local database access is needed.

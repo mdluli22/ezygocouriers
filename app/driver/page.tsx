@@ -1,5 +1,7 @@
 "use client";
 
+import { usePagedList, useRemote } from "@/components/ui/useRemote";
+import ListControls from "@/components/ui/ListControls";
 import EarningsPanel from "@/components/earnings/EarningsPanel";
 import DeliveryEarnings, { type DeliveryEarningsData } from "@/components/earnings/DeliveryEarnings";
 import { useEffect, useState } from "react";
@@ -24,7 +26,6 @@ interface Delivery extends DeliveryEarningsData {
   updated_at: string;
 }
 
-const ACTIVE_STATUSES: DeliveryStatus[] = ["assigned", "picked_up", "in_transit"];
 const FILTERS = ["active", "history", "all"] as const;
 type Filter = typeof FILTERS[number];
 
@@ -41,13 +42,9 @@ function Handling({ delivery }: { delivery: Delivery }) {
 }
 
 export default function DriverDashboardPage() {
-  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [driverName, setDriverName] = useState("");
   const [filter, setFilter] = useState<Filter>("active");
   const [query, setQuery] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -58,52 +55,34 @@ export default function DriverDashboardPage() {
     return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    async function load() {
-      try {
-        const response = await fetch("/api/driver/deliveries", { cache: "no-store", signal: controller.signal });
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.message || "Failed to load deliveries.");
-        if (!controller.signal.aborted) setDeliveries(data.data);
-      } catch (error) {
-        if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "Failed to load deliveries.");
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    }
-    void load();
-    return () => controller.abort();
-  }, [refreshKey]);
+  const list = usePagedList<Delivery>(`/api/driver/deliveries?view=${filter}&q=${encodeURIComponent(query)}`);
+  const deliveries = list.items;
+  const { loading, error } = list;
+  const summary = useRemote<{ data: Record<string, number> }>("/api/deliveries/summary");
+  const activeList = useRemote<{ data: Delivery[] }>("/api/driver/deliveries?view=active&limit=25");
 
-  const active = deliveries.filter(delivery => ACTIVE_STATUSES.includes(delivery.status));
-  const history = deliveries.filter(delivery => !ACTIVE_STATUSES.includes(delivery.status));
-  const awaitingPickup = active.filter(delivery => delivery.status === "assigned");
-  const completed = deliveries.filter(delivery => delivery.status === "delivered");
+  const active = activeList.data?.data ?? [];
   const currentTrip = active.find(delivery => delivery.status === "in_transit" || delivery.status === "picked_up") ?? active[0];
-  const filtered = (filter === "active" ? active : filter === "history" ? history : deliveries).filter(delivery =>
-    `${delivery.tracking_number} ${delivery.recipient_name} ${delivery.pickup_street} ${delivery.pickup_city} ${delivery.dropoff_street} ${delivery.dropoff_city}`.toLowerCase().includes(query.trim().toLowerCase())
-  );
-  const counts = { active: active.length, history: history.length, all: deliveries.length };
+  const filtered = deliveries;
+  const counts = summary.data?.data ?? {};
 
   return (
     <div className="dispatch-page">
       <header className="dispatch-header">
         <div><p className="dispatch-eyebrow">DRIVER WORKSPACE</p><h1>{driverName ? `${driverName}’s deliveries` : "Your deliveries"}</h1></div>
-        <button className="dispatch-refresh" onClick={() => setRefreshKey(value => value + 1)} disabled={loading}><RefreshCw size={16} aria-hidden="true" />{loading ? "Refreshing…" : "Refresh"}</button>
+        <button className="dispatch-refresh" onClick={() => list.reload()} disabled={loading}><RefreshCw size={16} aria-hidden="true" />{loading ? "Refreshing…" : "Refresh"}</button>
       </header>
 
       <dl className="dispatch-stats" aria-label="Delivery totals">
-        <div><dt><Navigation size={17} aria-hidden="true" />Active deliveries</dt><dd>{loading ? "Loading" : active.length}</dd></div>
-        <div><dt><Clock3 size={17} aria-hidden="true" />Awaiting pickup</dt><dd>{loading ? "Loading" : awaitingPickup.length}</dd></div>
-        <div><dt><CheckCircle2 size={17} aria-hidden="true" />Delivered</dt><dd>{loading ? "Loading" : completed.length}</dd></div>
+        <div><dt><Navigation size={17} aria-hidden="true" />Active deliveries</dt><dd>{loading ? "Loading" : counts.active ?? "…"}</dd></div>
+        <div><dt><Clock3 size={17} aria-hidden="true" />Awaiting pickup</dt><dd>{loading ? "Loading" : counts.assigned ?? "…"}</dd></div>
+        <div><dt><CheckCircle2 size={17} aria-hidden="true" />Delivered</dt><dd>{loading ? "Loading" : counts.delivered ?? "…"}</dd></div>
       </dl>
 
       <EarningsPanel />
+      <ListControls {...list} />
 
-      {error && <div className="dispatch-error" role="alert"><p>{error} {deliveries.length > 0 && "Showing previously loaded deliveries."}</p><button onClick={() => setRefreshKey(value => value + 1)}>Try again</button></div>}
+      {error && <div className="dispatch-error" role="alert"><p>{error} {deliveries.length > 0 && "Showing previously loaded deliveries."}</p><button onClick={() => list.reload()}>Try again</button></div>}
       {loading && deliveries.length === 0 ? <div className="dispatch-empty" role="status"><Truck size={30} aria-hidden="true" /><h2>Loading your deliveries</h2><p>Checking your assignments and recent updates.</p></div> : error && deliveries.length === 0 ? null :
       <div className="dispatch-layout">
         <aside className="dispatch-focus" aria-label="Current delivery">

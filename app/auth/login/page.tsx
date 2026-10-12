@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
+import RememberSession from "@/components/auth/RememberSession";
 import { useRouter, useSearchParams } from "next/navigation";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import { replaceAfterAuth, safeInternalRedirect } from "@/lib/auth/navigation";
@@ -34,22 +35,12 @@ function LoginForm() {
 
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
-  const [serverError, setServerError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [serverError, setServerError] = useState(OAUTH_ERROR_MESSAGES[searchParams.get("error") || ""] || "");
+  const notice = searchParams.get("verified") === "1" ? "Email verified successfully. You can now sign in." : "";
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-
-  // Handle OAuth error params from Google callback redirect
-  useEffect(() => {
-    const oauthError = searchParams.get("error");
-    if (oauthError && OAUTH_ERROR_MESSAGES[oauthError]) {
-      setServerError(OAUTH_ERROR_MESSAGES[oauthError]);
-    }
-    if (searchParams.get("verified") === "1") {
-      setNotice("Email verified successfully. You can now sign in.");
-    }
-  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -61,14 +52,14 @@ function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         if (res.status === 403 && data.errors?.email) {
-          router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
+          router.push(`/auth/verify-email?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(safeInternalRedirect(searchParams.get("redirect"), "/dashboard"))}`);
           return;
         }
         if (data.errors) {
@@ -108,7 +99,7 @@ function LoginForm() {
         <p className="mt-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
           Don&apos;t have an account?{" "}
           <Link
-            href="/auth/signup"
+            href={`/auth/signup?redirect=${encodeURIComponent(safeInternalRedirect(searchParams.get("redirect"), "/dashboard"))}`}
             className="font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity"
             style={{ color: "var(--color-link)" }}
           >
@@ -231,6 +222,8 @@ function LoginForm() {
             <p className="error-text">{fieldErrors.password}</p>
           )}
         </div>
+
+        <RememberSession checked={rememberMe} onChange={setRememberMe} disabled={loading} />
 
         {/* Submit */}
         <button

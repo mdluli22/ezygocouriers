@@ -1,5 +1,6 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useRemote } from "@/components/ui/useRemote";
+import { useState } from "react";
 import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
 import { distanceLabel, localDate, money, shiftDate, weekStart } from "@/lib/earnings/calculation";
 import { useTimedMessage } from "@/components/ui/useTimedMessage";
@@ -42,20 +43,14 @@ function PaymentForm({driver,week,onSave,busy}:{driver:Driver;week:string;onSave
 export default function EarningsPanel({admin=false}:{admin?:boolean}) {
   const [week,setWeek]=useState(()=>admin?shiftDate(weekStart(),-7):weekStart());
   const [month,setMonth]=useState(()=>localDate().slice(0,7));
-  const [report,setReport]=useState<Report|null>(null);const [error,setError]=useState("");
-  const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);
+  const [mutationError,setError]=useState("");
+  const [busy,setBusy]=useState(false);
   const [message,setMessage]=useTimedMessage("", "", 5000);
   const endpoint=admin?"/api/admin/earnings":"/api/driver/earnings";
-  const load=useCallback(async(signal?:AbortSignal)=>{
-    setLoading(true);setError("");
-    try {
-      const response=await fetch(`${endpoint}?week=${week}&month=${month}`,{cache:"no-store",signal});const data=await response.json();
-      if(!response.ok)throw new Error(data.message||"Unable to load earnings");
-      if(!signal?.aborted)setReport(data.data);
-    }catch(err){if(!signal?.aborted){setReport(null);setError(err instanceof Error?err.message:"Unable to load earnings");}}
-    finally{if(!signal?.aborted)setLoading(false);}
-  },[endpoint,week,month]);
-  useEffect(()=>{const controller=new AbortController();void load(controller.signal);return()=>controller.abort();},[load]);
+  const remote = useRemote<{data: Report}>(`${endpoint}?week=${week}&month=${month}`);
+  const report = remote.data?.data ?? null;
+  const { loading, reload: load } = remote;
+  const error = mutationError || remote.error;
   async function save(body:unknown) {
     setBusy(true);setError("");
     try {const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw new Error(data.message||"Unable to save earnings");setMessage(data.message);await load();return true;}
@@ -67,7 +62,7 @@ export default function EarningsPanel({admin=false}:{admin?:boolean}) {
       <button className="btn-outline" disabled={busy} onClick={()=>setWeek(shiftDate(week,-7))} aria-label="Previous week"><ArrowLeft size={16}/></button>
       <label>Week starting Monday<input className="input" type="date" value={week} disabled={busy} onChange={event=>{if(event.target.value)setWeek(weekStart(new Date(`${event.target.value}T12:00:00+02:00`)));}}/></label>
       <button className="btn-outline" disabled={busy||week>=weekStart()} onClick={()=>setWeek(shiftDate(week,7))} aria-label="Next week"><ArrowRight size={16}/></button>
-      <label>Bonus month<input className="input" type="month" value={month} disabled={busy} onChange={event=>{if(event.target.value)setMonth(event.target.value);}}/></label>
+      {admin&&<label>Bonus month<input className="input" type="month" value={month} disabled={busy} onChange={event=>{if(event.target.value)setMonth(event.target.value);}}/></label>}
     </div>
     {message&&<p role="status" className="earnings-success">{message}</p>}
     {error&&<p role="alert" className="earnings-warning">{error}</p>}
@@ -83,6 +78,7 @@ export default function EarningsPanel({admin=false}:{admin?:boolean}) {
         </dl>
         {driver.pendingCount>0&&<p className="earnings-warning">{driver.pendingCount} {driver.pendingCount===1?"delivery needs":"deliveries need"} distance, rate or completion verification. The amount above excludes unresolved pay.</p>}
         {driver.payment&&<p className="earnings-success">Paid {money(driver.paidCents)} · {new Date(driver.payment.paid_at).toLocaleDateString("en-ZA",{timeZone:"Africa/Johannesburg"})} · Reference: {driver.payment.reference}</p>}
+        {admin&&<>
         <div className="earning-bonus"><span>Monthly performance bonus · {report.month}</span><strong>{money(driver.monthlyBonusCents)}</strong><small>{driver.monthlyCount} completed deliveries. Shown separately from weekly pay{report.month===localDate().slice(0,7)?"; month still in progress":""}.</small></div>
         <details className="earning-breakdown"><summary>Delivery breakdown ({driver.deliveries.length})</summary>
           {driver.deliveries.length===0?<p>No completed deliveries in this week.</p>:<ul>{driver.deliveries.map(earning=><li key={earning.delivery_id}>
@@ -91,6 +87,7 @@ export default function EarningsPanel({admin=false}:{admin?:boolean}) {
             {admin&&!driver.payment&&earning.amount_cents===null&&<ReviewForm earning={earning} busy={busy} onSave={save}/>}
           </li>)}</ul>}
         </details>
+        </>}
         {admin&&!driver.payment&&driver.completedCount>0&&driver.pendingCount===0&&report.canRecordPayment&&<PaymentForm driver={driver} week={week} busy={busy} onSave={save}/>}
       </article>)}</div>
     </>}

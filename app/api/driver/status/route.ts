@@ -1,3 +1,4 @@
+import { applicationErrorResponse } from "@/lib/api/errors";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { updateDeliveryStatus } from "@/lib/services/drivers";
@@ -29,6 +30,8 @@ export async function PATCH(req: NextRequest) {
 
     return successResponse(`Delivery status updated to '${status}'.`);
   } catch (error: unknown) {
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     if (error instanceof Error) {
       if (
         error.message.includes("not assigned") ||

@@ -6,15 +6,16 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true, ...(process.env.DB_SSL_CA ? { ca: process.env.DB_SSL_CA.replace(/\\n/g, '\n') } : {}) } : false,
   max: 20,
+  statement_timeout: 5000,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 2_000,
 });
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle PostgreSQL client', err);
-  process.exit(-1);
+  // The pool replaces broken idle connections; readiness reports outages.
 });
 
 export async function query<T extends QueryResultRow = QueryResultRow>(

@@ -1,3 +1,5 @@
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { applicationErrorResponse } from "@/lib/api/errors";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
@@ -16,6 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
+    await consumeRateLimit(`checkout:${session.userId}`,20,60);
 
     const parsed = await parseJsonRequest(req, createPaymentSchema);
     if (!parsed.success) return parsed.response;
@@ -91,6 +94,8 @@ export async function POST(req: NextRequest) {
 
     return successResponse("Payment initialised.", checkout);
   } catch (error) {
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     console.error("[POST /api/payments/create]", error);
     return serverErrorResponse();
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import PublishedPrice from "@/components/PublishedPrice";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -30,7 +31,7 @@ export default function PricingSection() {
               <PackageCheck size={23} />
             </div>
             <div className="price-bento-amount">
-              <sup>R</sup><strong>99</strong><small>.00</small>
+              <strong><PublishedPrice /></strong>
             </div>
             <p>Per eligible delivery across our Cape Town coverage area.</p>
             <div className="price-bento-stamp"><Check size={13} /> No monthly fee</div>
@@ -64,7 +65,7 @@ export default function PricingSection() {
           <article className="price-bento-card price-bento-action">
             <span className="price-bento-icon"><CreditCard size={21} /></span>
             <small>Ready when you are</small>
-            <h3>Send it for R99.</h3>
+            <h3>Send it for <PublishedPrice />.</h3>
             <Link href="/auth/signup">
               Get started <ArrowRight size={18} />
             </Link>

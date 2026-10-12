@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
     "/email-otp/send-verification-otp"
   );
 
-  if (sendsVerificationOtp) {
+  const sendsPasswordReset = request.nextUrl.pathname.endsWith("/request-password-reset");
+  if (sendsVerificationOtp || sendsPasswordReset) {
     if (!isSmtpConfigured()) {
       return NextResponse.json(
         {
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
     }
     const delivery = await captureSmtpDelivery(() => handlers.POST(request));
     if (delivery.failure) {
+      if (sendsPasswordReset) return NextResponse.json({ message: "Email delivery failed. Please try again later." }, { status: 503 });
       const recipientRejected =
         delivery.failure.code === "EENVELOPE" ||
         delivery.failure.responseCode === 550;

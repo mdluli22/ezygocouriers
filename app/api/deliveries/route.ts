@@ -1,3 +1,8 @@
+import { parseQuery } from "@/lib/api/validation";
+import { pageSchema, paginatedResponse } from "@/lib/api/pagination";
+import { z } from "zod";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { applicationErrorResponse } from "@/lib/api/errors";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { createDelivery, confirmDelivery } from "@/lib/services/deliveries";
@@ -18,6 +23,7 @@ export async function POST(req: NextRequest) {
     // 1. Auth check
     const session = await getSession();
     if (!session) return unauthorizedResponse();
+    await consumeRateLimit(`booking:${session.userId}`,20,60);
     if (session.role !== "customer") {
       return errorResponse("Only customers can create deliveries.", undefined, 403);
     }
@@ -36,9 +42,14 @@ export async function POST(req: NextRequest) {
         503
       );
     }
+    const key = z.uuid().safeParse(req.headers.get("Idempotency-Key"));
+    if (!key.success) return errorResponse("A UUID Idempotency-Key header is required to safely retry a booking.",undefined,428);
     // 3. Create delivery (quoted status)
-    const delivery = await createDelivery(session.userId, deliveryInput);
+    const delivery = await createDelivery(session.userId, deliveryInput, key.data);
 
+    if (["paid","assigned","picked_up","in_transit","delivered"].includes(delivery.status)) {
+      return successResponse("This booking is already paid.",{id:delivery.id,trackingNumber:delivery.trackingNumber,redirect_url:`/dashboard/tracking/${delivery.id}`});
+    }
     // 4. Auto-confirm delivery (customer accepted at form submit)
     await confirmDelivery(delivery.id, session.userId);
 
@@ -76,12 +87,14 @@ export async function POST(req: NextRequest) {
       201
     );
   } catch (error) {
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     console.error("[POST /api/deliveries]", error);
     return serverErrorResponse("Failed to create delivery. Please try again.");
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -90,10 +103,14 @@ export async function GET() {
     }
 
     const { getCustomerDeliveries } = await import("@/lib/services/deliveries");
-    const deliveries = await getCustomerDeliveries(session.userId);
+    const page = parseQuery(req.nextUrl.searchParams, pageSchema);
+    if (!page.success) return page.response;
+    const deliveries = await getCustomerDeliveries(session.userId, page.data);
 
-    return successResponse("Deliveries fetched.", deliveries);
+    return paginatedResponse("Deliveries fetched.", deliveries);
   } catch (error) {
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     console.error("[GET /api/deliveries]", error);
     return serverErrorResponse();
   }

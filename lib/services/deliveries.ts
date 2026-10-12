@@ -1,4 +1,8 @@
+import { defaultPage, pageWhere, pageResult, type PageQuery } from "@/lib/api/pagination";
+import { createHash } from "node:crypto";
 import { verifyRouteDistance } from "@/lib/earnings/route-distance";
+import { BusinessError } from "@/lib/api/errors";
+import { queuePaymentReview } from "./payment-reviews";
 import { query, getClient } from "@/lib/db/server";
 import { generateQuote, acceptQuote } from "./quotes";
 import type { CreateDeliveryInput } from "@ezygo/contracts";
@@ -27,14 +31,33 @@ export interface CreatedDelivery {
  * 4. Insert the delivery
  * 5. Insert initial status log
  */
-export async function createDelivery(
+export async function createDelivery(customerId: number, input: CreateDeliveryInput, bookingKey: string): Promise<CreatedDelivery> {
+  const created = await createDeliveryRecord(customerId,input,bookingKey);
+  // The transaction connection has been released before contacting Google.
+  try { await verifyRouteDistance(created.id); } catch { console.warn("Delivery route pending",{deliveryId:created.id}); }
+  return created;
+}
+
+async function createDeliveryRecord(
   customerId: number,
-  input: CreateDeliveryInput
+  input: CreateDeliveryInput,
+  bookingKey: string
 ): Promise<CreatedDelivery> {
   const client = await getClient();
 
   try {
     await client.query("BEGIN");
+
+    const bookingHash = createHash("sha256").update(JSON.stringify(input)).digest("hex");
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`booking:${customerId}:${bookingKey}`]);
+    const existing = await client.query(`SELECT d.id,d.tracking_number,d.status,d.booking_hash,q.id AS quote_id,q.amount,q.currency
+      FROM deliveries d JOIN quotes q ON q.id=d.quote_id WHERE d.customer_id=$1 AND d.booking_key=$2`, [customerId,bookingKey]);
+    if (existing.rows[0]) {
+      const d=existing.rows[0];
+      if (d.booking_hash !== bookingHash) throw new BusinessError("This booking key was already used with different details.");
+      await client.query("COMMIT");
+      return {id:d.id,trackingNumber:d.tracking_number,status:d.status,quote:{id:d.quote_id,amount:Number(d.amount),currency:d.currency}};
+    }
 
     // Build a display-friendly street address from geocoded or typed data
     const pickupStreet =
@@ -99,7 +122,7 @@ export async function createDelivery(
     const dropoffAddressId = dropoffResult.rows[0].id;
 
     // 3. Generate quote (uses flat fee from DB)
-    const quote = await generateQuote();
+    const quote = await generateQuote(client);
 
     // 4. Insert delivery
     const deliveryResult = await client.query<{
@@ -112,8 +135,8 @@ export async function createDelivery(
          pickup_contact_name, pickup_contact_phone,
          recipient_name, recipient_phone, recipient_email,
          parcel_description, special_instructions, package_type,
-         package_category, fragile, require_pin, scheduled_time, status
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'quoted')
+         package_category, fragile, require_pin, scheduled_time, status, booking_key, booking_hash
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'quoted',$17,$18)
        RETURNING id, tracking_number, status`,
       [
         customerId,
@@ -132,6 +155,7 @@ export async function createDelivery(
         input.fragile ?? false,
         input.require_pin ?? false,
         input.scheduled_time || null,
+        bookingKey, bookingHash,
       ]
     );
 
@@ -145,7 +169,7 @@ export async function createDelivery(
     );
 
     await client.query("COMMIT");
-    try { await verifyRouteDistance(delivery.id); } catch { console.warn("Delivery route pending verification",{deliveryId:delivery.id}); }
+
 
     return {
       id:             delivery.id,
@@ -173,30 +197,19 @@ export async function confirmDelivery(
   deliveryId: number,
   customerId: number
 ): Promise<void> {
-  const result = await query<{ status: string; customer_id: number; quote_id: number }>(
-    `SELECT status, customer_id, quote_id FROM deliveries WHERE id = $1 LIMIT 1`,
-    [deliveryId]
-  );
-
-  const delivery = result.rows[0];
-  if (!delivery) throw new Error("Delivery not found.");
-  if (delivery.customer_id !== customerId) throw new Error("Unauthorized.");
-  if (!isValidTransition(delivery.status as DeliveryStatus, "confirmed")) {
-    throw new Error(`Cannot confirm a delivery with status '${delivery.status}'.`);
-  }
-
   const client = await getClient();
   try {
     await client.query("BEGIN");
-
-    await client.query(
-      `UPDATE deliveries SET status = 'confirmed', updated_at = NOW() WHERE id = $1`,
-      [deliveryId]
-    );
-
-    if (delivery.quote_id) {
-      await acceptQuote(delivery.quote_id);
+    const result = await client.query("SELECT status,customer_id,quote_id FROM deliveries WHERE id=$1 FOR UPDATE", [deliveryId]);
+    const delivery=result.rows[0];
+    if (!delivery || delivery.customer_id !== customerId) throw new BusinessError("Delivery not found.",404);
+    if (["confirmed","paid","assigned","picked_up","in_transit","delivered"].includes(delivery.status)) {
+      await client.query("COMMIT");
+      return;
     }
+    if (delivery.status !== "quoted") throw new BusinessError(`Cannot confirm a delivery with status '${delivery.status}'.`);
+    if (delivery.quote_id) await acceptQuote(client,delivery.quote_id);
+    await client.query("UPDATE deliveries SET status='confirmed',updated_at=NOW() WHERE id=$1", [deliveryId]);
 
     await client.query(
       `INSERT INTO delivery_status_logs (delivery_id, status, note, updated_by)
@@ -228,16 +241,6 @@ export async function cancelCustomerDelivery(
   try {
     await client.query("BEGIN");
 
-    // Payment completion locks a payment before locking its delivery. Keep the
-    // same order here so a provider callback and cancellation cannot deadlock.
-    await client.query(
-      `SELECT id
-       FROM payments
-       WHERE delivery_id = $1 AND status = 'pending'
-       FOR UPDATE`,
-      [deliveryId]
-    );
-
     const result = await client.query<{
       status: DeliveryStatus;
       customer_id: number;
@@ -251,13 +254,17 @@ export async function cancelCustomerDelivery(
     );
 
     const delivery = result.rows[0];
-    if (!delivery) throw new Error("Delivery not found.");
-    if (delivery.customer_id !== customerId) throw new Error("Unauthorized.");
+    if (!delivery) throw new BusinessError("Delivery not found.");
+    if (delivery.customer_id !== customerId) throw new BusinessError("Unauthorized.");
     if (!isValidTransition(delivery.status, "cancelled")) {
-      throw new Error(`Cannot cancel a delivery with status '${delivery.status}'.`);
+      throw new BusinessError(`Cannot cancel a delivery with status '${delivery.status}'.`);
     }
 
     assignedDriverId = delivery.assigned_driver_id;
+    const paid = await client.query("SELECT id,provider_payment_id FROM payments WHERE delivery_id=$1 AND status='complete' FOR UPDATE", [deliveryId]);
+    for (const payment of paid.rows) await queuePaymentReview(client,payment.id,payment.provider_payment_id || `legacy-${payment.id}`,"Customer cancelled a paid delivery");
+    await client.query("UPDATE notification_outbox SET status='cancelled',encrypted_payload=NULL WHERE delivery_id=$1 AND status IN ('pending','failed')", [deliveryId]);
+
 
     await client.query(
       `UPDATE deliveries
@@ -306,8 +313,11 @@ export async function cancelCustomerDelivery(
 /**
  * Fetch all deliveries for a customer with summary info.
  */
-export async function getCustomerDeliveries(customerId: number) {
-  const result = await query(
+export async function getCustomerDeliveries(customerId: number, page: PageQuery = defaultPage) {
+  const params: unknown[] = [customerId];
+  const extra = pageWhere(page, params, "d.id", "concat_ws(' ',d.tracking_number,pa.city,da.city)", "d.status");
+  params.push(page.limit + 1);
+  const result = await query<{ id: number; [key: string]: unknown }>(
     `SELECT
        d.id,
        d.tracking_number,
@@ -332,11 +342,11 @@ export async function getCustomerDeliveries(customerId: number) {
      JOIN addresses pa ON pa.id = d.pickup_address_id
      JOIN addresses da ON da.id = d.dropoff_address_id
      LEFT JOIN quotes q ON q.id = d.quote_id
-     WHERE d.customer_id = $1
-     ORDER BY d.created_at DESC`,
-    [customerId]
+     WHERE d.customer_id = $1 ${extra}
+     ORDER BY d.id DESC LIMIT $${params.length}`,
+    params
   );
-  return result.rows;
+  return pageResult(result.rows, page);
 }
 
 /**
@@ -345,7 +355,10 @@ export async function getCustomerDeliveries(customerId: number) {
 export async function getDeliveryById(deliveryId: number, customerId: number) {
   const result = await query(
     `SELECT
-       d.*,
+       d.id,d.customer_id,d.assigned_driver_id,d.pickup_address_id,d.dropoff_address_id,d.quote_id,
+       d.pickup_contact_name,d.pickup_contact_phone,d.recipient_name,d.recipient_phone,d.recipient_email,
+       d.parcel_description,d.special_instructions,d.tracking_number,d.status,d.created_at,d.updated_at,
+       d.package_type,d.package_category,d.fragile,d.require_pin,d.scheduled_time,d.delivery_pin_sent_at,d.pin_verified_at,
        pa.street_address  AS pickup_street,
        pa.suburb          AS pickup_suburb,
        pa.city            AS pickup_city,

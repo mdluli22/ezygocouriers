@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import EarningsPanel from "@/components/earnings/EarningsPanel";
 import Link from "next/link";
 import {
@@ -53,6 +54,7 @@ function StatCard({
 }
 
 export default async function AdminDashboardPage() {
+  await connection();
   const stats = await getAdminStats();
   const deliveries = stats.deliveries;
   const drivers = stats.drivers;

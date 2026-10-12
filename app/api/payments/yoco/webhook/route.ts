@@ -49,7 +49,18 @@ export async function POST(request: NextRequest) {
        LIMIT 1`,
       [checkoutId]
     );
-    const payment = result.rows[0];
+    let payment = result.rows[0];
+    // A provider can accept checkout while our response/persistence fails. Its
+    // signed metadata lets a retried webhook recover the original attempt.
+    if (!payment) {
+      const paymentId = Number(event.payload?.metadata?.paymentId);
+      if (Number.isSafeInteger(paymentId) && paymentId > 0) {
+        const recovered = await query<PaymentForWebhook>(
+          `SELECT id,delivery_id,amount,currency,status,provider FROM payments
+           WHERE id=$1 AND provider='yoco' AND provider_checkout_id IS NULL`, [paymentId]);
+        payment = recovered.rows[0];
+      }
+    }
 
     if (!payment) return new NextResponse("Payment not found", { status: 404 });
     if (payment.provider !== "yoco") {
@@ -64,6 +75,11 @@ export async function POST(request: NextRequest) {
     ) {
       return new NextResponse("Payment details do not match", { status: 400 });
     }
+
+    if (typeof event.payload.id !== "string" || !event.payload.id.trim()) {
+      return new NextResponse("Missing provider payment ID", { status: 400 });
+    }
+    await query("UPDATE payments SET provider_checkout_id=COALESCE(provider_checkout_id,$2) WHERE id=$1", [payment.id,checkoutId]);
 
     if (event.type === "payment.succeeded" && event.payload.status === "succeeded") {
       await completePayment({

@@ -94,6 +94,9 @@ function getTransporter(): Transporter {
   }
 
   transporter = nodemailer.createTransport({
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
     host,
     port,
     secure,
@@ -278,4 +281,20 @@ export async function sendDeliveryCompleted({
       </div>
     `,
   });
+}
+
+export async function sendPasswordReset(to: string, url: string): Promise<void> {
+  try {
+    await getTransporter().sendMail({
+      from: process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER,
+      to,
+      subject: "Reset your EzyGo password",
+      text: `Reset your password using this link: ${url}\nThis single-use link expires in 30 minutes. If you did not request it, ignore this email.`,
+      html: `<p><a href="${escapeHtml(url)}">Reset your EzyGo password</a></p><p>This single-use link expires in 30 minutes. If you did not request it, ignore this email.</p>`,
+    });
+  } catch (error) {
+    const state = smtpDeliveryContext.getStore();
+    if (state) state.failure = normalizeDeliveryFailure(error);
+    throw error;
+  }
 }

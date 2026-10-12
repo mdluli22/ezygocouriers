@@ -2,8 +2,9 @@
 
 import { useTimedMessage } from "@/components/ui/useTimedMessage";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
+import RememberSession from "@/components/auth/RememberSession";
 import { useRouter, useSearchParams } from "next/navigation";
 import LoginShell from "@/components/auth/LoginShell";
 import {
@@ -33,18 +34,13 @@ function DriverLoginForm() {
 
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
-  const [serverError, setServerError] = useTimedMessage("", "");
+  const [serverError, setServerError] = useTimedMessage(searchParams.get("error") === "unauthorized" ? "You must be logged in as a driver to access that page." : "", "");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   // Show error if redirected back with a query param
-  useEffect(() => {
-    if (searchParams.get("error") === "unauthorized") {
-      setServerError("You must be logged in as a driver to access that page.");
-    }
-  }, [searchParams]);
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -55,7 +51,7 @@ function DriverLoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await res.json();
@@ -167,6 +163,8 @@ function DriverLoginForm() {
               </div>
               {fieldErrors.password && <p className="error-text">{fieldErrors.password}</p>}
             </div>
+
+            <RememberSession checked={rememberMe} onChange={setRememberMe} disabled={loading} />
 
             {/* Submit */}
             <button

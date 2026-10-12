@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, Navigation, Package, ShieldCheck, Truck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Navigation, Package, ShieldCheck } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import "./login.css";
 

@@ -1,0 +1,112 @@
+{
+  "completedAt": "2026-10-12T14:03:30.208Z",
+  "elapsedMs": 6713,
+  "postgres": "16",
+  "migrations": [
+    "001_initial_schema.sql",
+    "002_better_auth.sql",
+    "003_delivery_checkout_details.sql",
+    "004_payment_attempt_integrity.sql",
+    "005_driver_location_auto_assignment.sql",
+    "006_delivery_recipient_pin.sql",
+    "007_delivery_completion_email.sql",
+    "008_payment_providers.sql",
+    "009_paystack_provider.sql",
+    "010_push_subscriptions.sql",
+    "011_yoco_provider.sql",
+    "012_driver_earnings.sql",
+    "013_security_payment_integrity.sql",
+    "014_list_pagination.sql"
+  ],
+  "archiveSha256": "62123475e02de2aa220374491fdb8aabebe18bb49638e4aca487af9aa198fcad",
+  "tables": [
+    [
+      "addresses",
+      "2|8a1b7bf08dfd464dc0aa1b960b4bdd3c"
+    ],
+    [
+      "auth_accounts",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "auth_sessions",
+      "1|4fa01b5135e6104962ff7f5bf75aa157"
+    ],
+    [
+      "auth_verifications",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "contact_messages",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "deliveries",
+      "1|dbf6e5a17b28dbf6b994f5a4b9b0ac82"
+    ],
+    [
+      "delivery_status_logs",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "driver_delivery_earnings",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "driver_earning_audit",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "driver_weekly_payouts",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "drivers",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "notification_outbox",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "payment_review_audit",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "payment_reviews",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "payments",
+      "1|63c7dc1c400d78ebbb8919b15af4e7b4"
+    ],
+    [
+      "pricing_rules",
+      "1|f3bc0e6b3b6dc2dde30d688929d9d993"
+    ],
+    [
+      "push_subscriptions",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "quotes",
+      "1|f3b682e18e27772ba37ce6659f790db4"
+    ],
+    [
+      "request_rate_limits",
+      "0|d41d8cd98f00b204e9800998ecf8427e"
+    ],
+    [
+      "restore_probe",
+      "2|672da72b4296759f6014bc552f12cbd4"
+    ],
+    [
+      "users",
+      "1|8850c5e9d78a3c6a6af57dd39e30d6b9"
+    ]
+  ],
+  "schemaVerified": true,
+  "sequencesVerified": true,
+  "seededUsers": 0,
+  "scope": "Synthetic isolated database; not a production backup"
+}

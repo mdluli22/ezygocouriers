@@ -3,7 +3,8 @@
 import DeliveryEarnings, { type DeliveryEarningsData } from "@/components/earnings/DeliveryEarnings";
 import { useTimedMessage } from "@/components/ui/useTimedMessage";
 
-import { useCallback, useEffect, useState } from "react";
+import { useRemote } from "@/components/ui/useRemote";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -57,9 +58,6 @@ const ACTION_LABELS: Partial<Record<DeliveryStatus, string>> = {
 export default function DriverDeliveryDetailPage() {
   const params = useParams();
 
-  const [delivery, setDelivery]     = useState<Delivery | null>(null);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState("");
   const [updating, setUpdating]     = useState<DeliveryStatus | null>(null);
   const [note, setNote]             = useState("");
   const [updateError, setUpdateError] = useTimedMessage("", "");
@@ -68,22 +66,9 @@ export default function DriverDeliveryDetailPage() {
   const [deliveryPin, setDeliveryPin] = useState("");
   const [online, setOnline] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res  = await fetch(`/api/driver/deliveries/${params.id}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Not found");
-      setDelivery(data.data.delivery);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load.");
-    } finally {
-      setLoading(false);
-    }
-  }, [params.id]);
-
-  useEffect(() => { void load(); }, [load]);
+  const remote = useRemote<{ data: { delivery: Delivery } }>(`/api/driver/deliveries/${params.id}`);
+  const delivery = remote.data?.data.delivery ?? null;
+  const { loading, error, reload: load } = remote;
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 const storageTypes = [
-  { name: "Sign-in cookies", purpose: "Keep you signed in and connect your browser to your EzyGo account. Signing out ends your session.", duration: "Sessions last up to 7 days and may renew while you use the app." },
+  { name: "Sign-in cookies", purpose: "Keep you signed in and connect your browser to your EzyGo account. Signing out ends your session.", duration: "With Keep me signed in selected, sessions last up to 7 days and may renew when you visit account pages. Otherwise, email sign-in uses a browser-session cookie. Browser restore features may preserve it; sign out on shared devices." },
   { name: "Sign-in security", purpose: "Support account verification and secure sign-in, including Google sign-in when you choose it.", duration: "Temporary data used during sign-in." },
   { name: "App installation preference", purpose: "Remember when you dismiss the prompt to install EzyGo on your device.", duration: "Until you clear the stored site data." },
   { name: "Offline app files", purpose: "Store images and an offline page so the app can show basic content without a connection. This cache does not store account pages, API responses, or payment callbacks.", duration: "Until the app refreshes its cache or you clear site data." },

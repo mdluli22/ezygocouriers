@@ -14,10 +14,10 @@ export async function POST(req: NextRequest) {
   try {
     const parsed = await parseJsonRequest(req, loginSchema);
     if (!parsed.success) return parsed.response;
-    const { email, password } = parsed.data;
+    const { email, password, rememberMe } = parsed.data;
 
     const signIn = await auth.api.signInEmail({
-      body: { email, password },
+      body: { email, password, rememberMe },
       headers: req.headers,
       returnHeaders: true,
     });

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
+import { PricingProvider } from "@/components/PublishedPrice";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 
@@ -70,7 +71,7 @@ export default function RootLayout({
         style={{ backgroundColor: "var(--color-bg)", color: "var(--color-text-primary)" }}
       >
         <ThemeProvider>
-          {children}
+          <PricingProvider>{children}</PricingProvider>
         </ThemeProvider>
         <ServiceWorkerRegistration />
       </body>

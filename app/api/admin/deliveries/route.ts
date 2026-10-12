@@ -1,3 +1,5 @@
+import { pageSchema, paginatedResponse } from "@/lib/api/pagination";
+import { applicationErrorResponse } from "@/lib/api/errors";
 import { getSession } from "@/lib/auth/session";
 import { getAdminDeliveries, assignDriver } from "@/lib/services/admin";
 import {
@@ -22,9 +24,13 @@ export async function GET(req: NextRequest) {
     const parsed = parseQuery(req.nextUrl.searchParams, adminDeliveryQuerySchema);
     if (!parsed.success) return parsed.response;
 
-    const deliveries = await getAdminDeliveries(parsed.data.status);
-    return successResponse("Deliveries fetched.", deliveries);
+    const page = parseQuery(req.nextUrl.searchParams, pageSchema);
+    if (!page.success) return page.response;
+    const deliveries = await getAdminDeliveries(parsed.data.status, page.data);
+    return paginatedResponse("Deliveries fetched.", deliveries);
   } catch (error) {
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     console.error("[GET /api/admin/deliveries]", error);
     return serverErrorResponse();
   }
@@ -40,9 +46,11 @@ export async function PATCH(req: NextRequest) {
     if (!parsed.success) return parsed.response;
     const { delivery_id, driver_id } = parsed.data;
 
-    await assignDriver(delivery_id, driver_id);
+    await assignDriver(delivery_id, driver_id, session.userId);
     return successResponse("Driver assigned successfully.");
   } catch (error) {
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     console.error("[PATCH /api/admin/deliveries]", error);
     return serverErrorResponse();
   }

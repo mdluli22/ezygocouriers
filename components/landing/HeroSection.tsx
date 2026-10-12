@@ -1,5 +1,6 @@
 "use client";
 
+import PublishedPrice from "@/components/PublishedPrice";
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -107,7 +108,7 @@ export default function HeroSection() {
                 </div>
                 <div className="flat-fee-badge">
                   <small>Flat fee</small>
-                  <strong>R99</strong>
+                  <strong><PublishedPrice /></strong>
                 </div>
               </div>
 
@@ -158,7 +159,7 @@ export default function HeroSection() {
                 </div>
 
                 <button type="submit" className="quote-submit">
-                  Get started for R99 <ArrowRight size={19} />
+                  Get started for <PublishedPrice /> <ArrowRight size={19} />
                 </button>
 
                 <p className="quote-footnote">

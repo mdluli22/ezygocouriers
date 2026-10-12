@@ -16,6 +16,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { signOutAndRedirect } from "@/lib/auth/navigation";
 
 const NAV_ITEMS = [
+  { href: "/admin/payments", label: "Payment reviews", icon: BadgeDollarSign },
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/deliveries", label: "Deliveries", icon: Package },
   { href: "/admin/drivers", label: "Drivers", icon: Truck },

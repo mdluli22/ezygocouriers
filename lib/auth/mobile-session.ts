@@ -1,3 +1,5 @@
+import { productionAccountAllowed } from "@/lib/security/seed-account-protection";
+import { driverIsActive } from "@/lib/security/driver-access";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { errorResponse } from "@/lib/api/response";
@@ -69,6 +71,9 @@ export async function resolveMobileSession(
   const userId = Number(session.user.id);
   const expiresAt = new Date(session.session.expiresAt);
   if (!Number.isInteger(userId) || Number.isNaN(expiresAt.getTime())) return null;
+
+  if (!await productionAccountAllowed(userId)) return null;
+  if (session.user.role === "driver" && !await driverIsActive(userId)) return null;
 
   return {
     accessToken: readIssuedAuthToken(result.headers) ?? suppliedToken,

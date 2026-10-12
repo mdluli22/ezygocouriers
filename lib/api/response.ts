@@ -20,6 +20,8 @@ function defaultErrorCode(status: number): ApiErrorCode {
 
 const contractHeaders = {
   [API_CONTRACT_VERSION_HEADER]: API_CONTRACT_VERSION,
+  "Cache-Control": "no-store",
+  Vary: "Cookie, Authorization",
 };
 
 /**

@@ -4,7 +4,7 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
-import { replaceAfterAuth } from "@/lib/auth/navigation";
+import { replaceAfterAuth, safeInternalRedirect } from "@/lib/auth/navigation";
 
 export default function VerifyEmailPage() {
   return (
@@ -42,15 +42,13 @@ function VerifyEmailForm() {
 
     setVerifying(true);
     setError("");
-    const result = await authClient.emailOtp.verifyEmail({ email, otp });
-    setVerifying(false);
+    try {
+      const result = await authClient.emailOtp.verifyEmail({ email, otp });
+      if (result.error) { setError(result.error.message || "That code is invalid or has expired."); return; }
+      replaceAfterAuth(safeInternalRedirect(searchParams.get("redirect"), "/dashboard?welcome=1"));
+    } catch { setError("Connection failed. Please try verifying again."); }
+    finally { setVerifying(false); }
 
-    if (result.error) {
-      setError(result.error.message || "That code is invalid or has expired.");
-      return;
-    }
-
-    replaceAfterAuth("/dashboard?welcome=1");
   }
 
   async function handleResend() {
@@ -59,19 +57,14 @@ function VerifyEmailForm() {
     setResending(true);
     setError("");
     setNotice("");
-    const result = await authClient.emailOtp.sendVerificationOtp({
-      email,
-      type: "email-verification",
-    });
-    setResending(false);
+    try {
+      const result = await authClient.emailOtp.sendVerificationOtp({ email, type: "email-verification" });
+      if (result.error) { setError(result.error.message || "We could not send another code."); return; }
+      setNotice(`A new code was sent to ${email}.`);
+      setCooldown(30);
+    } catch { setError("Connection failed. Please try sending the code again."); }
+    finally { setResending(false); }
 
-    if (result.error) {
-      setError(result.error.message || "We could not send another code.");
-      return;
-    }
-
-    setNotice(`A new code was sent to ${email}.`);
-    setCooldown(30);
   }
 
   if (!email) {

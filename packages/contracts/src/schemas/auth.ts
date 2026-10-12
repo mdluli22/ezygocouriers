@@ -39,6 +39,7 @@ export const loginSchema = z.object({
     .email("Please enter a valid email address")
     .toLowerCase(),
   password: z.string().min(1, "Password is required"),
+  rememberMe: z.boolean().default(true),
 });
 
 export const mobileVerifyEmailSchema = z.object({

@@ -10,7 +10,7 @@ export function replaceAfterAuth(destination: string) {
 }
 
 export function safeInternalRedirect(candidate: string | null, fallback: string) {
-  return candidate?.startsWith("/") && !candidate.startsWith("//")
+  return candidate?.startsWith("/") && !candidate.startsWith("//") && !/[\\\x00-\x20]/.test(candidate)
     ? candidate
     : fallback;
 }

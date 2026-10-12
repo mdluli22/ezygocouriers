@@ -1,3 +1,5 @@
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { applicationErrorResponse } from "@/lib/api/errors";
 import { NextRequest } from "next/server";
 import {
   deletePushSubscriptionSchema,
@@ -19,6 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
+    await consumeRateLimit(`push-subscription:${session.userId}`,20,60);
     const parsed = await parseJsonRequest(
       request,
       pushSubscriptionSchema,
@@ -28,6 +31,8 @@ export async function POST(request: NextRequest) {
     await savePushSubscription(session.userId, parsed.data);
     return successResponse("Notifications enabled.");
   } catch (error) {
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     console.error("[POST /api/push/subscriptions]", error);
     return serverErrorResponse("Could not save notification preferences.");
   }
@@ -46,6 +51,8 @@ export async function DELETE(request: NextRequest) {
     await removePushSubscription(session.userId, parsed.data.endpoint);
     return successResponse("Notifications disabled.");
   } catch (error) {
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     console.error("[DELETE /api/push/subscriptions]", error);
     return serverErrorResponse("Could not update notification preferences.");
   }

@@ -15,7 +15,7 @@ export default function DriverNav() {
   useEffect(() => {
     fetch("/api/auth/me", { cache: "no-store" })
       .then(r => r.json())
-      .then(d => { if (d.success) setName(d.data.full_name); });
+      .then(d => { if (d.success) setName(d.data.full_name); }).catch(() => {});
   }, []);
 
   // Poll for driver's deliveries and count those with status 'assigned'.
@@ -23,11 +23,10 @@ export default function DriverNav() {
     let mounted = true;
     async function load() {
       try {
-        const res = await fetch("/api/driver/deliveries");
+        const res = await fetch("/api/deliveries/summary");
         const data = await res.json();
         if (!res.ok || !data) return;
-        const rows: Array<{ status?: string }> = Array.isArray(data.data) ? data.data : [];
-        const assigned = rows.filter((row) => row.status === "assigned").length;
+        const assigned = data.data?.assigned ?? 0;
         if (!mounted) return;
         setAssignedCount(assigned);
       } catch {

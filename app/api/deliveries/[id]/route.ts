@@ -1,3 +1,4 @@
+import { applicationErrorResponse } from "@/lib/api/errors";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import {
@@ -40,6 +41,8 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
     return successResponse("Delivery fetched.", { delivery, logs });
   } catch (error) {
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     console.error("[GET /api/deliveries/[id]]", error);
     return serverErrorResponse();
   }
@@ -70,6 +73,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     await cancelCustomerDelivery(deliveryId, session.userId);
     return successResponse("Delivery cancelled.");
   } catch (error: unknown) {
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     if (error instanceof Error) {
       // Business rule errors (wrong status, unauthorized)
       if (
