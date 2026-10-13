@@ -3,6 +3,7 @@
 import { formatMoney } from "@/lib/currency";
 import { usePagedList, useRemote } from "@/components/ui/useRemote";
 import ListControls from "@/components/ui/ListControls";
+import SearchField from "@/components/ui/SearchField";
 import PublishedPrice from "@/components/PublishedPrice";
 import TimedNotice from "@/components/ui/TimedNotice";
 
@@ -107,12 +108,7 @@ function DashboardContent() {
             <h1 id="customer-greeting">Hello, {firstName}.</h1>
           </div>
         </div>
-        <form className="customer-search" role="search" onSubmit={event => { event.preventDefault(); document.getElementById("deliveries")?.scrollIntoView({ block: "start" }); }}>
-          <Search size={21} aria-hidden="true" />
-          <input ref={search} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Tracking number or city" aria-label="Search by tracking number or city" autoCapitalize="none" autoComplete="off" spellCheck={false} />
-          {query && <button type="button" onClick={() => { setQuery(""); search.current?.focus(); }} aria-label="Clear search"><X size={18} /></button>}
-          <button type="submit" aria-label="Search deliveries"><ArrowRight size={21} /></button>
-        </form>
+        <SearchField className="customer-search-field" inputRef={search} value={query} onChange={setQuery} label="Search by tracking number or city" placeholder="Tracking number or city" />
       </section>
 
       <nav className="customer-shortcuts" aria-label="Quick actions">
@@ -140,7 +136,6 @@ function DashboardContent() {
           </div>
           <div className="customer-list-intro">
             <div><h3>{query.trim() ? "Search results" : history ? "Delivery history" : "Active deliveries"}</h3></div>
-            <button type="button" className="customer-refresh" onClick={() => list.reload()} disabled={loading} aria-label="Refresh deliveries"><RefreshCw size={17} /></button>
           </div>
           {loading ? <div className="customer-empty" role="status"><Package size={30} /><h3>Gathering your deliveries</h3><p>One moment while we bring everything into view.</p></div>
             : error ? <div className="customer-empty" role="alert"><PackageOpen size={30} /><h3>Deliveries unavailable</h3><p>{error}</p><button className="portal-primary-button" onClick={() => list.reload()}>Try again <RefreshCw size={16} /></button></div>

@@ -82,7 +82,10 @@ services:
           /migrations/011_yoco_provider.sql \
           /migrations/012_driver_earnings.sql \
           /migrations/013_security_payment_integrity.sql \
-          /migrations/014_list_pagination.sql
+          /migrations/014_list_pagination.sql \
+          /migrations/015_delivery_email_templates.sql \
+          /migrations/016_delivery_cancellation_email.sql \
+          /migrations/017_user_analytics.sql
         do
           echo "Applying $${migration}"
           psql -v ON_ERROR_STOP=1 -h db -U "$${DB_USER}" -d "$${DB_NAME}" -f "$${migration}"

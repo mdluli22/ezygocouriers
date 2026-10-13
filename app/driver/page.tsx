@@ -2,11 +2,12 @@
 
 import { usePagedList, useRemote } from "@/components/ui/useRemote";
 import ListControls from "@/components/ui/ListControls";
+import SearchField from "@/components/ui/SearchField";
 import EarningsPanel from "@/components/earnings/EarningsPanel";
 import DeliveryEarnings, { type DeliveryEarningsData } from "@/components/earnings/DeliveryEarnings";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Clock3, Navigation, Package, RefreshCw, Search, ShieldCheck, Truck } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, Navigation, Package, ShieldCheck, Truck } from "lucide-react";
 import { STATUS_LABELS, type DeliveryStatus } from "@ezygo/contracts";
 import "./deliveries.css";
 
@@ -70,7 +71,6 @@ export default function DriverDashboardPage() {
     <div className="dispatch-page">
       <header className="dispatch-header">
         <div><p className="dispatch-eyebrow">DRIVER WORKSPACE</p><h1>{driverName ? `${driverName}’s deliveries` : "Your deliveries"}</h1></div>
-        <button className="dispatch-refresh" onClick={() => list.reload()} disabled={loading}><RefreshCw size={16} aria-hidden="true" />{loading ? "Refreshing…" : "Refresh"}</button>
       </header>
 
       <dl className="dispatch-stats" aria-label="Delivery totals">
@@ -80,7 +80,6 @@ export default function DriverDashboardPage() {
       </dl>
 
       <EarningsPanel />
-      <ListControls {...list} />
 
       {error && <div className="dispatch-error" role="alert"><p>{error} {deliveries.length > 0 && "Showing previously loaded deliveries."}</p><button onClick={() => list.reload()}>Try again</button></div>}
       {loading && deliveries.length === 0 ? <div className="dispatch-empty" role="status"><Truck size={30} aria-hidden="true" /><h2>Loading your deliveries</h2><p>Checking your assignments and recent updates.</p></div> : error && deliveries.length === 0 ? null :
@@ -102,7 +101,7 @@ export default function DriverDashboardPage() {
         <section className="dispatch-queue" aria-labelledby="dispatch-queue-heading" aria-busy={loading}>
           <div className="dispatch-queue-heading"><h2 id="dispatch-queue-heading">Delivery queue</h2><span>{filtered.length} {filtered.length === 1 ? "delivery" : "deliveries"}</span></div>
           <div className="dispatch-filters" role="group" aria-label="Filter deliveries">{FILTERS.map(value => <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === "active" ? "Active" : value === "history" ? "History" : "All deliveries"}<span>{counts[value]}</span></button>)}</div>
-          <label className="dispatch-search"><Search size={18} aria-hidden="true" /><span className="sr-only">Search deliveries by tracking number, address or recipient</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tracking number, address or recipient" /></label>
+          <SearchField value={query} onChange={setQuery} label="Search deliveries by tracking number, address or recipient" placeholder="Tracking number, address or recipient" />
           {filtered.length > 0 ? <ul className="dispatch-list" tabIndex={0} aria-label="Delivery queue results">{filtered.map(delivery => <li key={delivery.id}>
             <Link className="dispatch-job" href={`/driver/deliveries/${delivery.id}`}>
               <div className="dispatch-job-heading"><strong>{delivery.tracking_number}</strong><span className={`dispatch-status${delivery.status === "failed" || delivery.status === "cancelled" ? " is-ended" : ""}`}>{STATUS_LABELS[delivery.status]}</span></div>
@@ -112,6 +111,7 @@ export default function DriverDashboardPage() {
               <div className="dispatch-job-footer"><span>{delivery.recipient_name}</span><strong>View delivery <ArrowRight size={15} aria-hidden="true" /></strong></div>
             </Link>
           </li>)}</ul> : <div className="dispatch-empty"><Package size={28} aria-hidden="true" /><h3>{query ? "No matching deliveries" : filter === "active" ? "No active deliveries" : "No deliveries here yet"}</h3><p>{query ? "Try another address, recipient or tracking number." : "Your deliveries will appear here as they are assigned and updated."}</p>{query && <button onClick={() => setQuery("")}>Clear search</button>}</div>}
+          <ListControls {...list} />
         </section>
       </div>}
     </div>

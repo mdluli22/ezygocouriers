@@ -8,6 +8,7 @@ export type { UserRole } from "@ezygo/contracts";
 
 export interface AppSession {
   userId: number;
+  sessionId: string;
   email: string;
   role: UserRole;
 }
@@ -39,6 +40,7 @@ export async function getSession(): Promise<AppSession | null> {
 
   return {
     userId,
+    sessionId: session.session.id,
     email: session.user.email,
     role: session.user.role,
   };

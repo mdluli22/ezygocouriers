@@ -12,10 +12,10 @@ const ts=require('typescript');
 const schema='audit_integrity_'+randomUUID().replaceAll('-','');
 const config={host:process.env.DB_HOST,port:Number(process.env.DB_PORT)||5432,database:process.env.DB_NAME,user:process.env.DB_USER,password:process.env.DB_PASSWORD,ssl:process.env.DB_SSL==='true'?{rejectUnauthorized:true}:false};
 const setup=new Pool(config),pool=new Pool({...config,options:`-c search_path=${schema},public -c statement_timeout=15000`,max:8});
-let sent=0,bookingSent=0,assignedSent=0,failMail=false;
+let sent=0,bookingSent=0,assignedSent=0,cancelledSent=0,failMail=false;
 const mocks={
  '@/lib/db/server':{query:(...args)=>pool.query(...args),getClient:()=>pool.connect()},
- '@/lib/email/smtp':{sendDeliveryPin:async()=>{if(failMail)throw Error('synthetic SMTP outage');sent++;},sendBookingConfirmation:async()=>{bookingSent++;},sendDriverAssigned:async()=>{assignedSent++;},sendDeliveryCompleted:async()=>{sent++;}},
+ '@/lib/email/smtp':{sendDeliveryPin:async()=>{if(failMail)throw Error('synthetic SMTP outage');sent++;},sendBookingConfirmation:async()=>{bookingSent++;},sendDriverAssigned:async()=>{assignedSent++;},sendDeliveryCancelled:async(payload)=>{assert.equal(payload.to,'audit-customer@example.invalid');if(failMail)throw Error('synthetic SMTP outage');cancelledSent++;},sendDeliveryCompleted:async()=>{sent++;}},
  '@/lib/earnings/route-distance':{verifyRouteDistance:async()=>5464},
  './driver-assignment':{autoAssignDelivery:async()=>{},autoAssignNextPaidDeliveryToDriver:async()=>null},
 };
@@ -36,6 +36,8 @@ async function state(id){return (await q('SELECT status FROM deliveries WHERE id
  await q(readFileSync('scripts/sql/013_security_payment_integrity.sql','utf8'));
  await q(readFileSync('scripts/sql/015_delivery_email_templates.sql','utf8'));
  await q(readFileSync('scripts/sql/015_delivery_email_templates.sql','utf8'));
+ await q(readFileSync('scripts/sql/016_delivery_cancellation_email.sql','utf8'));
+ await q(readFileSync('scripts/sql/016_delivery_cancellation_email.sql','utf8'));
  assert.equal((await q('SELECT COUNT(*)::int n FROM users')).rows[0].n,0,'production bootstrap contains no seeded accounts');
  const customer=(await q("INSERT INTO users(full_name,email,password_hash,role,is_active,email_verified) VALUES ('Test Customer','audit-customer@example.invalid','test','customer',true,true) RETURNING id")).rows[0].id;
  const driverUser=(await q("INSERT INTO users(full_name,email,password_hash,role,is_active,email_verified) VALUES ('Test Driver','audit-driver@example.invalid','test','driver',true,true) RETURNING id")).rows[0].id;
@@ -116,6 +118,27 @@ async function state(id){return (await q('SELECT status FROM deliveries WHERE id
  const limiter=load('lib/security/rate-limit.ts'),attempts=await Promise.allSettled(Array.from({length:12},()=>limiter.consumeRateLimit('concurrent-test',10,60)));
  assert.equal(attempts.filter(r=>r.status==='fulfilled').length,10);assert.equal(attempts.filter(r=>r.status==='rejected').length,2);
  console.log('PASS shared rate limit under concurrent requests');
+ // Both cancellation paths queue exactly one customer notice, and retry SMTP failures.
+ await q("UPDATE deliveries SET status='assigned' WHERE id=$1",[d.id]);
+ await load('lib/services/drivers.ts').updateDeliveryStatus(d.id,driverUser,'cancelled');
+ await assert.rejects(load('lib/services/drivers.ts').updateDeliveryStatus(d.id,driverUser,'cancelled'));
+ await assert.rejects(deliveries.cancelCustomerDelivery(d2.id,customer));
+ for(const id of [d.id,d2.id,same[0].id]) {
+   assert.equal((await q("SELECT COUNT(*)::int n FROM notification_outbox WHERE delivery_id=$1 AND kind='cancelled_email'",[id])).rows[0].n,1);
+ }
+ const beforeCancelled=cancelledSent;
+ failMail=true;await outbox.processNotificationOutbox(100);
+ assert.equal(cancelledSent,beforeCancelled);
+ assert.equal((await q("SELECT status FROM notification_outbox WHERE delivery_id=$1 AND kind='cancelled_email'",[d.id])).rows[0].status,'pending');
+ failMail=false;await q("UPDATE notification_outbox SET available_at=NOW() WHERE kind='cancelled_email'");
+ await outbox.processNotificationOutbox(100);
+ assert.ok(cancelledSent>beforeCancelled);
+ for(const id of [d.id,d2.id]) {
+   const notice=(await q("SELECT status,encrypted_payload FROM notification_outbox WHERE delivery_id=$1 AND kind='cancelled_email'",[id])).rows[0];
+   assert.equal(notice.status,'sent');assert.equal(notice.encrypted_payload,null);
+ }
+ const afterCancelled=cancelledSent;await outbox.processNotificationOutbox(100);assert.equal(cancelledSent,afterCancelled);
+ console.log('PASS customer/driver cancellation email, deduplication, SMTP retry and payload erasure');
  console.log('All security/payment database checks passed. No customer records or external providers were touched.');
 }catch(error){console.error(error);process.exitCode=1;}finally{
  await pool.end();await setup.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);await setup.end();

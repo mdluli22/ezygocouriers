@@ -77,6 +77,18 @@ export function completedEmail(data: DeliveryEmailData): EmailContent {
   const deliveredAt=date && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-ZA',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Johannesburg'}).format(date) : null;
   return {subject,text:`Hi ${data.customerName},\nYour EzyGo delivery ${data.trackingNumber} has been handed over successfully to ${data.recipientName || 'the recipient'}.${deliveredAt ? `\nDelivered on ${deliveredAt} (South Africa time).` : ''}\nDelivery details: ${url}\nBook another delivery: ${link('/dashboard/deliveries/new')}`,html:frame(subject,heading('Delivered successfully','Your delivery has arrived!')+`<p style="margin:12px 0;font-size:56px;line-height:1;color:#008b58" aria-hidden="true">&#10004;</p>`+paragraph(`Hi ${escapeHtml(data.customerName)}, your EzyGo delivery <strong>${escapeHtml(data.trackingNumber)}</strong> has been handed over successfully to <strong>${escapeHtml(data.recipientName || 'the recipient')}</strong>.`)+tracking(data.trackingNumber)+card(row('Delivered to',data.recipientName || 'The recipient')+(deliveredAt ? `<hr style="border:0;border-top:1px solid #dde6e2;margin:16px 0">${row('Delivered on · South Africa time',deliveredAt)}`:'')+`<hr style="border:0;border-top:1px solid #dde6e2;margin:16px 0">${row('Status','Delivered')}`)+button('View delivery details',url)+button('Book a new delivery',link('/dashboard/deliveries/new'),true))};
 }
+export function cancelledEmail(data: DeliveryEmailData): EmailContent {
+  const subject = `Delivery cancelled: ${data.trackingNumber}`;
+  const url = trackingUrl(data);
+  const paymentNote = 'If a payment was collected, you can check its review status in your delivery details. This email confirms cancellation only, not a refund.';
+  return {
+    subject,
+    text: `Hi ${data.customerName},\nYour EzyGo delivery ${data.trackingNumber} has been cancelled.\n${paymentNote}\nDelivery details: ${url}`,
+    html: frame(subject, heading('Delivery cancelled', 'Your delivery has been cancelled.') +
+      paragraph(`Hi ${escapeHtml(data.customerName)}, your EzyGo delivery <strong>${escapeHtml(data.trackingNumber)}</strong> has been cancelled.`) +
+      tracking(data.trackingNumber) + route(data) + notice('Payment information', paymentNote) + button('View delivery details', url)),
+  };
+}
 export function authOtpEmail(otp: string, type: 'sign-in'|'email-verification'|'forget-password'|'change-email'): EmailContent {
   const copy={ 'sign-in':['Secure sign-in','Your sign-in code.','sign in'], 'email-verification':['Welcome to EzyGo','Let’s verify your email.','verify your email address'], 'forget-password':['Account security','Reset your password.','reset your password'], 'change-email':['Account security','Confirm your new email.','confirm your new email address'] }[type];
   const subject=`${otp} is your EzyGo verification code`;

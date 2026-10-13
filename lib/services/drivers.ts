@@ -1,7 +1,7 @@
 import { defaultPage, pageWhere, pageResult, type PageQuery } from "@/lib/api/pagination";
 import { BusinessError } from "@/lib/api/errors";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
-import { enqueueNotification } from "./notification-outbox";
+import { enqueueNotification, enqueueDeliveryUpdate } from "./notification-outbox";
 import { verifyRouteDistance } from "@/lib/earnings/route-distance";
 import { recordCompletion } from "@/lib/earnings/service";
 import { deliveryPayCents } from "@/lib/earnings/calculation";
@@ -205,6 +205,8 @@ export async function updateDeliveryStatus(
       payload:{to:delivery.customer_email,customerName:delivery.customer_name,trackingNumber:delivery.tracking_number,recipientName:delivery.recipient_name,deliveryId,deliveredAt:new Date().toISOString()}
     });
     if (newStatus === "cancelled") {
+      await client.query("UPDATE notification_outbox SET status='cancelled',encrypted_payload=NULL WHERE delivery_id=$1 AND status IN ('pending','failed')", [deliveryId]);
+      await enqueueDeliveryUpdate(client, deliveryId, "cancelled_email");
       const { queuePaymentReview } = await import("./payment-reviews");
       const paid = await client.query("SELECT id,provider_payment_id FROM payments WHERE delivery_id=$1 AND status='complete'", [deliveryId]);
       for (const payment of paid.rows) await queuePaymentReview(client,payment.id,payment.provider_payment_id || `legacy-${payment.id}`,"Driver cancelled a paid delivery");

@@ -1,7 +1,10 @@
 "use client";
 
+import UserPresence from "@/components/analytics/UserPresence";
+
 import { usePathname } from "next/navigation";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import "./admin.css";
 
 export default function AdminLayoutShell({
   children,
@@ -18,6 +21,7 @@ export default function AdminLayoutShell({
 
   return (
     <div className="admin-portal-shell">
+      <UserPresence />
       <AdminSidebar dashboardHref={dashboardHref} />
       <main className="admin-portal-main">{children}</main>
     </div>

@@ -1,7 +1,7 @@
 "use client";
 import { useRemote } from "@/components/ui/useRemote";
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { distanceLabel, localDate, money, shiftDate, weekStart } from "@/lib/earnings/calculation";
 import { useTimedMessage } from "@/components/ui/useTimedMessage";
 import "./earnings.css";
@@ -57,7 +57,7 @@ export default function EarningsPanel({admin=false}:{admin?:boolean}) {
     catch(err){setError(err instanceof Error?err.message:"Unable to save earnings");return false;}finally{setBusy(false);}
   }
   return <section className="earnings-panel" aria-label={admin?"Weekly driver payouts":"Your earnings"} aria-busy={loading}>
-    <header className="earnings-heading"><h2>{admin?"Weekly driver payouts":"Your earnings"}</h2><button className="btn-outline" disabled={loading||busy} onClick={()=>void load()} aria-label="Refresh earnings"><RefreshCw size={16}/></button></header>
+    <header className="earnings-heading"><h2>{admin?"Weekly driver payouts":"Your earnings"}</h2></header>
     <div className="earnings-controls">
       <button className="btn-outline" disabled={busy} onClick={()=>setWeek(shiftDate(week,-7))} aria-label="Previous week"><ArrowLeft size={16}/></button>
       <label>Week starting Monday<input className="input" type="date" value={week} disabled={busy} onChange={event=>{if(event.target.value)setWeek(weekStart(new Date(`${event.target.value}T12:00:00+02:00`)));}}/></label>

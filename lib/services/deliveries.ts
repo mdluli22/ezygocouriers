@@ -2,6 +2,7 @@ import { defaultPage, pageWhere, pageResult, type PageQuery } from "@/lib/api/pa
 import { createHash } from "node:crypto";
 import { verifyRouteDistance } from "@/lib/earnings/route-distance";
 import { BusinessError } from "@/lib/api/errors";
+import { enqueueDeliveryUpdate } from "./notification-outbox";
 import { queuePaymentReview } from "./payment-reviews";
 import { query, getClient } from "@/lib/db/server";
 import { generateQuote, acceptQuote } from "./quotes";
@@ -288,6 +289,7 @@ export async function cancelCustomerDelivery(
       [deliveryId, customerId]
     );
 
+    await enqueueDeliveryUpdate(client, deliveryId, "cancelled_email");
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");

@@ -3,17 +3,17 @@ import { randomUUID } from "node:crypto";
 import { query, getClient } from "@/lib/db/server";
 import { encryptPayload, decryptPayload } from "@/lib/security/encryption";
 import { generateDeliveryPin, hashDeliveryPin } from "@/lib/delivery-pin";
-import { sendDeliveryPin, sendDeliveryCompleted, sendBookingConfirmation, sendDriverAssigned } from "@/lib/email/smtp";
+import { sendDeliveryPin, sendDeliveryCompleted, sendBookingConfirmation, sendDriverAssigned, sendDeliveryCancelled } from "@/lib/email/smtp";
 
 type Executor = {query: typeof query};
-export async function enqueueNotification(db: Executor, job: { key: string; kind: "pin_email" | "completed_email" | "booking_email" | "assigned_email" | "push"; deliveryId?: number; payload: unknown }) {
+export async function enqueueNotification(db: Executor, job: { key: string; kind: "pin_email" | "completed_email" | "booking_email" | "assigned_email" | "cancelled_email" | "push"; deliveryId?: number; payload: unknown }) {
   await db.query(`INSERT INTO notification_outbox(dedupe_key,kind,delivery_id,encrypted_payload)
     VALUES ($1,$2,$3,$4) ON CONFLICT(dedupe_key) DO NOTHING`,
     [job.key,job.kind,job.deliveryId ?? null,encryptPayload(job.payload)]);
 }
 
-/** Called inside the payment/assignment transaction; dedupe keys survive webhook retries. */
-export async function enqueueDeliveryUpdate(db: Executor, deliveryId: number, kind: "booking_email" | "assigned_email") {
+/** Called inside the delivery transaction; stable keys deduplicate event retries. */
+export async function enqueueDeliveryUpdate(db: Executor, deliveryId: number, kind: "booking_email" | "assigned_email" | "cancelled_email") {
   const result = await db.query(`SELECT d.tracking_number,d.assigned_driver_id,d.status,
     cu.email,cu.full_name AS customer_name,pa.formatted_address AS pickup_address,
     da.formatted_address AS dropoff_address,du.full_name AS driver_name
@@ -22,7 +22,7 @@ export async function enqueueDeliveryUpdate(db: Executor, deliveryId: number, ki
     LEFT JOIN drivers dr ON dr.id=d.assigned_driver_id LEFT JOIN users du ON du.id=dr.user_id
     WHERE d.id=$1`, [deliveryId]);
   const d = result.rows[0];
-  if (!d || !["paid","assigned","picked_up","in_transit"].includes(d.status)) return;
+  if (!d || !(kind === "cancelled_email" ? d.status === "cancelled" : ["paid","assigned","picked_up","in_transit"].includes(d.status))) return;
   if (kind === "assigned_email" && !d.assigned_driver_id) return;
   await enqueueNotification(db, {
     key: `${kind}:${deliveryId}${kind === "assigned_email" ? `:${d.assigned_driver_id}` : ""}`,
@@ -81,6 +81,13 @@ export async function processNotificationOutbox(limit = 10): Promise<number> {
         if (job.kind === "completed_email") {
           await sendDeliveryCompleted({...decryptPayload<Parameters<typeof sendDeliveryCompleted>[0]>(job.encrypted_payload),deliveryId:job.delivery_id});
           await query("UPDATE deliveries SET delivery_completed_email_sent_at=NOW() WHERE id=$1", [job.delivery_id]);
+        } else if (job.kind === "cancelled_email") {
+          const current = await query("SELECT status FROM deliveries WHERE id=$1", [job.delivery_id]);
+          if (current.rows[0]?.status !== "cancelled") {
+            await query("UPDATE notification_outbox SET status='cancelled',encrypted_payload=NULL WHERE id=$1 AND lease_token=$2", [job.id,lease]);
+            continue;
+          }
+          await sendDeliveryCancelled(decryptPayload<Parameters<typeof sendDeliveryCancelled>[0]>(job.encrypted_payload));
         } else if (job.kind === "booking_email" || job.kind === "assigned_email") {
           const payload = decryptPayload<Parameters<typeof sendBookingConfirmation>[0] & {driverId?: number}>(job.encrypted_payload);
           const current = await query("SELECT status,assigned_driver_id FROM deliveries WHERE id=$1",[job.delivery_id]);

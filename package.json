@@ -12,7 +12,7 @@
     "lint": "eslint --max-warnings=0",
     "typecheck:contracts": "npm run typecheck --workspace @ezygo/contracts",
     "typecheck": "tsc --noEmit",
-    "test": "node --test scripts/test-driver-earnings.cjs scripts/test-yoco-checkout.cjs scripts/test-security-integrity.cjs scripts/test-web-sessions.cjs scripts/test-service-worker.mjs scripts/test-customer-completion.cjs scripts/test-email-templates.cjs",
+    "test": "node --test scripts/test-driver-earnings.cjs scripts/test-yoco-checkout.cjs scripts/test-security-integrity.cjs scripts/test-web-sessions.cjs scripts/test-service-worker.mjs scripts/test-customer-completion.cjs scripts/test-email-templates.cjs scripts/test-user-analytics.cjs",
     "test:restore": "node scripts/restore-drill.mjs",
     "check": "npm run lint && npm run typecheck && npm run typecheck:contracts && npm test",
     "test:smoke": "node scripts/smoke-release.mjs",

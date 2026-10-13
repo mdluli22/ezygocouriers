@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePagedList } from "@/components/ui/useRemote";
 import ListControls from "@/components/ui/ListControls";
+import SearchField from "@/components/ui/SearchField";
 import { requestJson } from "@/lib/api/client";
 
 interface User {
@@ -52,8 +53,6 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <label className="label">Search users<input className="input" type="search" value={search} onChange={event => setSearch(event.target.value)} /></label>
-      <ListControls {...list} />
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black" style={{ color: "var(--color-link)" }}>Users</h1>
@@ -61,6 +60,8 @@ export default function AdminUsersPage() {
           View and manage all user accounts
         </p>
       </div>
+
+      <SearchField value={search} onChange={setSearch} label="Search users" placeholder="Customer name or email" />
 
       {/* Toast */}
       {toast.msg && (
@@ -155,6 +156,7 @@ export default function AdminUsersPage() {
           </table>
         </div>
       )}
+      <ListControls {...list} />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import UserPresence from "@/components/analytics/UserPresence";
 import type { Metadata } from "next";
 import BrandLogo from "@/components/BrandLogo";
 import DashboardNav from "@/components/dashboard/DashboardNav";
@@ -26,6 +27,7 @@ export default function DashboardLayout({
         </div>
       </header>
 
+      <UserPresence />
       <NetworkStatus />
 
       <main className="portal-main">{children}</main>

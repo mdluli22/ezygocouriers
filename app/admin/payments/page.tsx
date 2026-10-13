@@ -32,7 +32,6 @@ export default function PaymentOperations() {
   return <main className="space-y-6"><h1 className="text-3xl font-bold">Payment reviews</h1>
     <p>Review cancellations and late payments. Record refunds here after completing them with the payment provider.</p>
     {error&&<p role="alert">{error}</p>}{loading&&<p role="status">Loading payment reviews…</p>}
-    <button className="btn-outline" onClick={()=>void load()} disabled={busy}>Refresh</button>
     {!loading&&!reviews.length&&<p>No payment reviews.</p>}
     {reviews.map(r=><section key={r.id} className="p-4 rounded-xl border space-y-3" style={{borderColor:"var(--color-border)"}}>
       <h2 className="font-bold">{r.tracking_number} · {r.currency} {Number(r.amount).toFixed(2)}</h2><p>{r.reason}</p><p>Status: {r.status}{r.refund_reference?` · Reference: ${r.refund_reference}`:""}</p>

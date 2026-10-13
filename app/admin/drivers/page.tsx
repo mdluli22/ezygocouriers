@@ -4,6 +4,7 @@ import EarningsPanel from "@/components/earnings/EarningsPanel";
 import { useState } from "react";
 import { usePagedList } from "@/components/ui/useRemote";
 import ListControls from "@/components/ui/ListControls";
+import SearchField from "@/components/ui/SearchField";
 import { requestJson } from "@/lib/api/client";
 
 interface Driver {
@@ -75,8 +76,6 @@ export default function AdminDriversPage() {
 
   return (
     <div className="space-y-6">
-      <label className="label">Search drivers<input className="input" type="search" value={search} onChange={event => setSearch(event.target.value)} /></label>
-      <ListControls {...list} />
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -89,6 +88,8 @@ export default function AdminDriversPage() {
           + Create Driver
         </button>
       </div>
+
+      <SearchField value={search} onChange={setSearch} label="Search drivers" placeholder="Driver name, email or vehicle" />
 
       {/* Toast */}
       {toast.msg && (
@@ -206,6 +207,7 @@ export default function AdminDriversPage() {
           </div>
         </div>
       )}
+      <ListControls {...list} />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import UserPresence from "@/components/analytics/UserPresence";
+
 import { usePathname } from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
 import DriverNav from "@/components/driver/DriverNav";
@@ -26,6 +28,7 @@ export default function DriverLayoutShell({ children }: { children: React.ReactN
           <DriverNav />
         </div>
       </header>
+      <UserPresence />
       <NetworkStatus />
       <DriverLocationTracker />
       <main className="portal-main">{children}</main>

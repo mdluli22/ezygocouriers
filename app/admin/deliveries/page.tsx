@@ -2,8 +2,10 @@
 
 import { formatMoney } from "@/lib/currency";
 import { useState } from "react";
+import { Package, UserRound, Truck } from "lucide-react";
 import { usePagedList } from "@/components/ui/useRemote";
 import ListControls from "@/components/ui/ListControls";
+import SearchField from "@/components/ui/SearchField";
 import { requestJson } from "@/lib/api/client";
 import {
   DELIVERY_STATUSES,
@@ -70,10 +72,7 @@ export default function AdminDeliveriesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <label className="label">Search deliveries<input className="input" type="search" value={search} onChange={event => setSearch(event.target.value)} /></label>
-      <ListControls {...list} />
-      <details><summary>Driver choices</summary><ListControls {...driverList} /></details>
+    <div className="space-y-6 admin-deliveries-page">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black" style={{ color: "var(--color-link)" }}>Deliveries</h1>
@@ -81,6 +80,8 @@ export default function AdminDeliveriesPage() {
           Manage all deliveries and assign drivers
         </p>
       </div>
+
+      <SearchField value={search} onChange={setSearch} label="Search deliveries" placeholder="Tracking number, customer or city" />
 
       {/* Toast */}
       {toast && (
@@ -90,10 +91,11 @@ export default function AdminDeliveriesPage() {
       )}
 
       {/* Filter tabs */}
-      <div className="flex flex-wrap gap-2">
+      <div className="admin-filter-tabs" aria-label="Delivery status">
         {(["all", ...DELIVERY_STATUSES] as const).map((s) => (
           <button
             key={s}
+            aria-pressed={filter === s}
             onClick={() => setFilter(s)}
             className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
             style={{
@@ -119,11 +121,12 @@ export default function AdminDeliveriesPage() {
           No deliveries found.
         </div>
       ) : (
-        <div className="space-y-3">
+        <section className="admin-delivery-list" tabIndex={0} aria-label="Delivery results" aria-busy={loading}>
           {deliveries.map((d) => (
-            <div key={d.id} className="card space-y-3">
+            <article key={d.id} className="card admin-delivery-card space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+                <span className="admin-delivery-icon" aria-hidden="true"><Package size={22} /></span>
+                <div className="admin-delivery-copy">
                   <p className="font-black text-sm" style={{ color: "var(--color-link)" }}>{d.tracking_number}</p>
                   <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
                     {d.pickup_city} → {d.dropoff_city} · {d.customer_name}
@@ -136,16 +139,22 @@ export default function AdminDeliveriesPage() {
                   <span className={`badge text-xs px-2 py-1 ${STATUS_COLORS[d.status]}`}>
                     {STATUS_LABELS[d.status]}
                   </span>
-                  <span className="text-sm font-bold" style={{ color: "var(--color-accent)" }}>
+                  <span className="text-sm font-bold" style={{ color: "var(--color-link)" }}>
                     {formatMoney(d.quote_amount, d.quote_currency)}
                   </span>
                 </div>
+              </div>
+
+              <div className="admin-delivery-meta">
+                <span><UserRound size={15} aria-hidden="true" /> {d.recipient_name}</span>
+                <span>{new Date(d.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}</span>
               </div>
 
               {/* Assign driver inline */}
               {["paid", "assigned"].includes(d.status) && (
                 <div className="flex items-center gap-2 flex-wrap pt-2 border-t" style={{ borderColor: "var(--color-border)" }}>
                   <select
+                    aria-label={`Assign driver for ${d.tracking_number}`}
                     className="input text-sm py-1.5 flex-1 min-w-0"
                     value={selectedDriver[d.id] ?? ""}
                     onChange={(e) => setSelectedDriver((prev) => ({ ...prev, [d.id]: Number(e.target.value) }))}
@@ -157,6 +166,7 @@ export default function AdminDeliveriesPage() {
                       </option>
                     ))}
                   </select>
+                  <ListControls {...driverList} />
                   <button
                     className="btn-primary text-sm py-1.5 px-4"
                     disabled={!selectedDriver[d.id] || assigning === d.id}
@@ -169,13 +179,14 @@ export default function AdminDeliveriesPage() {
 
               {d.driver_name && (
                 <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
-                  {d.driver_name}
+                  <Truck size={15} aria-hidden="true" className="inline mr-1" /> {d.driver_name}
                 </p>
               )}
-            </div>
+            </article>
           ))}
-        </div>
+        </section>
       )}
+      <ListControls {...list} />
     </div>
   );
 }

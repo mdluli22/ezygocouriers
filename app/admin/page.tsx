@@ -1,5 +1,7 @@
 import { connection } from "next/server";
 import EarningsPanel from "@/components/earnings/EarningsPanel";
+import UserAnalyticsPanel from "@/components/admin/UserAnalyticsPanel";
+import { getUserAnalytics } from "@/lib/services/analytics";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -55,7 +57,7 @@ function StatCard({
 
 export default async function AdminDashboardPage() {
   await connection();
-  const stats = await getAdminStats();
+  const [stats, analytics] = await Promise.all([getAdminStats(), getUserAnalytics()]);
   const deliveries = stats.deliveries;
   const drivers = stats.drivers;
   const users = stats.users;
@@ -81,8 +83,8 @@ export default async function AdminDashboardPage() {
       <section className="admin-overview-hero">
         <div className="portal-hero-grid" aria-hidden="true" />
         <div className="admin-overview-copy">
-          <span className="portal-eyebrow"><ShieldCheck size={14} /> Operations command centre</span>
-          <h1>Good overview.<br /><em>Better decisions.</em></h1>
+          <span className="portal-eyebrow"><ShieldCheck size={14} /> Admin overview</span>
+          <h1>Your operations,<br /><em>at a glance.</em></h1>
           <p>A clear view of deliveries, drivers, customers and revenue across EzyGo.</p>
         </div>
         <div className="admin-revenue-card">
@@ -101,8 +103,10 @@ export default async function AdminDashboardPage() {
         <StatCard label="Cancelled" value={deliveries.cancelled} icon="cancelled" />
         <StatCard label="Drivers" value={drivers.total} sub={`${drivers.active} active`} icon="drivers" />
         <StatCard label="Customers" value={users.customers} sub={`${users.total} total accounts`} icon="users" />
-        <StatCard label="Active users" value={users.active} icon="activeUsers" tone="green" />
+        <StatCard label="Enabled accounts" value={users.active} sub="Accounts permitted to sign in" icon="activeUsers" tone="green" />
       </section>
+
+      <UserAnalyticsPanel initialData={analytics} />
 
       <EarningsPanel admin />
 

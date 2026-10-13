@@ -1,4 +1,4 @@
-import { authOtpEmail, bookingEmail, completedEmail, deliveryPinEmail, driverAssignedEmail, passwordResetEmail, type EmailContent, type DeliveryEmailData } from "./templates";
+import { authOtpEmail, bookingEmail, cancelledEmail, completedEmail, deliveryPinEmail, driverAssignedEmail, passwordResetEmail, type EmailContent, type DeliveryEmailData } from "./templates";
 import { AsyncLocalStorage } from "node:async_hooks";
 import nodemailer, { type Transporter } from "nodemailer";
 
@@ -170,4 +170,8 @@ export async function sendDriverAssigned(data: DeliveryEmailData & {to: string})
 
 export async function sendPasswordReset(to: string, url: string): Promise<void> {
   await sendTransactional(to, passwordResetEmail(url));
+}
+
+export async function sendDeliveryCancelled(data: DeliveryEmailData & {to: string}): Promise<void> {
+  await sendTransactional(data.to, cancelledEmail(data));
 }

@@ -1781,3 +1781,23 @@ button, input, textarea, select { font-family: inherit; }
 @media (max-width: 600px) {
   .value-updates-photo { margin-top: 24px; }
 }
+
+/* Consistent search and result navigation across all workspaces. */
+.search-field { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 54px; padding: 6px 10px 6px 16px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-bg); color: var(--color-link); }
+.search-field > svg { flex-shrink: 0; }
+.search-field input { flex: 1; min-width: 0; width: 100%; min-height: 40px; border: 0; background: transparent; color: var(--color-text-primary); font-size: 14px; outline: none; }
+.search-field input::placeholder { color: var(--color-text-muted); }
+.search-field input::-webkit-search-cancel-button { display: none; }
+.search-field:focus-within { outline: 2px solid var(--color-link); outline-offset: 3px; }
+.search-field button { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; cursor: pointer; }
+.search-field button:hover { background: var(--color-surface-raised); }
+.customer-search-field { margin-top: 26px; }
+.list-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 16px; color: var(--color-text-secondary); font-size: 12px; }
+.list-navigation { display: flex; gap: 8px; margin-left: auto; }
+.list-controls button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 42px; min-height: 42px; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-bg); color: var(--color-link); font-weight: 600; cursor: pointer; }
+.list-controls button:hover:not(:disabled) { background: var(--color-surface-raised); }
+.list-controls button:disabled { opacity: .45; cursor: default; }
+.list-controls button:focus-visible { outline: 2px solid var(--color-link); outline-offset: 3px; }
+.list-error { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; color: var(--color-error); }
+.list-error a { text-decoration: underline; }
+@media (max-width: 640px) { .search-field input { font-size: 16px; } }

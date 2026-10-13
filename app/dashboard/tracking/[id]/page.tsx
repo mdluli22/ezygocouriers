@@ -197,7 +197,6 @@ function TrackingContent() {
   const [error, setError]       = useState("");
   const refresh = useRef<() => void>(() => {});
   const [lastChecked, setLastChecked] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useTimedMessage("", "");
 
@@ -252,7 +251,7 @@ function TrackingContent() {
         await Promise.resolve();
         if (disposed) return;
         setError("You are offline. Updates will resume when you reconnect.");
-        setLoading(false); setRefreshing(false);
+        setLoading(false);
         timer = setTimeout(() => void load(), 15000);
         return;
       }
@@ -280,13 +279,13 @@ function TrackingContent() {
         }
       } finally {
         if (!disposed && !current.signal.aborted) {
-          inFlight = false; setLoading(false); setRefreshing(false);
+          inFlight = false; setLoading(false);
           if (!terminal) timer = setTimeout(() => void load(), Math.min(60000, 15000 * 2 ** failures));
         }
       }
     }
     const resume = () => { if (!document.hidden && navigator.onLine) void load(true); };
-    refresh.current = () => { setRefreshing(true); void load(true); };
+    refresh.current = () => { void load(true); };
     window.addEventListener("online", resume);
     window.addEventListener("focus", resume);
     document.addEventListener("visibilitychange", resume);
@@ -330,7 +329,6 @@ function TrackingContent() {
     <div className="tracking-page">
       <Link href="/dashboard" className="tracking-back"><ArrowLeft size={17} /> All deliveries</Link>
       <div className="flex flex-wrap items-center gap-3 py-3 text-sm">
-        <button className="btn-secondary" disabled={refreshing} onClick={() => refresh.current()}>{refreshing ? "Refreshing…" : "Refresh status"}</button>
         <span role="status">{lastChecked ? `Last checked ${lastChecked}` : "Checking for updates"}</span>
         {error && <p role="alert">{error} Showing the last received update.</p>}
       </div>
