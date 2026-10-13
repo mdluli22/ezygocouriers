@@ -31,7 +31,8 @@ jobs:
             set -eu
             cd "${{ secrets.APP_DIR }}"
 
-            git pull --ff-only origin main
+            git fetch --prune origin main
+            git reset --hard origin/main
             test "$(git rev-parse HEAD)" = "${{ github.sha }}" || {
               echo "Server checkout does not match the release commit."
               exit 1
