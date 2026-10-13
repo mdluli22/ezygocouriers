@@ -22,6 +22,15 @@ export function normalizeSignInError(error: unknown): SignInFailure | null {
     };
   }
 
+  // Better Auth reaches this only after checking the password and email
+  // verification. Activation and production-account hooks can deny a session.
+  if (errorCode === "FAILED_TO_CREATE_SESSION") {
+    return {
+      message: "Your account could not start a session. Please contact support to check account activation and production access.",
+      status: 403,
+    };
+  }
+
   const status = error.statusCode === 403 ? 403 : 401;
   return {
     message:

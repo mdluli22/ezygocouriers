@@ -126,3 +126,17 @@ test('Quick quote serializes both selected addresses and coordinates into the bo
  assert.deepEqual(swapped.pickupGeo,restored.dropoffGeo);
  assert.deepEqual(swapped.dropoffGeo,restored.pickupGeo);
 });
+
+test('Session denial is distinguished from wrong credentials without bypassing access checks', () => {
+ const {APIError}=require('better-auth/api');
+ const {normalizeSignInError}=loader()('lib/auth/sign-in-error.ts');
+ const denied=normalizeSignInError(new APIError('UNAUTHORIZED',{code:'FAILED_TO_CREATE_SESSION',message:'Failed to create session'}));
+ assert.equal(denied.status,403);
+ assert.match(denied.message,/account activation and production access/);
+ assert.doesNotMatch(denied.message,/Invalid email or password/);
+ const invalid=normalizeSignInError(new APIError('UNAUTHORIZED',{code:'INVALID_EMAIL_OR_PASSWORD',message:'Invalid email or password'}));
+ assert.equal(invalid.status,401);
+ assert.equal(invalid.message,'Invalid email or password.');
+ const unverified=normalizeSignInError(new APIError('FORBIDDEN',{code:'EMAIL_NOT_VERIFIED',message:'Email not verified'}));
+ assert.equal(unverified.errors.email,'Email verification is required');
+});

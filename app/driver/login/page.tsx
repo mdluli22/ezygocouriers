@@ -130,7 +130,10 @@ function DriverLoginForm() {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="label">Password</label>
+              <div className="flex items-center justify-between gap-3">
+                <label htmlFor="password" className="label">Password</label>
+                <Link href="/auth/forgot-password" className="text-sm underline" style={{ color: "var(--color-link)" }}>Forgot password?</Link>
+              </div>
               <div className="relative">
                 <input
                   id="password"
