@@ -202,7 +202,7 @@ export async function updateDeliveryStatus(
 
     if (newStatus === "delivered") await enqueueNotification(client, {
       key:`completed:${deliveryId}`,kind:"completed_email",deliveryId,
-      payload:{to:delivery.customer_email,customerName:delivery.customer_name,trackingNumber:delivery.tracking_number,recipientName:delivery.recipient_name}
+      payload:{to:delivery.customer_email,customerName:delivery.customer_name,trackingNumber:delivery.tracking_number,recipientName:delivery.recipient_name,deliveryId,deliveredAt:new Date().toISOString()}
     });
     if (newStatus === "cancelled") {
       const { queuePaymentReview } = await import("./payment-reviews");

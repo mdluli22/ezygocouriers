@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { BusinessError } from "@/lib/api/errors";
 import { resolvePushAddress, pinnedPushAgent } from "@/lib/security/push-endpoint";
-import { enqueueNotification } from "./notification-outbox";
+import { enqueueNotification, enqueueDeliveryUpdate } from "./notification-outbox";
 import webPush from "web-push";
 import { query, getClient } from "@/lib/db/server";
 import type { PushSubscriptionInput } from "@ezygo/contracts";
@@ -160,6 +160,8 @@ export async function notifyAssignedDriver(params: {
   );
   const target = result.rows[0];
   if (!target) return;
+
+  await enqueueDeliveryUpdate(db,params.deliveryId,"assigned_email");
 
   await Promise.all([
     sendPushToUser(target.user_id, {

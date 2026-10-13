@@ -12,10 +12,10 @@ const ts=require('typescript');
 const schema='audit_integrity_'+randomUUID().replaceAll('-','');
 const config={host:process.env.DB_HOST,port:Number(process.env.DB_PORT)||5432,database:process.env.DB_NAME,user:process.env.DB_USER,password:process.env.DB_PASSWORD,ssl:process.env.DB_SSL==='true'?{rejectUnauthorized:true}:false};
 const setup=new Pool(config),pool=new Pool({...config,options:`-c search_path=${schema},public -c statement_timeout=15000`,max:8});
-let sent=0,failMail=false;
+let sent=0,bookingSent=0,assignedSent=0,failMail=false;
 const mocks={
  '@/lib/db/server':{query:(...args)=>pool.query(...args),getClient:()=>pool.connect()},
- '@/lib/email/smtp':{sendDeliveryPin:async()=>{if(failMail)throw Error('synthetic SMTP outage');sent++;},sendDeliveryCompleted:async()=>{sent++;}},
+ '@/lib/email/smtp':{sendDeliveryPin:async()=>{if(failMail)throw Error('synthetic SMTP outage');sent++;},sendBookingConfirmation:async()=>{bookingSent++;},sendDriverAssigned:async()=>{assignedSent++;},sendDeliveryCompleted:async()=>{sent++;}},
  '@/lib/earnings/route-distance':{verifyRouteDistance:async()=>5464},
  './driver-assignment':{autoAssignDelivery:async()=>{},autoAssignNextPaidDeliveryToDriver:async()=>null},
 };
@@ -24,7 +24,7 @@ function load(file){
  const filename=resolve(file);if(cache.has(filename))return cache.get(filename).exports;
  const module={exports:{}};cache.set(filename,module);
  const source=ts.transpileModule(readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText;
- function req(name){if(name in mocks)return mocks[name];if(name==='@ezygo/contracts')return load('packages/contracts/src/index.ts');if(name.startsWith('@/'))return load(name.slice(2)+'.ts');if(name.startsWith('.')){const p=resolve(dirname(filename),name);return load(extname(p)?p:existsSync(p+'.ts')?p+'.ts':p+'/index.ts');}return require(name);}
+ function req(name){if(name in mocks)return mocks[name];if(name==='@ezygo/contracts')return load('packages/contracts/src/index.ts');if(name.startsWith('@ezygo/contracts/'))return load('packages/contracts/src/'+name.slice('@ezygo/contracts/'.length)+'.ts');if(name.startsWith('@/'))return load(name.slice(2)+'.ts');if(name.startsWith('.')){const p=resolve(dirname(filename),name);return load(extname(p)?p:existsSync(p+'.ts')?p+'.ts':p+'/index.ts');}return require(name);}
  new Function('require','module','exports',source)(req,module,module.exports);return module.exports;
 }
 const q=(...args)=>pool.query(...args);
@@ -34,6 +34,8 @@ async function state(id){return (await q('SELECT status FROM deliveries WHERE id
  for(const file of readdirSync('scripts/sql').filter(f=>/^\d.*\.sql$/.test(f)).sort())await q(readFileSync('scripts/sql/'+file,'utf8'));
  // Applying the new migration twice must be safe.
  await q(readFileSync('scripts/sql/013_security_payment_integrity.sql','utf8'));
+ await q(readFileSync('scripts/sql/015_delivery_email_templates.sql','utf8'));
+ await q(readFileSync('scripts/sql/015_delivery_email_templates.sql','utf8'));
  assert.equal((await q('SELECT COUNT(*)::int n FROM users')).rows[0].n,0,'production bootstrap contains no seeded accounts');
  const customer=(await q("INSERT INTO users(full_name,email,password_hash,role,is_active,email_verified) VALUES ('Test Customer','audit-customer@example.invalid','test','customer',true,true) RETURNING id")).rows[0].id;
  const driverUser=(await q("INSERT INTO users(full_name,email,password_hash,role,is_active,email_verified) VALUES ('Test Driver','audit-driver@example.invalid','test','driver',true,true) RETURNING id")).rows[0].id;
@@ -61,17 +63,21 @@ async function state(id){return (await q('SELECT status FROM deliveries WHERE id
  const completed={paymentId:pid,deliveryId:d.id,provider:'yoco',providerPaymentId:'provider-one'};
  await Promise.all([payments.completePayment(completed),payments.completePayment(completed)]);
  assert.equal(await state(d.id),'paid');assert.equal((await q("SELECT COUNT(*)::int n FROM notification_outbox WHERE kind='pin_email'")).rows[0].n,1);
+ assert.equal((await q("SELECT COUNT(*)::int n FROM notification_outbox WHERE kind='booking_email'")).rows[0].n,1,'duplicate payment queues one booking email');
  const secret=(await q('SELECT delivery_pin_hash FROM deliveries WHERE id=$1',[d.id])).rows[0].delivery_pin_hash;
  await payments.completePayment(completed);assert.equal((await q('SELECT delivery_pin_hash FROM deliveries WHERE id=$1',[d.id])).rows[0].delivery_pin_hash,secret);
  await q("UPDATE deliveries SET status='confirmed' WHERE id=$1",[d.id]);await payments.completePayment(completed);assert.equal(await state(d.id),'paid');
  const encrypted=(await q("SELECT encrypted_payload FROM notification_outbox WHERE kind='pin_email'")).rows[0].encrypted_payload;assert.ok(!encrypted.includes('recipient@'));
  failMail=true;await outbox.processNotificationOutbox();assert.equal((await q("SELECT status FROM notification_outbox WHERE kind='pin_email'")).rows[0].status,'pending');
- failMail=false;await q("UPDATE notification_outbox SET available_at=NOW()");await outbox.processNotificationOutbox();assert.equal(sent,1);
+ failMail=false;await q("UPDATE notification_outbox SET available_at=NOW()");await outbox.processNotificationOutbox();assert.equal(sent,1);assert.equal(bookingSent,1);
  assert.equal((await q("SELECT encrypted_payload FROM notification_outbox WHERE kind='pin_email'")).rows[0].encrypted_payload,null);
  console.log('PASS duplicate payment, stable encrypted PIN, SMTP retry and payload erasure');
  await q("UPDATE drivers SET status='inactive' WHERE id=$1",[driver]);await assert.rejects(admins.assignDriver(d.id,driver,admin),/inactive/);
  assert.equal(await load('lib/security/driver-access.ts').driverIsActive(driverUser),false);
  await q("UPDATE drivers SET status='active' WHERE id=$1",[driver]);await admins.assignDriver(d.id,driver,admin);
+ await admins.assignDriver(d.id,driver,admin);
+ assert.equal((await q("SELECT COUNT(*)::int n FROM notification_outbox WHERE kind='assigned_email'")).rows[0].n,1);
+ await outbox.processNotificationOutbox();assert.equal(assignedSent,1);
  const driverDetail=await load('lib/services/drivers.ts').getDriverDeliveryById(d.id,driverUser);assert.equal('delivery_pin_hash' in driverDetail,false);
  const customerDetail=await deliveries.getDeliveryById(d.id,customer);assert.equal('delivery_pin_hash' in customerDetail,false);
  const d2=await book(),pid2=await payment(d2);await payments.completePayment({paymentId:pid2,deliveryId:d2.id,provider:'yoco',providerPaymentId:'provider-two'});

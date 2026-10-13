@@ -3,13 +3,34 @@ import { randomUUID } from "node:crypto";
 import { query, getClient } from "@/lib/db/server";
 import { encryptPayload, decryptPayload } from "@/lib/security/encryption";
 import { generateDeliveryPin, hashDeliveryPin } from "@/lib/delivery-pin";
-import { sendDeliveryPin, sendDeliveryCompleted } from "@/lib/email/smtp";
+import { sendDeliveryPin, sendDeliveryCompleted, sendBookingConfirmation, sendDriverAssigned } from "@/lib/email/smtp";
 
 type Executor = {query: typeof query};
-export async function enqueueNotification(db: Executor, job: { key: string; kind: "pin_email" | "completed_email" | "push"; deliveryId?: number; payload: unknown }) {
+export async function enqueueNotification(db: Executor, job: { key: string; kind: "pin_email" | "completed_email" | "booking_email" | "assigned_email" | "push"; deliveryId?: number; payload: unknown }) {
   await db.query(`INSERT INTO notification_outbox(dedupe_key,kind,delivery_id,encrypted_payload)
     VALUES ($1,$2,$3,$4) ON CONFLICT(dedupe_key) DO NOTHING`,
     [job.key,job.kind,job.deliveryId ?? null,encryptPayload(job.payload)]);
+}
+
+/** Called inside the payment/assignment transaction; dedupe keys survive webhook retries. */
+export async function enqueueDeliveryUpdate(db: Executor, deliveryId: number, kind: "booking_email" | "assigned_email") {
+  const result = await db.query(`SELECT d.tracking_number,d.assigned_driver_id,d.status,
+    cu.email,cu.full_name AS customer_name,pa.formatted_address AS pickup_address,
+    da.formatted_address AS dropoff_address,du.full_name AS driver_name
+    FROM deliveries d JOIN users cu ON cu.id=d.customer_id
+    JOIN addresses pa ON pa.id=d.pickup_address_id JOIN addresses da ON da.id=d.dropoff_address_id
+    LEFT JOIN drivers dr ON dr.id=d.assigned_driver_id LEFT JOIN users du ON du.id=dr.user_id
+    WHERE d.id=$1`, [deliveryId]);
+  const d = result.rows[0];
+  if (!d || !["paid","assigned","picked_up","in_transit"].includes(d.status)) return;
+  if (kind === "assigned_email" && !d.assigned_driver_id) return;
+  await enqueueNotification(db, {
+    key: `${kind}:${deliveryId}${kind === "assigned_email" ? `:${d.assigned_driver_id}` : ""}`,
+    kind, deliveryId,
+    payload: {to:d.email,customerName:d.customer_name,trackingNumber:d.tracking_number,
+      deliveryId,pickupAddress:d.pickup_address,dropoffAddress:d.dropoff_address,
+      driverName:d.driver_name,driverId:d.assigned_driver_id},
+  });
 }
 
 /** Caller locks the delivery in its transaction. Replayed payments never rotate a PIN. */
@@ -58,13 +79,24 @@ export async function processNotificationOutbox(limit = 10): Promise<number> {
         } catch (error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); }
       } else {
         if (job.kind === "completed_email") {
-          await sendDeliveryCompleted(decryptPayload(job.encrypted_payload));
+          await sendDeliveryCompleted({...decryptPayload<Parameters<typeof sendDeliveryCompleted>[0]>(job.encrypted_payload),deliveryId:job.delivery_id});
           await query("UPDATE deliveries SET delivery_completed_email_sent_at=NOW() WHERE id=$1", [job.delivery_id]);
-        } else {
+        } else if (job.kind === "booking_email" || job.kind === "assigned_email") {
+          const payload = decryptPayload<Parameters<typeof sendBookingConfirmation>[0] & {driverId?: number}>(job.encrypted_payload);
+          const current = await query("SELECT status,assigned_driver_id FROM deliveries WHERE id=$1",[job.delivery_id]);
+          const d = current.rows[0];
+          if (!d || ["cancelled","failed","delivered"].includes(d.status) ||
+              (job.kind === "assigned_email" && (d.status !== "assigned" || d.assigned_driver_id !== payload.driverId))) {
+            await query("UPDATE notification_outbox SET status='cancelled',encrypted_payload=NULL WHERE id=$1 AND lease_token=$2",[job.id,lease]);
+            continue;
+          }
+          if (job.kind === "booking_email") await sendBookingConfirmation(payload);
+          else await sendDriverAssigned(payload);
+        } else if (job.kind === "push") {
           const { deliverPushToUser } = await import("./push-notifications");
           const payload = decryptPayload<{ userId: number; message: import("./push-notifications").PushMessage }>(job.encrypted_payload);
           await deliverPushToUser(payload.userId,payload.message);
-        }
+        } else { throw new Error("Unknown notification kind"); }
         await markSent({query},job.id,lease);
       }
     } catch {

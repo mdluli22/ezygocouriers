@@ -1,3 +1,4 @@
+import { authOtpEmail, bookingEmail, completedEmail, deliveryPinEmail, driverAssignedEmail, passwordResetEmail, type EmailContent, type DeliveryEmailData } from "./templates";
 import { AsyncLocalStorage } from "node:async_hooks";
 import nodemailer, { type Transporter } from "nodemailer";
 
@@ -129,172 +130,44 @@ export async function verifySmtpConnection(): Promise<void> {
   await smtpVerification;
 }
 
-export async function sendAuthOtp({
-  to,
-  otp,
-  type,
-}: {
-  to: string;
-  otp: string;
-  type: "sign-in" | "email-verification" | "forget-password" | "change-email";
-}): Promise<void> {
-  const from =
-    process.env.SMTP_FROM ||
-    process.env.EMAIL_FROM ||
-    process.env.SMTP_USER;
-  if (!from) {
-    throw new Error("[Email] Missing SMTP_FROM or SMTP_USER.");
-  }
-
-  const purpose =
-    type === "email-verification"
-      ? "verify your email address"
-      : type === "forget-password"
-        ? "reset your password"
-        : type === "change-email"
-          ? "confirm your new email address"
-        : "sign in";
-
-  try {
-    await getTransporter().sendMail({
-      from,
-      to,
-      subject: `${otp} is your EzyGo verification code`,
-      text: [
-        `Use this code to ${purpose}:`,
-        "",
-        otp,
-        "",
-        "This code expires in 10 minutes. If you did not request it, you can ignore this email.",
-      ].join("\n"),
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px;color:#172033">
-          <h1 style="font-size:24px;margin:0 0 16px">EzyGo verification</h1>
-          <p style="line-height:1.6">Use the code below to ${purpose}.</p>
-          <div style="font-size:36px;font-weight:800;letter-spacing:10px;padding:20px 24px;margin:24px 0;background:#f4f6f8;border-radius:12px;text-align:center">
-            ${otp}
-          </div>
-          <p style="font-size:14px;color:#667085;line-height:1.6">
-            This code expires in 10 minutes. If you did not request it, you can ignore this email.
-          </p>
-        </div>
-      `,
-    });
-  } catch (error) {
-    const deliveryState = smtpDeliveryContext.getStore();
-    if (deliveryState) {
-      deliveryState.failure = normalizeDeliveryFailure(error);
-    }
-    throw error;
-  }
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>'"]/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "'": "&#39;",
-    '"': "&quot;",
-  })[character] ?? character);
-}
-
-export async function sendDeliveryPin({
-  to,
-  recipientName,
-  trackingNumber,
-  pin,
-}: {
-  to: string;
-  recipientName: string;
-  trackingNumber: string;
-  pin: string;
-}): Promise<void> {
+/** Keep transport/retry handling separate from the shared visual templates. */
+async function sendTransactional(to: string, content: EmailContent): Promise<void> {
   const from = process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER;
   if (!from) throw new Error("[Email] Missing SMTP_FROM or SMTP_USER.");
-
-  const safeName = escapeHtml(recipientName);
-  const safeTrackingNumber = escapeHtml(trackingNumber);
-
-  await getTransporter().sendMail({
-    from,
-    to,
-    subject: `${pin} is your EzyGo delivery PIN`,
-    text: [
-      `Hi ${recipientName},`,
-      "",
-      `Your delivery PIN for ${trackingNumber} is ${pin}.`,
-      "",
-      "Give this PIN to the EzyGo driver only when the parcel is handed to you. EzyGo staff will never ask for it before delivery.",
-    ].join("\n"),
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px;color:#172033">
-        <p style="color:#0f766e;font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px">EzyGo secure handover</p>
-        <h1 style="font-size:24px;margin:0 0 12px">Your parcel is protected by a PIN</h1>
-        <p style="line-height:1.6">Hi ${safeName}, use this code when your EzyGo driver hands over delivery <strong>${safeTrackingNumber}</strong>.</p>
-        <div style="font-size:36px;font-weight:800;letter-spacing:10px;padding:20px 24px;margin:24px 0;background:#f4f6f8;border-radius:12px;text-align:center">${pin}</div>
-        <p style="font-size:14px;color:#667085;line-height:1.6">Only share this PIN once the parcel is physically with you. EzyGo staff will never ask for it before delivery.</p>
-      </div>
-    `,
-  });
-}
-
-export async function sendDeliveryCompleted({
-  to,
-  customerName,
-  trackingNumber,
-  recipientName,
-}: {
-  to: string;
-  customerName: string;
-  trackingNumber: string;
-  recipientName: string;
-}): Promise<void> {
-  const from = process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER;
-  if (!from) throw new Error("[Email] Missing SMTP_FROM or SMTP_USER.");
-
-  const safeCustomerName = escapeHtml(customerName);
-  const safeTrackingNumber = escapeHtml(trackingNumber);
-  const safeRecipientName = escapeHtml(recipientName);
-
-  await getTransporter().sendMail({
-    from,
-    to,
-    subject: `Delivered successfully: ${trackingNumber}`,
-    text: [
-      `Hi ${customerName},`,
-      "",
-      `Your EzyGo delivery ${trackingNumber} has been delivered successfully to ${recipientName}.`,
-      "",
-      "Thank you for choosing EzyGo Couriers.",
-    ].join("\n"),
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#172033">
-        <div style="display:inline-block;padding:7px 12px;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase">Delivered successfully</div>
-        <h1 style="font-size:26px;margin:20px 0 12px;color:#173d38">Your delivery has arrived</h1>
-        <p style="line-height:1.7">Hi ${safeCustomerName}, your EzyGo delivery <strong>${safeTrackingNumber}</strong> has been handed over successfully to <strong>${safeRecipientName}</strong>.</p>
-        <div style="margin:24px 0;padding:18px 20px;border-radius:14px;background:#f4f7f5;border-left:4px solid #16a34a">
-          <div style="font-size:12px;color:#667085;text-transform:uppercase;letter-spacing:1px;font-weight:700">Tracking number</div>
-          <div style="font-size:20px;font-weight:800;margin-top:5px;color:#173d38">${safeTrackingNumber}</div>
-        </div>
-        <p style="font-size:14px;color:#667085;line-height:1.6">Thank you for choosing EzyGo Couriers.</p>
-      </div>
-    `,
-  });
-}
-
-export async function sendPasswordReset(to: string, url: string): Promise<void> {
   try {
-    await getTransporter().sendMail({
-      from: process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER,
-      to,
-      subject: "Reset your EzyGo password",
-      text: `Reset your password using this link: ${url}\nThis single-use link expires in 30 minutes. If you did not request it, ignore this email.`,
-      html: `<p><a href="${escapeHtml(url)}">Reset your EzyGo password</a></p><p>This single-use link expires in 30 minutes. If you did not request it, ignore this email.</p>`,
-    });
+    await getTransporter().sendMail({ from, to, ...content });
   } catch (error) {
     const state = smtpDeliveryContext.getStore();
     if (state) state.failure = normalizeDeliveryFailure(error);
     throw error;
   }
+}
+
+export async function sendAuthOtp({to, otp, type}: {
+  to: string; otp: string;
+  type: "sign-in" | "email-verification" | "forget-password" | "change-email";
+}): Promise<void> {
+  await sendTransactional(to, authOtpEmail(otp, type));
+}
+
+export async function sendDeliveryPin(data: {
+  to: string; recipientName: string; trackingNumber: string; pin: string;
+}): Promise<void> {
+  await sendTransactional(data.to, deliveryPinEmail(data));
+}
+
+export async function sendDeliveryCompleted(data: DeliveryEmailData & {to: string}): Promise<void> {
+  await sendTransactional(data.to, completedEmail(data));
+}
+
+export async function sendBookingConfirmation(data: DeliveryEmailData & {to: string}): Promise<void> {
+  await sendTransactional(data.to, bookingEmail(data));
+}
+
+export async function sendDriverAssigned(data: DeliveryEmailData & {to: string}): Promise<void> {
+  await sendTransactional(data.to, driverAssignedEmail(data));
+}
+
+export async function sendPasswordReset(to: string, url: string): Promise<void> {
+  await sendTransactional(to, passwordResetEmail(url));
 }

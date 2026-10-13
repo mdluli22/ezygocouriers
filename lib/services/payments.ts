@@ -1,7 +1,7 @@
 import { BusinessError } from "@/lib/api/errors";
 import { query, getClient } from "@/lib/db/server";
 import { autoAssignDelivery } from "./driver-assignment";
-import { enqueueRecipientPin } from "./notification-outbox";
+import { enqueueRecipientPin, enqueueDeliveryUpdate } from "./notification-outbox";
 import { queuePaymentReview } from "./payment-reviews";
 
 export async function createPaymentRecord(params: {
@@ -50,9 +50,11 @@ export async function completePayment(params: {
         await client.query("UPDATE deliveries SET status='paid',updated_at=NOW() WHERE id=$1",[params.deliveryId]);
         await client.query("INSERT INTO delivery_status_logs(delivery_id,status,note) VALUES ($1,'paid','Settled payment reconciled')",[params.deliveryId]);
         await enqueueRecipientPin(client,params.deliveryId);
+        await enqueueDeliveryUpdate(client,params.deliveryId,"booking_email");
         dispatch = true;
       } else if (["paid","assigned","picked_up","in_transit"].includes(d.status)) {
         await enqueueRecipientPin(client,params.deliveryId);
+        await enqueueDeliveryUpdate(client,params.deliveryId,"booking_email");
         dispatch = d.status === "paid";
       } else if (d.status !== "delivered") {
         await queuePaymentReview(client,params.paymentId,params.providerPaymentId,`Settled payment on a ${d.status} delivery`);
@@ -65,6 +67,7 @@ export async function completePayment(params: {
         await client.query("UPDATE deliveries SET status='paid',updated_at=NOW() WHERE id=$1", [params.deliveryId]);
         await client.query("INSERT INTO delivery_status_logs(delivery_id,status,note) VALUES ($1,'paid','Verified payment received')", [params.deliveryId]);
         await enqueueRecipientPin(client,params.deliveryId);
+        await enqueueDeliveryUpdate(client,params.deliveryId,"booking_email");
         dispatch = true;
       } else {
         await queuePaymentReview(client,params.paymentId,params.providerPaymentId,
