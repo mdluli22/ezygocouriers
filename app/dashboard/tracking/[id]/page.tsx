@@ -365,14 +365,10 @@ function TrackingContent() {
             </ol>
           </section>
 
-          <section className="tracking-panel">
-            <div className="tracking-section-title"><h2>Parcel details</h2><Package size={20} aria-hidden="true" /></div>
-            <dl><InfoRow label="Description" value={delivery.parcel_description} /><InfoRow label="Special instructions" value={delivery.special_instructions} />{delivery.fragile && <InfoRow label="Handling" value="Fragile · handle with care" />}</dl>
-            {delivery.require_pin && <div className="tracking-security"><ShieldCheck size={21} aria-hidden="true" /><div><strong>Secure handover</strong><p>{delivery.delivery_pin_sent_at ? "Delivery PIN sent to the recipient." : "A delivery PIN will be sent after payment."}</p></div></div>}
-          </section>
+
         </div>
 
-        <aside className="tracking-sidebar" aria-label="Driver and payment details">
+        <aside className="tracking-sidebar" aria-label="Driver, payment and parcel details">
           <section className="tracking-panel">
             <div className="tracking-section-title"><h2>Your driver</h2><Truck size={20} aria-hidden="true" /></div>
             <div className="tracking-driver">
@@ -390,6 +386,11 @@ function TrackingContent() {
             <div className="tracking-fee"><span>Delivery fee <small>Flat rate</small></span><strong>{fee}</strong></div>
             <p className="tracking-booked">Booked {formatDate(delivery.created_at)}</p>
             {delivery.status === "confirmed" && <><Link href={`/dashboard/tracking/${delivery.id}/pay`} className="tracking-primary-button">Pay now <ArrowUpRight size={18} /></Link><p className="tracking-payment-note"><ShieldCheck size={14} />Secure payment via Yoco</p></>}
+          </section>
+          <section className="tracking-panel">
+            <div className="tracking-section-title"><h2>Parcel details</h2><Package size={20} aria-hidden="true" /></div>
+            <dl><InfoRow label="Description" value={delivery.parcel_description} /><InfoRow label="Special instructions" value={delivery.special_instructions} />{delivery.fragile && <InfoRow label="Handling" value="Fragile · handle with care" />}</dl>
+            {delivery.require_pin && <div className="tracking-security"><ShieldCheck size={21} aria-hidden="true" /><div><strong>Secure handover</strong><p>{delivery.delivery_pin_sent_at ? "Delivery PIN sent to the recipient." : "A delivery PIN will be sent after payment."}</p></div></div>}
           </section>
           {canCancel && <div className="tracking-cancel"><p>Change of plans? You can cancel before your parcel is picked up.</p>{cancelError && <p role="alert" className="tracking-cancel-error">{cancelError}</p>}<button type="button" onClick={handleCancel} disabled={cancelling}>{cancelling ? "Cancelling…" : "Cancel delivery"}</button></div>}
         </aside>
