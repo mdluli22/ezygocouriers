@@ -9,7 +9,7 @@ export interface SessionStore {
 }
 export type AuthPhase = "loading" | "signedOut" | "authenticated" | "offline" | "storageError";
 export interface AuthState { phase: AuthPhase; user: MobileAuthUser | null; message: string | null }
-export type Transport = <T>(path: string, method: "GET" | "POST" | "PATCH" | "DELETE", body?: unknown, token?: string) => Promise<T>;
+export type Transport = <T>(path: string, method: "GET" | "POST" | "PATCH" | "DELETE", body?: unknown, token?: string, headers?: Record<string, string>) => Promise<T>;
 const prefix = "/api/mobile/v1/auth";
 
 /** No credentials or user profile are persisted outside the injected secure store. */
@@ -64,9 +64,13 @@ export class SessionController {
     this.expiresAtMonotonic = this.now() + Math.max(0, data.expires_in - 30) * 1000;
     this.emit("authenticated", data.user);
   }
-  async signIn(input: LoginInput) {
+  async signIn(input: LoginInput, expectedRole?: "customer" | "driver") {
     const generation = ++this.generation;
     const data = await this.transport<MobileAuthTokenData>(`${prefix}/login`, "POST", input);
+    if (expectedRole && data.user.role !== expectedRole) {
+      await this.revoke(data.access_token);
+      throw new Error(`This account is not a ${expectedRole} account. Choose the correct sign-in option.`);
+    }
     await this.accept(data, generation);
   }
   async register(input: SignupInput) {
@@ -131,7 +135,7 @@ export class SessionController {
       });
     } catch { this.storageFailed(); }
   }
-  async request<T>(path: string, method: "GET" | "POST" | "PATCH" | "DELETE" = "GET", body?: unknown): Promise<T> {
+  async request<T>(path: string, method: "GET" | "POST" | "PATCH" | "DELETE" = "GET", body?: unknown, headers?: Record<string, string>): Promise<T> {
     if (this.state.phase !== "authenticated") throw new Error("Please verify your session first.");
     if (this.now() >= this.expiresAtMonotonic) await this.restore();
     if (this.state.phase !== "authenticated") throw new Error("Please sign in again.");
@@ -141,7 +145,7 @@ export class SessionController {
     catch { this.storageFailed(); throw new Error("Secure storage is unavailable."); }
     if (generation !== this.generation) throw new Error("Your session has changed. Please try again.");
     if (!saved) { this.emit("signedOut"); throw new Error("Please sign in again."); }
-    try { return await this.transport<T>(path, method, body, saved.accessToken); }
+    try { return await this.transport<T>(path, method, body, saved.accessToken, headers); }
     catch (error) {
       if (error instanceof ApiError && error.status === 401) await this.invalidate(saved.accessToken);
       throw error;

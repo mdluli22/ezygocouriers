@@ -21,7 +21,7 @@ export default function GoogleCallback() {
     return () => { live = false; };
   }, [callbackParams, auth.phase]); // Scalar link fields; never persist router params.
   if (auth.phase === "authenticated") return <Redirect href="/" />;
-  return <AuthPage title="Finishing sign-in" subtitle="Connecting your Google account securely.">
+  return <AuthPage title="Finishing sign-in">
     {error ? <><Notice message={error} error /><Action label="Back to sign in" onPress={() => router.replace("/auth/sign-in")} /></> : <ActivityIndicator color={colors.ink} />}
   </AuthPage>;
 }

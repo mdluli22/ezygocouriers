@@ -1,9 +1,11 @@
 import { useCallback,useState } from "react";
-import { AppState } from "react-native";
+import { AppState, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import MapView,{Marker} from "react-native-maps";
 import type { LiveDeliveryLocation } from "@ezygo/contracts";
 import { useAuth } from "../../lib/auth/provider";
+import { colors, fonts } from "../../lib/theme";
+import { Text } from "react-native";
 import { Card,Notice,Action } from "./UI";
 export function LiveDeliveryMap({id, status}:{id:number;status:string}) {
  const {controller,user,phase}=useAuth();
@@ -23,10 +25,10 @@ export function LiveDeliveryMap({id, status}:{id:number;status:string}) {
  if(!enabled)return null;
  const point=data?.location;
  const center=point??data?.pickup??data?.dropoff;
- return <Card><Notice message={error ? "Live location unavailable." : point ? `${point.stale ? "Last known position · may be stale" : "Driver location"} · ${new Date(point.recorded_at).toLocaleTimeString()}` : "Waiting for the driver to share a recent location."} />
- {center ? <MapView style={{height:240,width:"100%"}} region={{...center,latitudeDelta:0.045,longitudeDelta:0.045}} accessibilityLabel="Delivery map">
+ return <Card><Text accessibilityRole="header" style={{ fontFamily: fonts.bold, fontSize: 19, color: colors.text }}>Live tracking</Text><Notice message={error ? "Live location unavailable." : point ? `${point.stale ? "Last known position · may be stale" : "Driver location"} · ${new Date(point.recorded_at).toLocaleTimeString()}` : "Waiting for the driver to share a recent location."} />
+ {center ? <View style={{ borderRadius: 8, overflow: "hidden" }}><MapView style={{height:240,width:"100%"}} region={{...center,latitudeDelta:0.045,longitudeDelta:0.045}} accessibilityLabel="Delivery map">
  {data?.pickup ? <Marker coordinate={data.pickup} title="Pickup" pinColor="green" />:null}
  {data?.dropoff ? <Marker coordinate={data.dropoff} title="Destination" pinColor="blue" />:null}
  {point ? <Marker coordinate={point} title={point.stale ? "Driver · stale position" : "Driver"} />:null}
- </MapView>:null}{error ? <Action label="Retry location" secondary onPress={()=>setRetry(n=>n+1)} />:null}</Card>;
+ </MapView></View>:null}{error ? <Action label="Retry location" secondary onPress={()=>setRetry(n=>n+1)} />:null}</Card>;
 }

@@ -11,10 +11,10 @@ export function createMobileApi(getAccessToken?: () => Promise<string | null>, o
   return createApiClient({ baseUrl, credentials: "omit", getAccessToken, onUnauthorized });
 }
 
-export const mobileTransport: Transport = async <T>(path: string, method: "GET" | "POST" | "PATCH" | "DELETE", body?: unknown, token?: string): Promise<T> => {
+export const mobileTransport: Transport = async <T>(path: string, method: "GET" | "POST" | "PATCH" | "DELETE", body?: unknown, token?: string, extraHeaders?: Record<string, string>): Promise<T> => {
   const result = await createMobileApi().request<T>(path, {
     method,
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    headers: { ...extraHeaders, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   return result.data;

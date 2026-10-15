@@ -6,8 +6,10 @@ export function parsePaymentLink(link: string) {
   if (!/^[A-Za-z0-9_-]+\.[a-f0-9]{64}$/.test(token) || token.length > 2048) throw new Error("Invalid payment return link.");
   return token;
 }
-export function secureCheckoutUrl(value: string) {
+export function secureCheckoutUrl(value: string, provider: "paystack" | "yoco" = "yoco") {
   const url = new URL(value);
-  if (url.protocol !== "https:" || url.hostname !== "checkout.paystack.com" || url.port || url.username || url.password) throw new Error("The payment provider returned an unsafe checkout URL.");
+  // Yoco documents c.yoco.com as its hosted checkout origin:
+  // https://developer.yoco.com/api-reference/checkout-api/checkout/create-checkout
+  if (url.protocol !== "https:" || url.hostname !== (provider === "yoco" ? "c.yoco.com" : provider === "paystack" ? "checkout.paystack.com" : "") || url.port || url.username || url.password) throw new Error("The payment provider returned an unsafe checkout URL.");
   return url.toString();
 }

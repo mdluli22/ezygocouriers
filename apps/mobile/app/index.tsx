@@ -15,6 +15,6 @@ export default function HomeScreen() {
   return <AuthPage title={`Welcome, ${auth.user.full_name.split(" ")[0]}`} subtitle={role}>
     <Text style={styles.label}>{auth.user.email}</Text>
     <Notice message={auth.user.role === "admin" ? "Use the EzyGo website to manage dispatch and administration." : "You’re securely signed in. Driver tools are available on the EzyGo website."} />
-    <Action label="Sign out" secondary onPress={() => { void auth.signOut(); }} />
+    <Action label="Sign out" danger onPress={() => { void auth.signOut(); }} />
   </AuthPage>;
 }

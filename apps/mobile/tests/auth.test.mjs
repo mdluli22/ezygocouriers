@@ -89,3 +89,25 @@ test('OAuth cancellation rejects a pending secure-store read before exchange', a
   const pending = flow.complete(callback); await flow.cancel(); release({ state, verifier });
   await assert.rejects(pending); assert.equal(exchanges, 0);
 });
+
+test('authenticated booking forwards its idempotency key with the session token', async () => {
+  const f = setup();
+  await f.controller.signIn(login);
+  const headers = { 'Idempotency-Key': '4ce0b2ad-973c-493b-a7a2-42bef892dfe7' };
+  await f.controller.request('/api/deliveries', 'POST', { parcel_description: 'Documents' }, headers);
+  assert.deepEqual(f.calls.at(-1), ['/api/deliveries', 'POST', { parcel_description: 'Documents' }, 'signed-token', headers]);
+});
+
+test('wrong login role is revoked before a session is saved or authenticated', async () => {
+  const f = setup();
+  await assert.rejects(f.controller.signIn(login, 'driver'), /not a driver account/);
+  assert.equal(f.saved(), null);
+  assert.notEqual(f.controller.getSnapshot().phase, 'authenticated');
+  assert.equal(f.calls.at(-1)[0], '/api/mobile/v1/auth/logout');
+  assert.equal(f.calls.at(-1)[3], 'signed-token');
+});
+test('matching customer login role accepts the authenticated server session', async () => {
+  const f = setup(); await f.controller.signIn(login, 'customer');
+  assert.equal(f.controller.getSnapshot().phase, 'authenticated');
+  assert.equal(f.saved().accessToken, 'signed-token');
+});

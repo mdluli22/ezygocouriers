@@ -4,7 +4,7 @@ export interface PaymentVerification { delivery_id: number; status: string }
 export const customerApi = {
   list: () => authController.request<CustomerDeliverySummary[]>("/api/deliveries"),
   detail: (id: number) => authController.request<DeliveryDetailResponse<CustomerDeliveryDetail>>(`/api/deliveries/${id}`),
-  create: (input: CreateDeliveryRequest) => authController.request<CreateDeliveryResponse>("/api/deliveries", "POST", input),
+  create: (input: CreateDeliveryRequest, bookingKey: string) => authController.request<CreateDeliveryResponse>("/api/deliveries", "POST", input, { "Idempotency-Key": bookingKey }),
   cancel: (id: number) => authController.request(`/api/deliveries/${id}`, "POST", { action: "cancel" }),
   checkout: (id: number) => authController.request<PaymentCheckout>("/api/payments/create", "POST", { delivery_id: id, payment_method: "yoco" }),
   verify: (input: { delivery_id?: number; token?: string }) => authController.request<PaymentVerification>("/api/payments/verify", "POST", input),

@@ -1,9 +1,9 @@
 import { useEffect, useState, type RefObject } from "react";
-import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { colors } from "../../lib/theme";
+import { colors, fonts } from "../../lib/theme";
 
 type Destination = "Home" | "Orders" | "Send" | "History";
 const items: { label: Destination; icon: keyof typeof Ionicons.glyphMap; selectedIcon: keyof typeof Ionicons.glyphMap }[] = [
@@ -18,6 +18,7 @@ export function GlassNavigation({ target, selected, onNavigate }: {
   selected: Destination;
   onNavigate: (destination: Destination) => void;
 }) {
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [reduceTransparency, setReduceTransparency] = useState(true);
   useEffect(() => {
@@ -29,7 +30,7 @@ export function GlassNavigation({ target, selected, onNavigate }: {
     return () => { mounted = false; subscription.remove(); };
   }, []);
 
-  return <View style={[styles.position, { bottom: Math.max(insets.bottom, 12) }]}>
+  return <View style={[styles.position, { width: Math.min(width - 24, 600), bottom: Math.max(insets.bottom, 12) }]}>
     <View style={styles.shadow}>
       <View style={styles.glass}>
         {!reduceTransparency && <BlurView pointerEvents="none" blurTarget={target} blurMethod="dimezisBlurViewSdk31Plus" intensity={75} tint="dark" style={StyleSheet.absoluteFill} />}
@@ -39,11 +40,11 @@ export function GlassNavigation({ target, selected, onNavigate }: {
           {items.map(item => {
             const active = selected === item.label;
             const send = item.label === "Send";
-            return <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label === "Send" ? "Send a parcel" : item.label} accessibilityState={{ selected: active }} onPress={() => onNavigate(item.label)} style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
+            return <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label === "Send" ? "Send a parcel" : item.label === "Orders" ? "Deliveries" : item.label} accessibilityState={{ selected: active }} onPress={() => onNavigate(item.label)} style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
               <View style={[styles.icon, active && styles.active, send && styles.send]}>
                 <Ionicons name={active ? item.selectedIcon : item.icon} size={23} color={active || send ? colors.ink : colors.heroText} />
               </View>
-              <Text style={[styles.label, active && styles.activeLabel]}>{item.label}</Text>
+              <Text style={[styles.label, active && styles.activeLabel]}>{item.label === "Orders" ? "Deliveries" : item.label}</Text>
             </Pressable>;
           })}
         </View>
@@ -53,16 +54,16 @@ export function GlassNavigation({ target, selected, onNavigate }: {
 }
 
 const styles = StyleSheet.create({
-  position: { position: "absolute", left: 18, right: 18, maxWidth: 600, alignSelf: "center", width: "auto" },
-  shadow: { borderRadius: 38, shadowColor: colors.ink, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.14, shadowRadius: 22, elevation: 8 },
-  glass: { borderRadius: 38, overflow: "hidden", borderWidth: 1, borderColor: colors.primary },
+  position: { position: "absolute", alignSelf: "center", maxWidth: 600 },
+  shadow: { borderRadius: 20, shadowColor: colors.ink, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 22, elevation: 8 },
+  glass: { borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: colors.primary },
   highlight: { position: "absolute", top: 0, left: 24, right: 24, height: 1, backgroundColor: "rgba(255,255,255,0.12)" },
-  row: { flexDirection: "row", padding: 8, gap: 4 },
-  item: { flex: 1, minHeight: 62, alignItems: "center", justifyContent: "center", gap: 3, borderRadius: 20 },
+  row: { flexDirection: "row", paddingVertical: 10, paddingHorizontal: 4, gap: 2 },
+  item: { flex: 1, minWidth: 0, paddingHorizontal: 2, minHeight: 64, alignItems: "center", justifyContent: "center", gap: 3, borderRadius: 12 },
   pressed: { backgroundColor: "rgba(47,79,79,0.09)", transform: [{ scale: 0.96 }] },
-  icon: { width: 46, height: 40, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  icon: { width: 46, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   active: { backgroundColor: colors.soft },
-  send: { backgroundColor: colors.accent, borderWidth: 1, borderColor: "rgba(255,255,255,0.65)", shadowColor: colors.accent, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6 },
-  label: { fontSize: 10, fontWeight: "600", color: colors.heroText },
-  activeLabel: { color: colors.surface, fontWeight: "800" },
+  send: { backgroundColor: colors.accent, borderWidth: 1, borderColor: "rgba(255,255,255,0.65)", shadowColor: colors.accent, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0, shadowRadius: 6 },
+  label: { width: "100%", textAlign: "center", fontSize: 12, fontFamily: fonts.semibold, color: colors.heroText },
+  activeLabel: { color: colors.surface, fontFamily: fonts.bold },
 });

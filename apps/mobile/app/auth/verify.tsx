@@ -1,3 +1,4 @@
+import { SignupProgress } from "../../components/auth/SignupProgress";
 import { useState } from "react";
 import { Link, Redirect } from "expo-router";
 import { mobileVerifyEmailSchema, mobileSendVerificationSchema } from "@ezygo/contracts";
@@ -34,6 +35,7 @@ export default function Verify() {
     finally { setResending(false); }
   }
   return <AuthPage title="Check your inbox." subtitle="Enter the six-digit code in your email. Codes expire after 10 minutes.">
+    <SignupProgress step={3} />
     <Field label="Email address" value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" editable={!busy && !resending} />
     <Field label="Verification code" value={otp} onChangeText={value => setOtp(value.replace(/\D/g, "").slice(0, 6))} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" maxLength={6} editable={!busy && !resending} />
     <Notice message={message} /><Notice message={error} error />

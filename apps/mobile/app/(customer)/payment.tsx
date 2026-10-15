@@ -54,7 +54,7 @@ export default function Payment() {
     opening.current = true; setBusy(true); setError("");
     try {
       const checkout = await customerApi.checkout(id);
-      const result = await WebBrowser.openAuthSessionAsync(secureCheckoutUrl(checkout.redirect_url), PAYMENT_RETURN_URL, { preferEphemeralSession: true });
+      const result = await WebBrowser.openAuthSessionAsync(secureCheckoutUrl(checkout.redirect_url, checkout.provider), PAYMENT_RETURN_URL, { preferEphemeralSession: true });
       if (result.type === "success") {
         const token = parsePaymentLink(result.url);
         // Return content is untrusted until the authenticated backend verifies it.
@@ -71,10 +71,11 @@ export default function Payment() {
   const paid = status === "complete";
   return <Page><Title>{paid ? "Payment confirmed" : "Payment"}</Title><Card>
     <Notice message={price} />
-    <Notice message={paid ? "The backend has confirmed your payment. Your delivery is ready for dispatch." : status === "not_started" ? "Your quote is ready. Open Paystack when you are ready to pay." : status === "pending" ? "Awaiting payment confirmation. Closing checkout or returning to the app does not confirm payment." : status === "checking" ? "Checking payment with the server…" : `Payment ${status}. Open your delivery for the next steps.`} />
+    {!paid ? <Notice message="After paying, close the checkout browser to return here. We’ll check confirmation with the server." /> : null}
+    <Notice message={paid ? "The backend has confirmed your payment. Your delivery is ready for dispatch." : status === "not_started" ? "Your quote is ready. Open Yoco when you are ready to pay." : status === "pending" ? "Awaiting payment confirmation. Closing checkout or returning to the app does not confirm payment." : status === "checking" ? "Checking payment with the server…" : `Payment ${status}. Open your delivery for the next steps.`} />
     {polling ? <Notice message="Verifying payment status…" /> : null}
     <Notice message={error} error />
     {!paid ? <Action label="Check payment again" secondary disabled={busy} onPress={() => setRetry(value => value + 1)} /> : null}
-    {canPay && !paid && id ? <Action label={["failed", "cancelled"].includes(status) ? "Try secure Paystack checkout again" : "Open secure Paystack checkout"} busy={busy} onPress={() => void open()} /> : null}
+    {canPay && !paid && id ? <Action label={["failed", "cancelled"].includes(status) ? "Try secure Yoco checkout again" : "Open secure Yoco checkout"} busy={busy} onPress={() => void open()} /> : null}
   </Card>{id ? <Action label="View delivery" secondary onPress={() => router.replace({ pathname: "/deliveries/[id]", params: { id } })} /> : null}<Action label="Back to dashboard" secondary onPress={() => router.replace("/dashboard")} /></Page>;
 }

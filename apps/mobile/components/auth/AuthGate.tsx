@@ -10,7 +10,7 @@ export function SessionGate() {
     {loading ? <ActivityIndicator size="large" color={colors.ink} /> : <>
       <Notice message={auth.message} error />
       <Action label="Try again" onPress={() => { void auth.controller.restore(); }} />
-      <Action label="Sign out on this device" secondary onPress={() => { void auth.signOut(); }} />
+      <Action label="Sign out on this device" danger onPress={() => { void auth.signOut(); }} />
     </>}
   </AuthPage>;
 }

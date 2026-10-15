@@ -1,4 +1,4 @@
-import { colors } from "../../lib/theme";
+import { colors, fonts } from "../../lib/theme";
 import { useRef } from "react";
 import { View } from "react-native";
 import { Stack, Redirect } from "expo-router";
@@ -13,7 +13,7 @@ export default function CustomerLayout() {
   if (!hasCustomer.current && auth.phase !== "authenticated") return <SessionGate />;
   if (auth.phase === "authenticated" && auth.user?.role !== "customer") return <Redirect href="/" />;
   const locked = auth.phase !== "authenticated";
-  return <View style={{ flex: 1 }}>{locked ? <SessionGate /> : null}<View style={{ flex: 1, display: locked ? "none" : "flex" }} accessibilityElementsHidden={locked} importantForAccessibility={locked ? "no-hide-descendants" : "auto"}><Stack screenOptions={{ headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.ink, headerShadowVisible: false, headerTitleAlign: "center", headerBackButtonDisplayMode: "minimal" }}>
+  return <View style={{ flex: 1 }}>{locked ? <SessionGate /> : null}<View style={{ flex: 1, display: locked ? "none" : "flex" }} accessibilityElementsHidden={locked} importantForAccessibility={locked ? "no-hide-descendants" : "auto"}><Stack screenOptions={{ headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.ink, headerShadowVisible: false, headerTitleStyle: { fontFamily: fonts.semibold, fontSize: 16 }, headerTitleAlign: "center", headerBackButtonDisplayMode: "minimal" }}>
     <Stack.Screen name="dashboard" options={{ title: "EzyGo Couriers" }} />
     <Stack.Screen name="history" options={{ title: "Delivery history" }} />
     <Stack.Screen name="deliveries/new" options={{ title: "New delivery" }} />

@@ -5,7 +5,6 @@ export function WelcomeCard() {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Your deliveries, on the go.</Text>
-      <Text style={styles.description}>The EzyGo customer and driver app is taking shape. Booking and delivery tools are coming next.</Text>
     </View>
   );
 }
