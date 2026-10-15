@@ -85,7 +85,8 @@ services:
           /migrations/014_list_pagination.sql \
           /migrations/015_delivery_email_templates.sql \
           /migrations/016_delivery_cancellation_email.sql \
-          /migrations/017_user_analytics.sql
+          /migrations/017_user_analytics.sql \
+          /migrations/018_mobile_google_oauth.sql
         do
           echo "Applying $${migration}"
           psql -v ON_ERROR_STOP=1 -h db -U "$${DB_USER}" -d "$${DB_NAME}" -f "$${migration}"

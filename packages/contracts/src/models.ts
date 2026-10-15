@@ -1,6 +1,7 @@
 import type { DeliveryStatus, UserRole } from "./constants";
 
 export type ApiErrorCode =
+  | "RATE_LIMITED"
   | "BAD_REQUEST"
   | "INVALID_JSON"
   | "VALIDATION_ERROR"
