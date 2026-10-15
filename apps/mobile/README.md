@@ -109,3 +109,9 @@ then supply its ID through `EXPO_PUBLIC_EAS_PROJECT_ID` (or `extra.eas.projectId
 in app.json). Build with `npx eas-cli@latest build --platform ios --profile development`.
 The EAS profile retains push capability; configure APNs credentials separately.
 Run `npm run start:dev --workspace @ezygo/mobile` for this build variant.
+
+## Production release
+
+Production store builds, automatic build numbering, submission profiles and
+account/signing/push/maps setup are documented in
+[mobile release setup](../../docs/mobile-release-setup.md).

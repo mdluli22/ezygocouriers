@@ -47,3 +47,13 @@ dist/
 expo-env.d.ts
 /apps/mobile/ios/
 /apps/mobile/android/
+
+# Native signing and Firebase files stay outside source control
+/apps/mobile/credentials.json
+/apps/mobile/google-services.json
+/apps/mobile/credentials/
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision

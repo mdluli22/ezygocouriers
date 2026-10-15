@@ -2,7 +2,7 @@
   "expo": {
     "name": "EzyGo Couriers",
     "slug": "ezygo-couriers",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "scheme": "ezygo",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
