@@ -24,7 +24,7 @@ export default function LandingPage() {
           {[0, 1].map((group) => (
             <div className="coming-soon-group" key={group}>
               {[0, 1, 2].map((item) => (
-                <span key={item}>EzyGo is coming soon</span>
+                <span key={item}>EzyGo Couriers coming soon</span>
               ))}
             </div>
           ))}
