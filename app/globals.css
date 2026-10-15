@@ -341,6 +341,46 @@ body {
 }
 
 /* ─── Landing page ─────────────────────────────────────────────────────────── */
+.landing-page { padding-top: 36px; }
+.coming-soon-banner {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 51;
+  height: 36px;
+  overflow: hidden;
+  background: #c81926;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.coming-soon-track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  animation: coming-soon-scroll 24s linear infinite;
+}
+.coming-soon-group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-around;
+  gap: 64px;
+  min-width: 100vw;
+  padding-inline: 32px;
+  white-space: nowrap;
+}
+.coming-soon-banner:hover .coming-soon-track { animation-play-state: paused; }
+.landing-page .landing-nav { top: 36px; }
+@keyframes coming-soon-scroll {
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coming-soon-track { animation: none; width: 100%; }
+  .coming-soon-group { min-width: 100%; justify-content: center; }
+  .coming-soon-group + .coming-soon-group,
+  .coming-soon-group span + span { display: none; }
+}
+
 .landing-shell {
   width: min(1180px, calc(100% - 48px));
   margin-inline: auto;

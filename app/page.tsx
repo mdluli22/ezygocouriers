@@ -17,7 +17,19 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <main>
+    <main className="landing-page">
+      <div className="coming-soon-banner" role="region" aria-label="Announcement">
+        <span className="sr-only">EzyGo Couriers coming soon</span>
+        <div className="coming-soon-track" aria-hidden="true">
+          {[0, 1].map((group) => (
+            <div className="coming-soon-group" key={group}>
+              {[0, 1, 2].map((item) => (
+                <span key={item}>EzyGo is coming soon</span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
       <Navbar scrolled={scrolled} />
       <HeroSection />
       <HowItWorks />
