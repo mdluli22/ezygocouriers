@@ -5,8 +5,16 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+concurrency:
+  group: production-release
+  cancel-in-progress: false
 jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
   deploy:
+    needs: checks
     runs-on: ubuntu-latest
 
     steps:
@@ -36,9 +44,27 @@ jobs:
             # Existing Postgres volumes do not re-run /docker-entrypoint-initdb.d.
             # Run the idempotent migrations explicitly and fail the deployment
             # before starting the app if any schema change cannot be applied.
-            docker compose up -d db
+            docker compose up -d --wait db
+            # Capture a restorable archive before schema changes.
+            sh scripts/backup-database.sh ../ezygo-backups
             docker compose run --rm migrate
 
+            previous_image=$(docker inspect --format '{{.Image}}' ezygo_app 2>/dev/null || true)
             docker compose up -d --no-deps app
+            healthy=false
+            for attempt in $(seq 1 30); do
+              if curl --fail --silent --max-time 5 http://127.0.0.1:3000/api/health/ready >/dev/null; then healthy=true; break; fi
+              sleep 2
+            done
+            if [ "$healthy" != true ]; then
+              echo "Release readiness failed. Restoring the previous application image."
+              if [ -n "$previous_image" ]; then
+                image_name=$(docker inspect --format '{{.Config.Image}}' ezygo_app)
+                docker image tag "$previous_image" "$image_name"
+                docker compose up -d --no-deps --force-recreate app
+                curl --retry 15 --retry-connrefused --retry-delay 2 --fail --max-time 5 http://127.0.0.1:3000/api/health/ready
+              fi
+              exit 1
+            fi
 
             docker image prune -f

@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 import { auth } from "./auth";
 import { query, getClient } from "@/lib/db/server";
-import { ApiProblem } from "@/lib/api/errors";
+import { MobileOAuthError as ApiProblem } from "./mobile-oauth-route";
 import { applyAuthCookies } from "./response";
 import { mobileTokenData, resolveMobileSession } from "./mobile-session";
 
@@ -39,7 +39,7 @@ export function mobileAuthOrigin() {
   return origin.origin;
 }
 interface Flow { request_id: string; code_challenge: string; client_state: string; browser_hash: string | null; code_hash: string | null; encrypted_token: string | null }
-const invalid = () => new ApiProblem("OAUTH_INVALID", "This sign-in attempt has expired or is invalid. Start again.");
+const invalid = () => new ApiProblem("BAD_REQUEST", "This sign-in attempt has expired or is invalid. Start again.");
 
 export async function beginMobileGoogle(input: { state: string; code_challenge: string }) {
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET)

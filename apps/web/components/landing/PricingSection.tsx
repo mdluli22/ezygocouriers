@@ -1,5 +1,6 @@
 "use client";
 
+import PublishedPrice from "@/components/PublishedPrice";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -21,10 +22,6 @@ export default function PricingSection() {
             <span className="section-kicker section-kicker-light">Transparent pricing</span>
             <h2>One delivery.<br /><em>One clear price.</em></h2>
           </div>
-          <p>
-            No quote calculators or unexpected additions. Eligible deliveries within our
-            Cape Town service area stay refreshingly simple.
-          </p>
         </div>
 
         <div className="price-bento">
@@ -34,7 +31,7 @@ export default function PricingSection() {
               <PackageCheck size={23} />
             </div>
             <div className="price-bento-amount">
-              <sup>R</sup><strong>99</strong><small>.00</small>
+              <strong><PublishedPrice /></strong>
             </div>
             <p>Per eligible delivery across our Cape Town coverage area.</p>
             <div className="price-bento-stamp"><Check size={13} /> No monthly fee</div>
@@ -49,7 +46,7 @@ export default function PricingSection() {
             <ul>
               <li><Check size={15} /> Collection and delivery</li>
               <li><Check size={15} /> Live status tracking</li>
-              <li><Check size={15} /> Secure Paystack checkout</li>
+              <li><Check size={15} /> Secure Yoco checkout</li>
               <li><Check size={15} /> Clear delivery updates</li>
             </ul>
           </article>
@@ -59,7 +56,6 @@ export default function PricingSection() {
               <span className="price-bento-icon"><MapPinned size={20} /></span>
               <small>Cape Town-wide simplicity</small>
               <h3>No distance calculations.</h3>
-              <p>One rate wherever your eligible delivery starts and ends inside our service area.</p>
             </div>
             <div className="coverage-route" aria-hidden="true">
               <MapPin size={15} /><i /><span><PackageCheck size={16} /></span><i /><MapPin size={15} />
@@ -69,8 +65,7 @@ export default function PricingSection() {
           <article className="price-bento-card price-bento-action">
             <span className="price-bento-icon"><CreditCard size={21} /></span>
             <small>Ready when you are</small>
-            <h3>Send it for R99.</h3>
-            <p>Create your account free and book your first delivery.</p>
+            <h3>Send it for <PublishedPrice />.</h3>
             <Link href="/auth/signup">
               Get started <ArrowRight size={18} />
             </Link>

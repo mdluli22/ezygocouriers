@@ -3,7 +3,7 @@ import { positiveIntegerSchema } from "./common";
 
 export const createPaymentSchema = z.object({
   delivery_id: positiveIntegerSchema,
-  payment_method: z.literal("paystack"),
+  payment_method: z.literal("yoco"),
 });
 
 export const sandboxConfirmationSchema = z.object({

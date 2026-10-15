@@ -1,6 +1,9 @@
-import { logServerError } from "@/lib/api/context";
+import { createHash } from "node:crypto";
+import { BusinessError } from "@/lib/api/errors";
+import { resolvePushAddress, pinnedPushAgent } from "@/lib/security/push-endpoint";
+import { enqueueNotification, enqueueDeliveryUpdate } from "./notification-outbox";
 import webPush from "web-push";
-import { query } from "@/lib/db/server";
+import { query, getClient } from "@/lib/db/server";
 import type { PushSubscriptionInput } from "@ezygo/contracts";
 
 export interface PushMessage {
@@ -41,7 +44,16 @@ export async function savePushSubscription(
   userId: number,
   subscription: PushSubscriptionInput
 ): Promise<void> {
-  await query(
+  try { await resolvePushAddress(subscription.endpoint); } catch { throw new BusinessError("Unsupported push endpoint.",422); }
+  const publicKey = Buffer.from(subscription.keys.p256dh,"base64url"), authKey = Buffer.from(subscription.keys.auth,"base64url");
+  if (publicKey.length !== 65 || publicKey[0] !== 4 || authKey.length !== 16) throw new BusinessError("Invalid push subscription keys.",422);
+  const client = await getClient();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(921,$1)",[userId]);
+    const count = await client.query("SELECT COUNT(*)::int AS count FROM push_subscriptions WHERE user_id=$1 AND endpoint<>$2",[userId,subscription.endpoint]);
+    if (count.rows[0].count >= 10) throw new BusinessError("Too many notification devices. Remove an old device first.",422);
+  await client.query(
     `INSERT INTO push_subscriptions
        (user_id, endpoint, p256dh, auth, expiration_time)
      VALUES ($1, $2, $3, $4, $5)
@@ -59,6 +71,9 @@ export async function savePushSubscription(
       subscription.expirationTime ?? null,
     ]
   );
+    await client.query("COMMIT");
+  } catch (error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); }
+
 }
 
 export async function removePushSubscription(
@@ -71,11 +86,17 @@ export async function removePushSubscription(
   );
 }
 
-export async function sendPushToUser(
+export async function sendPushToUser(userId: number, message: PushMessage, db: {query: typeof query} = {query}): Promise<void> {
+  if (!pushIsConfigured()) return;
+  const digest=createHash("sha256").update(JSON.stringify(message)).digest("hex");
+  await enqueueNotification(db,{key:`push:${userId}:${digest}`,kind:"push",payload:{userId,message}});
+}
+
+export async function deliverPushToUser(
   userId: number,
   message: PushMessage
 ): Promise<void> {
-  if (!configureWebPush()) return;
+  if (!configureWebPush()) throw new Error("Push is not configured.");
 
   const result = await query<{
     endpoint: string;
@@ -88,17 +109,19 @@ export async function sendPushToUser(
     [userId]
   );
 
-  await Promise.allSettled(
+  const sent = await Promise.allSettled(
     result.rows.map(async (row) => {
       try {
-        await webPush.sendNotification(
+        const address = await resolvePushAddress(row.endpoint);
+        const agent = pinnedPushAgent(address);
+        try { await webPush.sendNotification(
           {
             endpoint: row.endpoint,
             keys: { p256dh: row.p256dh, auth: row.auth },
           },
           JSON.stringify(message),
-          { TTL: 60 * 60, urgency: "high" }
-        );
+          { TTL: 60 * 60, urgency: "high", timeout: 10000, agent }
+        ); } finally { agent.destroy(); }
       } catch (error) {
         const statusCode =
           typeof error === "object" && error && "statusCode" in error
@@ -110,20 +133,18 @@ export async function sendPushToUser(
           ]);
           return;
         }
-        logServerError("[Web push] Delivery failed", {
-          userId,
-          statusCode,
-        });
+        throw new Error(`Push provider failure (${statusCode})`);
       }
     })
   );
+  if (sent.some(result=>result.status === "rejected")) throw new Error("Some push notifications need retrying.");
 }
 
 export async function notifyAssignedDriver(params: {
   driverId: number;
   deliveryId: number;
-}): Promise<void> {
-  const result = await query<{
+}, db: {query: typeof query} = {query}): Promise<void> {
+  const result = await db.query<{
     user_id: number;
     customer_id: number;
     tracking_number: string;
@@ -140,18 +161,20 @@ export async function notifyAssignedDriver(params: {
   const target = result.rows[0];
   if (!target) return;
 
+  await enqueueDeliveryUpdate(db,params.deliveryId,"assigned_email");
+
   await Promise.all([
     sendPushToUser(target.user_id, {
       title: "New delivery assigned",
       body: `${target.tracking_number} is ready for pickup.`,
       url: `/driver/deliveries/${params.deliveryId}`,
       tag: `assignment-${params.deliveryId}`,
-    }),
+    },db),
     sendPushToUser(target.customer_id, {
       title: "Driver assigned",
       body: `${target.driver_name} has been assigned to ${target.tracking_number}.`,
       url: `/dashboard/tracking/${params.deliveryId}`,
       tag: `delivery-${params.deliveryId}`,
-    }),
+    },db),
   ]);
 }

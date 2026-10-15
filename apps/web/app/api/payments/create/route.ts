@@ -1,11 +1,10 @@
-import { problemResponse } from "@/lib/api/response";
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { applicationErrorResponse } from "@/lib/api/errors";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
 import { initialisePaymentCheckout } from "@/lib/services/payment-checkout";
-import { getPaystackConfig } from "@/lib/paystack";
+import { getYocoConfig } from "@/lib/yoco";
 import { createPaymentSchema } from "@ezygo/contracts";
 import { parseJsonRequest } from "@/lib/api/validation";
 import {
@@ -15,19 +14,23 @@ import {
   serverErrorResponse,
 } from "@/lib/api/response";
 
-async function handlePOST(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
-    if (session.role !== "customer") return errorResponse("Access denied.", undefined, 403);
+    await consumeRateLimit(`checkout:${session.userId}`,20,60);
 
     const parsed = await parseJsonRequest(req, createPaymentSchema);
     if (!parsed.success) return parsed.response;
     const { delivery_id, payment_method } = parsed.data;
     try {
-      getPaystackConfig();
-    } catch {
-      return errorResponse("Paystack test checkout is not configured yet.", undefined, 503);
+      getYocoConfig();
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : "Yoco checkout is not configured yet.",
+        undefined,
+        503
+      );
     }
 
     // 1. Fetch delivery — verify ownership and status
@@ -77,7 +80,6 @@ async function handlePOST(req: NextRequest) {
     const amount = parseFloat(delivery.quote_amount);
 
     const checkout = await initialisePaymentCheckout({
-      mobileReturn: req.headers.has("authorization"),
       provider: payment_method,
       delivery: {
         id: delivery.id,
@@ -92,11 +94,9 @@ async function handlePOST(req: NextRequest) {
 
     return successResponse("Payment initialised.", checkout);
   } catch (error) {
-    const problem = problemResponse(error);
-    if (problem) return problem;
-    logServerError("[POST /api/payments/create]", error);
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
+    console.error("[POST /api/payments/create]", error);
     return serverErrorResponse();
   }
 }
-
-export const POST = withApiRoute("/api/payments/create", handlePOST);

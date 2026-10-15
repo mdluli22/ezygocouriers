@@ -12,7 +12,7 @@ test('checkout opens HTTPS Paystack only, without userinfo or alternate ports', 
   for (const url of ['http://checkout.paystack.com/x', 'https://checkout.paystack.com.evil.test/x', 'https://evil.test/x', 'https://user@checkout.paystack.com/x', 'https://checkout.paystack.com:8443/x', 'javascript:alert(1)']) assert.throws(() => secureCheckoutUrl(url));
 });
 const address = { formatted_address: '1 Long Street, Cape Town', latitude: -33.92, longitude: 18.42, city: 'Cape Town' };
-const booking = { pickup_address: address, dropoff_address: address, pickup_contact_name: 'Sender', pickup_contact_phone: '+27821234567', recipient_name: 'Recipient', recipient_phone: '+27821234567', parcel_description: 'Documents', payment_method: 'paystack' };
+const booking = { pickup_address: address, dropoff_address: address, pickup_contact_name: 'Sender', pickup_contact_phone: '+27821234567', recipient_name: 'Recipient', recipient_phone: '+27821234567', parcel_description: 'Documents', payment_method: 'yoco' };
 test('booking accepts selected Cape Town addresses and enforces coordinates and PIN email', () => {
   assert.equal(createDeliveryRequestSchema.safeParse(booking).success, true);
   for (const patch of [{ pickup_address: { ...address, latitude: -26.2 } }, { dropoff_address: { ...address, latitude: undefined } }, { require_pin: true }, { recipient_phone: '123' }]) assert.equal(createDeliveryRequestSchema.safeParse({ ...booking, ...patch }).success, false);

@@ -4,11 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/next.mjs dev",
-    "build": "node scripts/next.mjs build",
+    "build": "node scripts/next.mjs build --webpack",
     "start": "node scripts/next.mjs start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:api": "node --import ./tests/register.mjs --test --test-concurrency=1 tests/*.test.mjs"
+    "test:api": "node --import ./tests/register.mjs --test --test-concurrency=1 tests/*.test.mjs",
+    "test:release": "node --test scripts/test-driver-earnings.cjs scripts/test-yoco-checkout.cjs scripts/test-security-integrity.cjs scripts/test-web-sessions.cjs scripts/test-service-worker.mjs scripts/test-customer-completion.cjs scripts/test-email-templates.cjs scripts/test-user-analytics.cjs scripts/test-mobile-google.cjs",
+    "test:smoke": "node scripts/smoke-release.mjs"
   },
   "dependencies": {
     "@ezygo/contracts": "*",
@@ -16,7 +18,7 @@
     "bcryptjs": "^3.0.3",
     "better-auth": "^1.6.24",
     "lucide-react": "^1.7.0",
-    "next": "^16.3.5",
+    "next": "^16.4.0",
     "nodemailer": "^10.0.10",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -37,7 +39,7 @@
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
-    "eslint-config-next": "^16.3.5",
+    "eslint-config-next": "^16.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

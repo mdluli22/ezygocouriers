@@ -61,7 +61,7 @@ export interface MobileSessionData {
 }
 
 export interface PaymentCheckout {
-  provider: "paystack";
+  provider: "paystack" | "yoco";
   redirect_url: string;
   checkout_id: string;
   demo_mode: boolean;

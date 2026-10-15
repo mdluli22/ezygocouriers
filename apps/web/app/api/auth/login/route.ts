@@ -1,5 +1,3 @@
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { loginSchema } from "@ezygo/contracts";
 import { auth } from "@/lib/auth/auth";
@@ -12,14 +10,14 @@ import {
 import { parseJsonRequest } from "@/lib/api/validation";
 import { normalizeSignInError } from "@/lib/auth/sign-in-error";
 
-async function handlePOST(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const parsed = await parseJsonRequest(req, loginSchema);
     if (!parsed.success) return parsed.response;
-    const { email, password } = parsed.data;
+    const { email, password, rememberMe } = parsed.data;
 
     const signIn = await auth.api.signInEmail({
-      body: { email, password },
+      body: { email, password, rememberMe },
       headers: req.headers,
       returnHeaders: true,
     });
@@ -38,13 +36,10 @@ async function handlePOST(req: NextRequest) {
       return errorResponse(
         signInError.message,
         signInError.errors,
-        signInError.status,
-          signInError.code
+        signInError.status
       );
     }
-    logServerError("[POST /api/auth/login]", error);
+    console.error("[POST /api/auth/login]", error);
     return serverErrorResponse("Something went wrong. Please try again.");
   }
 }
-
-export const POST = withApiRoute("/api/auth/login", handlePOST);

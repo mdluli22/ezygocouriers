@@ -1,10 +1,12 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
-type PaymentProvider = "paystack";
+type PaymentProvider = "yoco";
 
 interface PaymentRedirect {
   provider: PaymentProvider;
@@ -16,9 +18,9 @@ interface PaymentRedirect {
 
 export default function PayDeliveryPage() {
   const params = useParams<{ id: string }>();
-  const selectedProvider: PaymentProvider = "paystack";
+  const selectedProvider: PaymentProvider = "yoco";
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useTimedMessage("", "");
 
   async function initialisePayment() {
     if (!navigator.onLine) {
@@ -43,7 +45,7 @@ export default function PayDeliveryPage() {
       }
 
       const redirect = result.data as PaymentRedirect;
-      if (!redirect.redirect_url) throw new Error("Paystack did not return a checkout URL.");
+      if (!redirect.redirect_url) throw new Error("Yoco did not return a checkout URL.");
       window.location.assign(redirect.redirect_url);
     } catch (paymentError) {
       setError(
@@ -58,16 +60,16 @@ export default function PayDeliveryPage() {
   return (
     <div className="max-w-md mx-auto py-16 space-y-5">
       <div>
-        <h1 className="text-xl font-black" style={{ color: "var(--color-primary)" }}>
+        <h1 className="text-xl font-black" style={{ color: "var(--color-link)" }}>
           Choose how to pay
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
-          Paystack is enabled in test mode for this integration trial.
+          Yoco is enabled in test mode for this integration trial.
         </p>
       </div>
 
       <div className="p-4 rounded-2xl text-left" style={{ backgroundColor: "var(--color-surface)", border: "2px solid var(--color-primary)" }}>
-        <strong className="block text-sm" style={{ color: "var(--color-text-primary)" }}>Paystack</strong>
+        <strong className="block text-sm" style={{ color: "var(--color-text-primary)" }}>Yoco</strong>
         <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Secure test checkout</span>
       </div>
 
@@ -78,7 +80,7 @@ export default function PayDeliveryPage() {
       )}
 
       <button type="button" onClick={initialisePayment} disabled={loading} className="btn-primary w-full py-3">
-        {loading ? "Opening Paystack…" : "Continue with Paystack"}
+        {loading ? "Opening Yoco…" : "Continue with Yoco"}
       </button>
 
       <Link href={`/dashboard/tracking/${params.id}`} className="block text-center text-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>

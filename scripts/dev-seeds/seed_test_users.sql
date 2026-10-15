@@ -6,7 +6,7 @@
 -- Customer → customer@ezygo.co.za / Customer@1234
 --
 -- Run via:
---   docker exec -i ezygo_db psql -U $DB_USER -d $DB_NAME < scripts/sql/seed_test_users.sql
+--   docker exec -i ezygo_db psql -U $DB_USER -d $DB_NAME < scripts/dev-seeds/seed_test_users.sql
 -- =============================================================================
 
 -- ── Fix the placeholder admin hash from 001_initial_schema.sql ──────────────

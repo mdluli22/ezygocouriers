@@ -290,18 +290,4 @@ CREATE TRIGGER set_updated_at_pricing_rules
   BEFORE UPDATE ON pricing_rules
   FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
 
--- =============================================================================
--- SEED: DEFAULT ADMIN USER
--- Password: changeme123 (bcrypt — MUST be changed immediately after first login)
--- =============================================================================
-
-INSERT INTO users (full_name, email, password_hash, auth_provider, role, is_active, email_verified)
-VALUES (
-  'EzyGo Admin',
-  'admin@ezygo.co.za',
-  '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TiGNv8FYqYmFkfQkL9TwXpOZwQ2K',
-  'email',
-  'admin',
-  TRUE,
-  TRUE
-);
+-- Production administrators must be provisioned explicitly. Development seeds live in scripts/dev-seeds.

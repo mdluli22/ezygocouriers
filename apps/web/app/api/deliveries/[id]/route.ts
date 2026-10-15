@@ -1,6 +1,4 @@
-import { problemResponse } from "@/lib/api/response";
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
+import { applicationErrorResponse } from "@/lib/api/errors";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import {
@@ -26,11 +24,10 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-async function handleGET(_req: NextRequest, { params }: RouteParams) {
+export async function GET(_req: NextRequest, { params }: RouteParams) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
-    if (session.role !== "customer") return errorResponse("Access denied.", undefined, 403);
 
     const { id } = await params;
     const parsedId = deliveryIdParamSchema.safeParse(id);
@@ -44,17 +41,18 @@ async function handleGET(_req: NextRequest, { params }: RouteParams) {
 
     return successResponse("Delivery fetched.", { delivery, logs });
   } catch (error) {
-    logServerError("[GET /api/deliveries/[id]]", error);
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
+    console.error("[GET /api/deliveries/[id]]", error);
     return serverErrorResponse();
   }
 }
 
 // POST to /api/deliveries/[id] with body { action: "confirm" | "cancel" }
-async function handlePOST(req: NextRequest, { params }: RouteParams) {
+export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
-    if (session.role !== "customer") return errorResponse("Access denied.", undefined, 403);
     if (session.role !== "customer") {
       return errorResponse("Only customers can update their deliveries.", undefined, 403);
     }
@@ -75,8 +73,8 @@ async function handlePOST(req: NextRequest, { params }: RouteParams) {
     await cancelCustomerDelivery(deliveryId, session.userId);
     return successResponse("Delivery cancelled.");
   } catch (error: unknown) {
-    const problem = problemResponse(error);
-    if (problem) return problem;
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
     if (error instanceof Error) {
       // Business rule errors (wrong status, unauthorized)
       if (
@@ -88,10 +86,7 @@ async function handlePOST(req: NextRequest, { params }: RouteParams) {
         return errorResponse(error.message, undefined, 400);
       }
     }
-    logServerError("[POST /api/deliveries/[id]]", error);
+    console.error("[POST /api/deliveries/[id]]", error);
     return serverErrorResponse();
   }
 }
-
-export const GET = withApiRoute("/api/deliveries/[id]", handleGET);
-export const POST = withApiRoute("/api/deliveries/[id]", handlePOST);

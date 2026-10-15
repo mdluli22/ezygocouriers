@@ -266,55 +266,38 @@ The booking flow currently accepts only pickup and drop-off addresses inside
 the Cape Town service area. This restriction is enforced in both Google Places
 autocomplete and server-side delivery validation.
 
-## Paystack test integration
+## Yoco test integration
 
-Paystack is currently the only payment method exposed by the checkout. PayFast
-and Yoco remain in the codebase for easy restoration, but new checkout requests
-for either provider are rejected by the API.
+Yoco is the only active checkout provider. Paystack and PayFast callbacks and
+sandbox confirmation handlers are commented out and return HTTP 503. Their
+client implementations are retained for restoration. The API rejects new
+checkout requests for either disabled provider.
 
-Set `PAYSTACK_SECRET_KEY` to the `sk_test_...` key from your Paystack dashboard.
-Set `PAYSTACK_APP_URL` to the application origin used for Paystack's return
-callback (it defaults to `NEXT_PUBLIC_APP_URL`). The secret key is used only by
-server routes and must never be exposed to browser code.
+Set these server-only variables in your environment (see `.env.example`):
 
-Register this URL as the webhook URL in the Paystack dashboard:
-
-```text
-https://your-public-app.example.com/api/payments/paystack/webhook
+```dotenv
+YOCO_SANDBOX=true
+YOCO_SECRET_KEY=sk_test_your_key_here
+YOCO_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+YOCO_APP_URL=https://your-public-app.example.com
 ```
 
-The hosted checkout redirects through `/api/payments/paystack/callback`, which
-verifies the transaction before completing the delivery. The signed
-`charge.success` webhook provides a second idempotent completion path. Both
-paths validate provider mode, reference, amount, and currency before fulfillment.
+Register `https://your-public-app.example.com/api/payments/yoco/webhook` with
+the Yoco Checkout API using your test secret key, and save the returned webhook
+secret as `YOCO_WEBHOOK_SECRET`. The webhook must be reachable from Yoco;
+use a public HTTPS deployment or tunnel when testing locally. Restart the app
+after changing environment variables. Never put secret keys in browser code.
 
-## Disabled PayFast sandbox integration
+Apply `scripts/sql/011_yoco_provider.sql` to an existing database; Docker's
+migration service also runs it. Historical payment provider values are preserved.
 
-Set `PAYFAST_SANDBOX=true`. You can provide credentials from your own PayFast
-sandbox account, or leave `PAYFAST_MERCHANT_ID` and `PAYFAST_MERCHANT_KEY` blank
-to use PayFast's complete published shared test credential set. When using your
-own credentials, `PAYFAST_PASSPHRASE` must exactly match the passphrase on that
-sandbox account.
+Create a booking or retry an unpaid delivery to open Yoco checkout. Use the test
+card details from your Yoco account. A browser success redirect only means the
+payment was submitted: completion requires a valid signed Yoco webhook matching
+the payment provider, mode, amount, currency and checkout ID.
 
-For end-to-end ITN testing, `PAYFAST_APP_URL` (or `NEXT_PUBLIC_APP_URL`) must be
-a public HTTPS origin. PayFast rejects localhost callback URLs. Without one,
-the app uses an explicit no-money local demo confirmation screen. With a public
-HTTPS origin, checkout is sent to PayFast. Sandbox success returns are
-reconciled for the authenticated customer in addition to accepting verified
-ITNs. In live mode, the verified ITN remains the sole source of truth.
-
-## Disabled Yoco sandbox integration
-
-Set `YOCO_SANDBOX=true` and add the `sk_test_...` secret key from the Yoco App
-as `YOCO_SECRET_KEY`. Set `YOCO_APP_URL` to the app origin used for checkout
-success, cancellation, and failure redirects (it defaults to
-`NEXT_PUBLIC_APP_URL`).
-
-Register `https://your-public-app.example.com/api/payments/yoco/webhook` as the
-Yoco Checkout API webhook, then save the returned `whsec_...` value as
-`YOCO_WEBHOOK_SECRET`. Payment completion is accepted only from a valid signed
-Yoco webhook whose provider, mode, currency, and amount match the pending
-payment attempt.
+Yoco references: [Accepting a payment](https://developer.yoco.com/guides/online-payments/accepting-a-payment)
+and [Verifying webhook events](https://developer.yoco.com/guides/online-payments/webhooks/verifying-the-events).
 
 ## Admin subdomain
 
@@ -354,3 +337,70 @@ sudo certbot --nginx -d admin.ezygocouriers.co.za
 ```bash
 npm run build
 ```
+
+
+## Driver earnings and Monday payouts
+
+The rider-pay schedule is stored in `lib/earnings/calculation.ts` (version
+`rider-pay-v1`). Completed deliveries earn R32 up to 5 km, R35 up to 10 km,
+R39 up to 15 km, R44 up to 20 km, R50 up to 25 km and R57 up to 30 km.
+Over 30 km requires an admin-approved amount. Distances are stored in whole
+metres; a distance just above a band limit enters the next band. Displayed
+kilometres round up to one decimal, matching the PDF's 5.1 km-style labels.
+
+Run `node scripts/apply-driver-earnings.cjs` for a local database. Docker's
+migration service also applies `012_driver_earnings.sql` to existing volumes.
+The migration backfills completed-delivery records using the first delivered
+status log, preserving unknown dates and distances as pending review. After
+configuring the Routes key, run `node scripts/backfill-driver-earnings.cjs` to
+inspect pending records, then add `--apply` to calculate their road distances.
+This only calculates earnings; it never records or initiates a payment.
+`node scripts/check-driver-routing.cjs` tests the key with public landmarks
+without changing customer records.
+
+Configure `GOOGLE_ROUTES_API_KEY` in `.env.local` for local development or the
+production server's environment (`.env` for Docker). Enable Google Routes API
+and billing for this server key. It must allow server requests; browser-referrer
+restricted Maps keys cannot be used. Routes requests use IPv4 explicitly, so allow
+the app server's public outbound IPv4 address on the key. This avoids a dual-stack
+connection choosing an unlisted IPv6 address. Other app traffic is unchanged.
+Restart the app after configuring it.
+The application calls [Google Routes computeRoutes](https://developers.google.com/maps/documentation/routes/reference/rest/v2/TopLevel/computeRoutes)
+for the collection-to-delivery driving distance at booking, with a retry on
+completion. This is the verified planned road route, not GPS odometer mileage
+or distance driven to reach the collection point. Missing routes do not block
+delivery completion and do not silently produce a R0 payout.
+
+Admin's overview and Drivers page include weekly statements, delivery details,
+route recalculation and manual distance/rate verification with an audit note.
+Historical and unverified deliveries need review before a week's payment can
+be recorded. Payout periods run Monday 00:00 inclusive to the following Monday
+00:00 exclusive in Africa/Johannesburg (UTC+02:00), with payment due that Monday.
+The default admin view is the latest closed week; driver view starts with the
+current week. Both can browse previous weeks.
+
+The payment-record action records a bank payment already made, with its
+reference. It does not initiate a bank transfer or schedule automatic bank
+payments. A week can only be marked paid after it closes and all its deliveries
+are verified. Payment amounts are recomputed on the server, checked against
+the displayed amount, and locked against duplicate recording and later edits.
+
+Monthly bonuses remain separate from weekly pay. The progressive bands match
+the PDF example: deliveries 150-249 add R2 each, 250-349 add R4 each, 350-449
+add R6 each, and 450 onward add R8 each. Therefore 275 completed deliveries
+produce R304, not 275 times R4. Month-to-date bonuses are provisional. Missing
+historical completion dates must be verified before they can count for a month.
+
+Checks:
+- `node --test scripts/test-driver-earnings.cjs`
+- `node scripts/test-driver-earnings-db.cjs` (session-local temporary tables only)
+
+## Security and payment integrity
+
+See [the release guide](docs/security-payment-integrity.md) for migration 013, production test-account protection, notification-worker configuration, the booking Idempotency-Key requirement and the admin payment-review workflow.
+
+## Release and customer completion
+
+Run `npm run check`, `npm run build`, `npm run test:smoke`, and `npm run test:restore` before release. The restore drill needs Docker and uses a disposable database. CI enforces these checks before deployment.
+
+See [release checks and recovery](docs/release-reliability.md) and [customer flows and paginated API contract](docs/customer-completion.md). Apply `014_list_pagination.sql` through the migration service on existing installations. Production PostgreSQL is no longer published on a host port; use the local Compose override only when local database access is needed.

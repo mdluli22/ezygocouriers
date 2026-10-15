@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { usePagedList } from "@/components/ui/useRemote";
+import ListControls from "@/components/ui/ListControls";
+import SearchField from "@/components/ui/SearchField";
+import { requestJson } from "@/lib/api/client";
 
 interface User {
   id: number;
@@ -16,21 +20,13 @@ interface User {
 const ROLE_FILTERS = ["all", "customer", "driver", "admin"] as const;
 
 export default function AdminUsersPage() {
-  const [users, setUsers]     = useState<User[]>([]);
   const [filter, setFilter]   = useState<typeof ROLE_FILTERS[number]>("all");
-  const [loading, setLoading] = useState(true);
   const [toast, setToast]     = useState({ msg: "", ok: true });
 
-  async function load(role: typeof ROLE_FILTERS[number]) {
-    setLoading(true);
-    const url = role === "all" ? "/api/admin/users" : `/api/admin/users?role=${role}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    setUsers(data.data ?? []);
-    setLoading(false);
-  }
-
-  useEffect(() => { load(filter); }, [filter]);
+  const [search, setSearch] = useState("");
+  const list = usePagedList<User>(`/api/admin/users?${filter === "all" ? "" : `role=${filter}`}&q=${encodeURIComponent(search)}`);
+  const users = list.items;
+  const { loading, reload: load } = list;
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -38,14 +34,15 @@ export default function AdminUsersPage() {
   }
 
   async function handleToggle(userId: number) {
-    const res = await fetch("/api/admin/users", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
-    });
-    const data = await res.json();
-    if (res.ok) { showToast("User status updated."); load(filter); }
-    else showToast(data.message ?? "Failed to update user.", false);
+    try {
+      await requestJson<{ message: string }>("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      });
+
+      showToast("User status updated."); load();
+    } catch (error) { showToast(error instanceof Error ? error.message : "Request failed.", false); }
   }
 
   const ROLE_COLORS: Record<string, string> = {
@@ -58,11 +55,13 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>Users</h1>
+        <h1 className="text-3xl font-black" style={{ color: "var(--color-link)" }}>Users</h1>
         <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
           View and manage all user accounts
         </p>
       </div>
+
+      <SearchField value={search} onChange={setSearch} label="Search users" placeholder="Customer name or email" />
 
       {/* Toast */}
       {toast.msg && (
@@ -97,12 +96,12 @@ export default function AdminUsersPage() {
       {/* Table */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-primary)" }} viewBox="0 0 24 24" fill="none">
+          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-link)" }} viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
         </div>
-      ) : users.length === 0 ? (
+      ) : list.error ? null : users.length === 0 ? (
         <div className="card text-center py-12 text-sm" style={{ color: "var(--color-text-muted)" }}>No users found.</div>
       ) : (
         <div className="card p-0 overflow-hidden">
@@ -157,6 +156,7 @@ export default function AdminUsersPage() {
           </table>
         </div>
       )}
+      <ListControls {...list} />
     </div>
   );
 }

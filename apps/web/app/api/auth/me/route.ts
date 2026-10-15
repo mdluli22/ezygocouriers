@@ -1,5 +1,3 @@
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
 import { getSession } from "@/lib/auth/session";
 import { query } from "@/lib/db/server";
 import {
@@ -10,7 +8,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-async function handleGET() {
+export async function GET() {
   try {
     // 1. Verify session
     const session = await getSession();
@@ -47,9 +45,7 @@ async function handleGET() {
 
     return successResponse("Authenticated.", user);
   } catch (error) {
-    logServerError("[GET /api/auth/me]", error);
+    console.error("[GET /api/auth/me]", error);
     return serverErrorResponse("Something went wrong.");
   }
 }
-
-export const GET = withApiRoute("/api/auth/me", handleGET);

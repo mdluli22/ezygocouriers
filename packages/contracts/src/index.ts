@@ -5,3 +5,5 @@ export * from "./admin";
 export * from "./schemas/index";
 
 export * from "./operations";
+
+export * from "./phone";

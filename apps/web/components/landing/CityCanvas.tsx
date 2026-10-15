@@ -3,24 +3,21 @@
 import { useEffect, useRef } from "react";
 
 interface CityCanvasProps {
-  /** bg colour the canvas fades into on all edges – must be an opaque hex/rgb */
-  fadeColor?: string;
   /** "dark" gives night city; "light" gives day city */
   theme?: "light" | "dark";
 }
 
 export default function CityCanvas({
-  fadeColor = "#0D2020",
   theme = "dark",
 }: CityCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef   = useRef<number>(0);
-  const propsRef  = useRef({ fadeColor, theme });
+  const propsRef  = useRef({ theme });
 
   // Keep props ref fresh without restarting the animation loop
   useEffect(() => {
-    propsRef.current = { fadeColor, theme };
-  }, [fadeColor, theme]);
+    propsRef.current = { theme };
+  }, [theme]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -333,30 +330,6 @@ export default function CityCanvas({
       ctx.restore();
     }
 
-    /** Stamp an edge-fade mask over the canvas so the city dissolves into bg */
-    function stampEdgeFade() {
-      const { fadeColor } = propsRef.current;
-
-      const bTop    = H * 0.30;
-      const bBottom = H * 0.38;
-      const bLeft   = W * 0.32;
-      const bRight  = W * 0.30;
-
-      const dirs: [CanvasGradient, number, number, number, number][] = [
-        [ctx.createLinearGradient(0, 0, 0, bTop),          0, 0, W, bTop],
-        [ctx.createLinearGradient(0, H, 0, H - bBottom),   0, H - bBottom, W, bBottom],
-        [ctx.createLinearGradient(0, 0, bLeft, 0),         0, 0, bLeft, H],
-        [ctx.createLinearGradient(W, 0, W - bRight, 0),    W - bRight, 0, bRight, H],
-      ];
-
-      dirs.forEach(([grad, rx, ry, rw, rh]) => {
-        grad.addColorStop(0, fadeColor);
-        grad.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(rx, ry, rw, rh);
-      });
-    }
-
     // ── Main animation loop ───────────────────────────────────────────
     function loop() {
       frame++;
@@ -389,9 +362,6 @@ export default function CityCanvas({
       });
 
       drawIsoScooter(pos.x, pos.y, pos.angle);
-
-      // ── Edge fade: city dissolves into hero background ────────────
-      stampEdgeFade();
 
       animRef.current = requestAnimationFrame(loop);
     }

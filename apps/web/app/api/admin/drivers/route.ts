@@ -1,5 +1,5 @@
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
+import { parseQuery } from "@/lib/api/validation";
+import { pageSchema, paginatedResponse } from "@/lib/api/pagination";
 import { getSession } from "@/lib/auth/session";
 import { getAdminDrivers, createDriver, toggleDriverStatus } from "@/lib/services/admin";
 import { hashPassword } from "@/lib/auth/password";
@@ -19,21 +19,23 @@ import {
 } from "@ezygo/contracts";
 import { parseJsonRequest } from "@/lib/api/validation";
 
-async function handleGET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
     if (session.role !== "admin") return forbiddenResponse();
 
-    const drivers = await getAdminDrivers();
-    return successResponse("Drivers fetched.", drivers);
+    const page = parseQuery(req.nextUrl.searchParams, pageSchema);
+    if (!page.success) return page.response;
+    const drivers = await getAdminDrivers(page.data);
+    return paginatedResponse("Drivers fetched.", drivers);
   } catch (error) {
-    logServerError("[GET /api/admin/drivers]", error);
+    console.error("[GET /api/admin/drivers]", error);
     return serverErrorResponse();
   }
 }
 
-async function handlePOST(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -66,7 +68,7 @@ async function handlePOST(req: NextRequest) {
       await sendAuthOtp({ to: normalizedEmail, otp, type: "email-verification" });
     } catch (emailError) {
       verificationEmailSent = false;
-      logServerError("[Driver verification email]", emailError);
+      console.error("[Driver verification email]", emailError);
     }
 
     return successResponse(
@@ -77,7 +79,7 @@ async function handlePOST(req: NextRequest) {
       201
     );
   } catch (error: unknown) {
-    logServerError("[POST /api/admin/drivers]", error);
+    console.error("[POST /api/admin/drivers]", error);
     if (error instanceof Error && error.message.includes("unique")) {
       return errorResponse("A user with this email already exists.", undefined, 409);
     }
@@ -85,7 +87,7 @@ async function handlePOST(req: NextRequest) {
   }
 }
 
-async function handlePATCH(req: NextRequest) {
+export async function PATCH(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -97,11 +99,7 @@ async function handlePATCH(req: NextRequest) {
     await toggleDriverStatus(parsed.data.driver_id);
     return successResponse("Driver status toggled.");
   } catch (error) {
-    logServerError("[PATCH /api/admin/drivers]", error);
+    console.error("[PATCH /api/admin/drivers]", error);
     return serverErrorResponse();
   }
 }
-
-export const GET = withApiRoute("/api/admin/drivers", handleGET);
-export const POST = withApiRoute("/api/admin/drivers", handlePOST);
-export const PATCH = withApiRoute("/api/admin/drivers", handlePATCH);

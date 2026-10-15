@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import EarningsPanel from "@/components/earnings/EarningsPanel";
+import { useState } from "react";
+import { usePagedList } from "@/components/ui/useRemote";
+import ListControls from "@/components/ui/ListControls";
+import SearchField from "@/components/ui/SearchField";
+import { requestJson } from "@/lib/api/client";
 
 interface Driver {
   id: number;
@@ -23,22 +28,15 @@ const EMPTY_FORM = {
 };
 
 export default function AdminDriversPage() {
-  const [drivers, setDrivers]   = useState<Driver[]>([]);
-  const [loading, setLoading]   = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm]         = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast]       = useState({ msg: "", ok: true });
 
-  async function load() {
-    setLoading(true);
-    const res = await fetch("/api/admin/drivers");
-    const data = await res.json();
-    setDrivers(data.data ?? []);
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, []);
+  const [search, setSearch] = useState("");
+  const list = usePagedList<Driver>(`/api/admin/drivers?q=${encodeURIComponent(search)}`);
+  const drivers = list.items;
+  const { loading, reload: load } = list;
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -46,33 +44,34 @@ export default function AdminDriversPage() {
   }
 
   async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    const res = await fetch("/api/admin/drivers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-    setSubmitting(false);
-    if (res.ok) {
-      showToast("Driver account created!");
-      setShowModal(false);
-      setForm(EMPTY_FORM);
-      load();
-    } else {
-      showToast(data.message ?? "Failed to create driver.", false);
-    }
+    try {
+      e.preventDefault();
+      setSubmitting(true);
+      await requestJson<{ message: string }>("/api/admin/drivers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      setSubmitting(false);
+      {
+        showToast("Driver account created!");
+        setShowModal(false);
+        setForm(EMPTY_FORM);
+        load();
+      }
+    } catch (error) { showToast(error instanceof Error ? error.message : "Request failed.", false); } finally { setSubmitting(false); }
   }
 
   async function handleToggle(driverId: number) {
-    const res = await fetch("/api/admin/drivers", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ driver_id: driverId }),
-    });
-    if (res.ok) { showToast("Status updated."); load(); }
-    else showToast("Failed to toggle status.", false);
+    try {
+      await requestJson<{ message: string }>("/api/admin/drivers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ driver_id: driverId }),
+      });
+      showToast("Status updated."); load();
+    } catch (error) { showToast(error instanceof Error ? error.message : "Request failed.", false); }
   }
 
   return (
@@ -80,7 +79,7 @@ export default function AdminDriversPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>Drivers</h1>
+          <h1 className="text-3xl font-black" style={{ color: "var(--color-link)" }}>Drivers</h1>
           <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
             Manage driver accounts and availability
           </p>
@@ -89,6 +88,8 @@ export default function AdminDriversPage() {
           + Create Driver
         </button>
       </div>
+
+      <SearchField value={search} onChange={setSearch} label="Search drivers" placeholder="Driver name, email or vehicle" />
 
       {/* Toast */}
       {toast.msg && (
@@ -103,15 +104,17 @@ export default function AdminDriversPage() {
         </div>
       )}
 
+      <EarningsPanel admin />
+
       {/* Driver Cards */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-primary)" }} viewBox="0 0 24 24" fill="none">
+          <svg className="animate-spin w-8 h-8" style={{ color: "var(--color-link)" }} viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
         </div>
-      ) : drivers.length === 0 ? (
+      ) : list.error ? null : drivers.length === 0 ? (
         <div className="card text-center py-12 text-sm" style={{ color: "var(--color-text-muted)" }}>No drivers yet.</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -164,7 +167,7 @@ export default function AdminDriversPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgb(0 0 0 / 0.5)" }}>
           <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto" style={{ backgroundColor: "var(--color-bg)" }}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-black" style={{ color: "var(--color-primary)" }}>Create Driver Account</h2>
+              <h2 className="text-lg font-black" style={{ color: "var(--color-link)" }}>Create Driver Account</h2>
               <button onClick={() => setShowModal(false)} style={{ color: "var(--color-text-muted)" }}>✕</button>
             </div>
 
@@ -204,6 +207,7 @@ export default function AdminDriversPage() {
           </div>
         </div>
       )}
+      <ListControls {...list} />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
+import RememberSession from "@/components/auth/RememberSession";
 import { useRouter, useSearchParams } from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
 import {
@@ -29,16 +30,11 @@ function AdminLoginForm() {
 
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState(searchParams.get("error") === "unauthorized" ? "You must be logged in as admin to access that page." : "");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-
-  useEffect(() => {
-    if (searchParams.get("error") === "unauthorized") {
-      setServerError("You must be logged in as an admin to access that page.");
-    }
-  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,7 +46,7 @@ function AdminLoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await res.json();
@@ -167,7 +163,7 @@ function AdminLoginForm() {
               </svg>
               Restricted
             </div>
-            <h1 className="text-3xl font-black tracking-tight" style={{ color: "var(--color-primary)" }}>
+            <h1 className="text-3xl font-black tracking-tight" style={{ color: "var(--color-link)" }}>
               Admin sign in
             </h1>
             <p className="mt-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
@@ -175,7 +171,7 @@ function AdminLoginForm() {
               <Link
                 href="/auth/login"
                 className="font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity"
-                style={{ color: "var(--color-primary)" }}
+                style={{ color: "var(--color-link)" }}
               >
                 Customer login →
               </Link>
@@ -219,7 +215,10 @@ function AdminLoginForm() {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="label">Password</label>
+              <div className="flex items-center justify-between gap-3">
+                <label htmlFor="password" className="label">Password</label>
+                <Link href="/auth/forgot-password" className="text-sm underline" style={{ color: "var(--color-link)" }}>Forgot password?</Link>
+              </div>
               <div className="relative">
                 <input
                   id="password"
@@ -252,6 +251,8 @@ function AdminLoginForm() {
               </div>
               {fieldErrors.password && <p className="error-text">{fieldErrors.password}</p>}
             </div>
+
+            <RememberSession checked={rememberMe} onChange={setRememberMe} disabled={loading} />
 
             {/* Submit */}
             <button

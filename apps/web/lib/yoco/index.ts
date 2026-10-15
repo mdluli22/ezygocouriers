@@ -53,6 +53,8 @@ export async function createYocoCheckout(params: {
   amount: number;
   currency: string;
 }): Promise<YocoCheckout> {
+  const existing = await query("SELECT checkout_response FROM payments WHERE id=$1 AND provider='yoco'", [params.paymentId]);
+  if (existing.rows[0]?.checkout_response) return existing.rows[0].checkout_response as YocoCheckout;
   const config = getYocoConfig();
   const amountInCents = Math.round(params.amount * 100);
 
@@ -65,6 +67,7 @@ export async function createYocoCheckout(params: {
 
   const response = await fetch(YOCO_CHECKOUT_URL, {
     method: "POST",
+    signal: AbortSignal.timeout(12000),
     headers: {
       Authorization: `Bearer ${config.secretKey}`,
       "Content-Type": "application/json",
@@ -96,9 +99,9 @@ export async function createYocoCheckout(params: {
 
   await query(
     `UPDATE payments
-     SET provider_checkout_id = $1, updated_at = NOW()
-     WHERE id = $2 AND provider = 'yoco' AND status = 'pending'`,
-    [body.id, params.paymentId]
+     SET provider_checkout_id = COALESCE(provider_checkout_id,$1), checkout_response=COALESCE(checkout_response,$3::jsonb), updated_at = NOW()
+     WHERE id = $2 AND provider = 'yoco'`,
+    [body.id, params.paymentId, JSON.stringify(body)]
   );
 
   return body as YocoCheckout;

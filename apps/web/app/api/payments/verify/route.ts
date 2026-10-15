@@ -19,9 +19,9 @@ export const POST = withApiRoute("/api/payments/verify", async (req: NextRequest
   if (parsed.data.token && !returned) return errorResponse("Invalid or expired payment return.");
   const id = returned?.deliveryId ?? parsed.data.delivery_id;
   if (!id || (returned && parsed.data.delivery_id && id !== parsed.data.delivery_id)) return errorResponse("Invalid delivery.");
-  const result = await query<{ id: number; delivery_id: number; status: string; provider_checkout_id: string; amount: string; currency: string }>(
-    `SELECT p.id, p.delivery_id, p.status, p.provider_checkout_id, p.amount, p.currency FROM payments p JOIN deliveries d ON d.id=p.delivery_id
-     WHERE d.id=$1 AND d.customer_id=$2 AND p.provider='paystack' ORDER BY p.id DESC LIMIT 1`, [id, session.userId]);
+  const result = await query<{ id: number; delivery_id: number; status: string; provider: string; provider_checkout_id: string; amount: string; currency: string }>(
+    `SELECT p.id, p.delivery_id, p.status, p.provider, p.provider_checkout_id, p.amount, p.currency FROM payments p JOIN deliveries d ON d.id=p.delivery_id
+     WHERE d.id=$1 AND d.customer_id=$2 AND p.provider IN ('paystack','yoco') ORDER BY p.id DESC LIMIT 1`, [id, session.userId]);
   const payment = result.rows[0];
   if (!payment) {
     const delivery = await query<{ status: string }>("SELECT status FROM deliveries WHERE id=$1 AND customer_id=$2", [id, session.userId]);
@@ -29,7 +29,7 @@ export const POST = withApiRoute("/api/payments/verify", async (req: NextRequest
     return errorResponse("Payment not found.", undefined, 404);
   }
   if (returned && returned.reference !== payment.provider_checkout_id) return errorResponse("Payment return does not match the current attempt.", undefined, 409);
-  if (payment.status === "pending" && payment.provider_checkout_id) {
+  if (payment.provider === "paystack" && payment.status === "pending" && payment.provider_checkout_id) {
     const transaction = await verifyPaystackTransaction(payment.provider_checkout_id);
     if (paystackTransactionMatches({ transaction, reference: payment.provider_checkout_id, amount: Number(payment.amount), currency: payment.currency })) {
       await completePayment({ paymentId: payment.id, deliveryId: id, provider: "paystack", providerPaymentId: String(transaction.id) });

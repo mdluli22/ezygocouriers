@@ -1,6 +1,10 @@
-import { createHmac } from "node:crypto";
-import { ApiProblem } from "@/lib/api/errors";
-import { logServerError } from "@/lib/api/context";
+import { defaultPage, pageWhere, pageResult, type PageQuery } from "@/lib/api/pagination";
+import { BusinessError } from "@/lib/api/errors";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { enqueueNotification, enqueueDeliveryUpdate } from "./notification-outbox";
+import { verifyRouteDistance } from "@/lib/earnings/route-distance";
+import { recordCompletion } from "@/lib/earnings/service";
+import { deliveryPayCents } from "@/lib/earnings/calculation";
 import { query, getClient } from "@/lib/db/server";
 import {
   DeliveryStatus,
@@ -9,14 +13,16 @@ import {
 } from "@ezygo/contracts";
 import { autoAssignNextPaidDeliveryToDriver } from "./driver-assignment";
 import { isDeliveryPinFormat, verifyDeliveryPin } from "@/lib/delivery-pin";
-import { sendDeliveryCompleted } from "@/lib/email/smtp";
 import { sendPushToUser } from "@/lib/services/push-notifications";
 
 /**
  * Get all deliveries assigned to a driver (via their user ID).
  */
-export async function getDriverDeliveries(driverUserId: number) {
-  const result = await query(
+export async function getDriverDeliveries(driverUserId: number, page: PageQuery = defaultPage) {
+  const params: unknown[] = [driverUserId];
+  const extra = pageWhere(page, params, "d.id", "concat_ws(' ',d.tracking_number,d.recipient_name,pa.street_address,pa.city,da.street_address,da.city)", "d.status");
+  params.push(page.limit + 1);
+  const result = await query<{ id: number; [key: string]: unknown }>(
     `SELECT
        d.id,
        d.tracking_number,
@@ -34,6 +40,9 @@ export async function getDriverDeliveries(driverUserId: number) {
        d.scheduled_time,
        d.created_at,
        d.updated_at,
+       COALESCE(e.distance_meters,d.route_distance_meters) AS distance_meters,
+       e.amount_cents AS earning_cents,
+       e.completed_at,
        pa.street_address  AS pickup_street,
        pa.suburb          AS pickup_suburb,
        pa.city            AS pickup_city,
@@ -45,15 +54,16 @@ export async function getDriverDeliveries(driverUserId: number) {
        q.amount           AS quote_amount,
        q.currency         AS quote_currency
      FROM deliveries d
+     LEFT JOIN driver_delivery_earnings e ON e.delivery_id=d.id
      JOIN drivers dr   ON dr.id = d.assigned_driver_id
      JOIN addresses pa ON pa.id = d.pickup_address_id
      JOIN addresses da ON da.id = d.dropoff_address_id
      LEFT JOIN quotes q ON q.id = d.quote_id
-     WHERE dr.user_id = $1
-     ORDER BY d.updated_at DESC`,
-    [driverUserId]
+     WHERE dr.user_id = $1 ${extra}
+     ORDER BY d.id DESC LIMIT $${params.length}`,
+    params
   );
-  return result.rows;
+  return pageResult(result.rows.map(row => ({...row, estimated_earning_cents: deliveryPayCents(row.distance_meters as number | null)})), page);
 }
 
 /**
@@ -66,31 +76,13 @@ export async function getDriverDeliveryById(
 ) {
   const result = await query(
     `SELECT
-       d.id,
-       d.customer_id,
-       d.assigned_driver_id,
-       d.pickup_address_id,
-       d.dropoff_address_id,
-       d.quote_id,
-       d.pickup_contact_name,
-       d.pickup_contact_phone,
-       d.recipient_name,
-       d.recipient_phone,
-       d.recipient_email,
-       d.parcel_description,
-       d.special_instructions,
-       d.tracking_number,
-       d.status,
-       d.package_type,
-       d.package_category,
-       d.fragile,
-       d.require_pin,
-       d.pin_verified_at,
-       d.scheduled_time,
-       d.delivery_pin_sent_at,
-       d.delivery_completed_email_sent_at,
-       d.created_at,
-       d.updated_at,
+       d.id,d.customer_id,d.assigned_driver_id,d.pickup_address_id,d.dropoff_address_id,d.quote_id,
+       d.pickup_contact_name,d.pickup_contact_phone,d.recipient_name,d.recipient_phone,d.recipient_email,
+       d.parcel_description,d.special_instructions,d.tracking_number,d.status,d.created_at,d.updated_at,
+       d.package_type,d.package_category,d.fragile,d.require_pin,d.scheduled_time,d.delivery_pin_sent_at,d.pin_verified_at,
+       COALESCE(e.distance_meters,d.route_distance_meters) AS distance_meters,
+       e.amount_cents AS earning_cents,
+       e.completed_at,
        pa.street_address  AS pickup_street,
        pa.suburb          AS pickup_suburb,
        pa.city            AS pickup_city,
@@ -108,6 +100,7 @@ export async function getDriverDeliveryById(
        cu.full_name       AS customer_name,
        cu.phone           AS customer_phone
      FROM deliveries d
+     LEFT JOIN driver_delivery_earnings e ON e.delivery_id=d.id
      JOIN drivers dr   ON dr.id = d.assigned_driver_id
      JOIN addresses pa ON pa.id = d.pickup_address_id
      JOIN addresses da ON da.id = d.dropoff_address_id
@@ -117,7 +110,8 @@ export async function getDriverDeliveryById(
      LIMIT 1`,
     [deliveryId, driverUserId]
   );
-  return result.rows[0] ?? null;
+  const row=result.rows[0];
+  return row ? {...row,estimated_earning_cents:deliveryPayCents(row.distance_meters)} : null;
 }
 
 /**
@@ -129,31 +123,24 @@ export async function updateDeliveryStatus(
   driverUserId: number,
   newStatus: DeliveryStatus,
   note?: string,
-  pin?: string,
-  operationId?: string
+  pin?: string
 ): Promise<void> {
+  await consumeRateLimit(`driver-status:${driverUserId}`,60,60);
+  if (newStatus === "delivered") await consumeRateLimit(`delivery-pin:${deliveryId}:${driverUserId}`,5,300);
+  let meters: number | null = null;
+  if (newStatus === "delivered") {
+    const assigned = await query("SELECT d.id FROM deliveries d JOIN drivers dr ON dr.id=d.assigned_driver_id WHERE d.id=$1 AND dr.user_id=$2",[deliveryId,driverUserId]);
+    if (!assigned.rowCount) throw new BusinessError("Delivery not found or not assigned to you.");
+    meters = await verifyRouteDistance(deliveryId);
+  }
   const client = await getClient();
   try {
     await client.query("BEGIN");
 
-    let payloadHash: string | undefined;
-    if (operationId) {
-      const secret = process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET;
-      if (!secret) throw new ApiProblem("SERVICE_UNAVAILABLE", "Request signing is unavailable.", 503);
-      payloadHash = createHmac("sha256", secret).update(JSON.stringify([deliveryId, newStatus, note ?? "", pin ?? ""])).digest("hex");
-      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`driver-operation:${driverUserId}:${operationId}`]);
-      const receipt = await client.query<{ payload_hash: string }>("SELECT payload_hash FROM driver_operation_receipts WHERE driver_user_id=$1 AND operation_id=$2", [driverUserId, operationId]);
-      if (receipt.rows[0]) {
-        if (receipt.rows[0].payload_hash !== payloadHash) throw new ApiProblem("CONFLICT", "Operation ID was already used for different input.", 409);
-        await client.query("COMMIT");
-        return;
-      }
-    }
     const check = await client.query<{
       status: string;
       id: number;
       driver_id: number;
-      driver_status: string;
       require_pin: boolean;
       delivery_pin_hash: string | null;
       tracking_number: string;
@@ -163,34 +150,37 @@ export async function updateDeliveryStatus(
       customer_id: number;
     }>(
       `SELECT d.id, d.status, d.require_pin, d.delivery_pin_hash,
-              d.tracking_number, d.recipient_name, dr.id AS driver_id, dr.status AS driver_status,
+              d.tracking_number, d.recipient_name, dr.id AS driver_id,
               cu.email AS customer_email, cu.full_name AS customer_name,
               cu.id AS customer_id
        FROM deliveries d
        JOIN drivers dr ON dr.id = d.assigned_driver_id
        JOIN users cu ON cu.id = d.customer_id
-       WHERE d.id = $1 AND dr.user_id = $2
+       WHERE d.id = $1 AND dr.user_id = $2 AND dr.status = 'active'
        FOR UPDATE`,
       [deliveryId, driverUserId]
     );
 
     const delivery = check.rows[0];
-    if (!delivery) throw new ApiProblem("NOT_FOUND", "Delivery not found or not assigned to you.", 404);
-    if (delivery.driver_status !== "active") throw new ApiProblem("FORBIDDEN", "An active driver profile is required.", 403);
+    if (!delivery) throw new BusinessError("Delivery not found or not assigned to you.");
+    if (newStatus !== "cancelled") {
+      const settled = await client.query("SELECT id FROM payments WHERE delivery_id=$1 AND status='complete'", [deliveryId]);
+      if (!settled.rowCount) throw new BusinessError("A verified payment is required before fulfilment.");
+    }
     if (!isValidTransition(delivery.status as DeliveryStatus, newStatus)) {
-      throw new ApiProblem("INVALID_TRANSITION", `Cannot transition from '${delivery.status}' to '${newStatus}'.`);
+      throw new BusinessError(`Cannot transition from '${delivery.status}' to '${newStatus}'.`);
     }
 
     let pinVerified = false;
     if (newStatus === "delivered" && delivery.require_pin) {
       if (!delivery.delivery_pin_hash) {
-        throw new ApiProblem("PIN_NOT_ISSUED", "Delivery PIN has not been issued to the recipient yet.");
+        throw new BusinessError("Delivery PIN has not been issued to the recipient yet.");
       }
       if (!pin || !isDeliveryPinFormat(pin)) {
-        throw new ApiProblem("PIN_REQUIRED", "Enter the recipient's six-digit delivery PIN.");
+        throw new BusinessError("Enter the recipient's six-digit delivery PIN.");
       }
       pinVerified = await verifyDeliveryPin(pin, delivery.delivery_pin_hash);
-      if (!pinVerified) throw new ApiProblem("PIN_INVALID", "Incorrect delivery PIN. Ask the recipient to check their email.");
+      if (!pinVerified) throw new BusinessError("Incorrect delivery PIN. Ask the recipient to check their email.");
     }
 
     await client.query(
@@ -208,56 +198,32 @@ export async function updateDeliveryStatus(
       [deliveryId, newStatus, note || null, driverUserId]
     );
 
-    if (operationId) await client.query("INSERT INTO driver_operation_receipts (driver_user_id, operation_id, payload_hash) VALUES ($1,$2,$3)", [driverUserId, operationId, payloadHash]);
-    if (["delivered", "failed", "cancelled"].includes(newStatus)) {
-      await client.query("UPDATE drivers SET current_latitude=NULL, current_longitude=NULL, location_updated_at=NULL, location_accuracy=NULL WHERE id=$1", [delivery.driver_id]);
+    if (newStatus === "delivered") await recordCompletion(client,deliveryId,delivery.driver_id,meters);
+
+    if (newStatus === "delivered") await enqueueNotification(client, {
+      key:`completed:${deliveryId}`,kind:"completed_email",deliveryId,
+      payload:{to:delivery.customer_email,customerName:delivery.customer_name,trackingNumber:delivery.tracking_number,recipientName:delivery.recipient_name,deliveryId,deliveredAt:new Date().toISOString()}
+    });
+    if (newStatus === "cancelled") {
+      await client.query("UPDATE notification_outbox SET status='cancelled',encrypted_payload=NULL WHERE delivery_id=$1 AND status IN ('pending','failed')", [deliveryId]);
+      await enqueueDeliveryUpdate(client, deliveryId, "cancelled_email");
+      const { queuePaymentReview } = await import("./payment-reviews");
+      const paid = await client.query("SELECT id,provider_payment_id FROM payments WHERE delivery_id=$1 AND status='complete'", [deliveryId]);
+      for (const payment of paid.rows) await queuePaymentReview(client,payment.id,payment.provider_payment_id || `legacy-${payment.id}`,"Driver cancelled a paid delivery");
     }
+    await sendPushToUser(delivery.customer_id, {
+      title: `Delivery ${STATUS_LABELS[newStatus].toLowerCase()}`,
+      body: `${delivery.tracking_number} is now ${STATUS_LABELS[newStatus].toLowerCase()}.`,
+      url: `/dashboard/tracking/${deliveryId}`,tag: `delivery-${deliveryId}`,
+    },client);
     await client.query("COMMIT");
-
-    try {
-      await sendPushToUser(delivery.customer_id, {
-        title: `Delivery ${STATUS_LABELS[newStatus].toLowerCase()}`,
-        body: `${delivery.tracking_number} is now ${STATUS_LABELS[newStatus].toLowerCase()}.`,
-        url: `/dashboard/tracking/${deliveryId}`,
-        tag: `delivery-${deliveryId}`,
-      });
-    } catch (error) {
-      logServerError("[Customer status push] Delivery failed", {
-        deliveryId,
-        error,
-      });
-    }
-
-    if (newStatus === "delivered") {
-      try {
-        await sendDeliveryCompleted({
-          to: delivery.customer_email,
-          customerName: delivery.customer_name,
-          trackingNumber: delivery.tracking_number,
-          recipientName: delivery.recipient_name,
-        });
-        await query(
-          `UPDATE deliveries
-           SET delivery_completed_email_sent_at = NOW(), updated_at = NOW()
-           WHERE id = $1 AND delivery_completed_email_sent_at IS NULL`,
-          [deliveryId]
-        );
-      } catch (error) {
-        // Delivery completion remains authoritative even if the notification
-        // provider is temporarily unavailable.
-        logServerError("[Delivery completed email] Delivery failed", {
-          deliveryId,
-          error,
-        });
-      }
-    }
 
     if (["delivered", "failed", "cancelled"].includes(newStatus)) {
       try {
         await autoAssignNextPaidDeliveryToDriver(delivery.driver_id);
       } catch (error) {
         // The status update is complete; location heartbeats retry the queue.
-        logServerError("[Automatic delivery queue assignment]", {
+        console.error("[Automatic delivery queue assignment]", {
           driverId: delivery.driver_id,
           error,
         });

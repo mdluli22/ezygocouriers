@@ -1,5 +1,3 @@
-import { logEvent, logServerError } from "@/lib/api/context";
-import "server-only";
 import { Pool, QueryResultRow } from 'pg';
 
 const pool = new Pool({
@@ -8,15 +6,16 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true, ...(process.env.DB_SSL_CA ? { ca: process.env.DB_SSL_CA.replace(/\\n/g, '\n') } : {}) } : false,
   max: 20,
+  statement_timeout: 5000,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 2_000,
 });
 
 pool.on('error', (err) => {
-  logServerError('db.idle_client_error', err);
-  process.exit(-1);
+  console.error('Unexpected error on idle PostgreSQL client', err);
+  // The pool replaces broken idle connections; readiness reports outages.
 });
 
 export async function query<T extends QueryResultRow = QueryResultRow>(
@@ -26,7 +25,7 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   const start = Date.now();
   const result = await pool.query<T>(text, params);
   const duration = Date.now() - start;
-  logEvent('db.query', { duration_ms: duration, rows: result.rowCount });
+  console.log('Executed query', { text, duration, rows: result.rowCount });
   return result;
 }
 

@@ -1,6 +1,10 @@
+import { productionAccountAllowed } from "@/lib/security/seed-account-protection";
+import { guardAuthRequest } from "@/lib/security/auth-request";
+import { driverIsActive } from "@/lib/security/driver-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 import { auth } from "@/lib/auth/auth";
+import { applyAuthCookies } from "@/lib/auth/response";
 
 // ─── Route Definitions ────────────────────────────────────────────────────────
 
@@ -54,6 +58,8 @@ function nextWithPathname(req: NextRequest) {
 // ─── Proxy ────────────────────────────────────────────────────────────────────
 
 export async function proxy(req: NextRequest) {
+  const guarded = await guardAuthRequest(req);
+  if (guarded) return guarded;
   const { pathname } = req.nextUrl;
   const isAuthRoute = matchesRoute(pathname, AUTH_ROUTES);
   const isProtectedRoute =
@@ -67,9 +73,19 @@ export async function proxy(req: NextRequest) {
   }
 
   const hasSessionCookie = getSessionCookie(req, { cookiePrefix: "ezygo" });
-  const session = hasSessionCookie
-    ? await auth.api.getSession({ headers: req.headers })
+  const resolved = hasSessionCookie
+    ? await auth.api.getSession({
+        headers: req.headers,
+        query: { disableCookieCache: true },
+        returnHeaders: true,
+      })
     : null;
+  // Forward renewal and expired-cookie cleanup on redirects as well as pages.
+  const finish = (response: NextResponse) =>
+    applyAuthCookies(response, resolved?.headers ?? new Headers());
+  let session = resolved?.response ?? null;
+  if (session && !await productionAccountAllowed(Number(session.user.id))) session = null;
+  if (session?.user.role === "driver" && !await driverIsActive(Number(session.user.id))) session = null;
   const role =
     session?.user.isActive === true && session.user.emailVerified === true
       ? session.user.role
@@ -79,9 +95,9 @@ export async function proxy(req: NextRequest) {
   if (isAuthRoute) {
     if (role) {
       const home = getRoleHome(role, req);
-      return NextResponse.redirect(new URL(home, req.url));
+      return finish(NextResponse.redirect(new URL(home, req.url)));
     }
-    return nextWithPathname(req);  // still inject x-pathname so layouts can detect the login page
+    return finish(nextWithPathname(req));  // still inject x-pathname so layouts can detect the login page
   }
 
   // ── 2. Admin-only routes ─────────────────────────────────────────────────────
@@ -89,13 +105,13 @@ export async function proxy(req: NextRequest) {
     if (!role) {
       const loginUrl = new URL("/admin/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
+      return finish(NextResponse.redirect(loginUrl));
     }
     if (role !== "admin") {
       const home = getRoleHome(role, req);
-      return NextResponse.redirect(new URL(home, req.url));
+      return finish(NextResponse.redirect(new URL(home, req.url)));
     }
-    return nextWithPathname(req);
+    return finish(nextWithPathname(req));
   }
 
   // ── 3. Driver-only routes ────────────────────────────────────────────────────
@@ -103,13 +119,13 @@ export async function proxy(req: NextRequest) {
     if (!role) {
       const loginUrl = new URL("/driver/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
+      return finish(NextResponse.redirect(loginUrl));
     }
     if (role !== "driver") {
       const home = getRoleHome(role, req);
-      return NextResponse.redirect(new URL(home, req.url));
+      return finish(NextResponse.redirect(new URL(home, req.url)));
     }
-    return nextWithPathname(req);
+    return finish(nextWithPathname(req));
   }
 
   // ── 4. General protected routes (any authenticated role) ────────────────────
@@ -117,13 +133,13 @@ export async function proxy(req: NextRequest) {
     if (!role) {
       const loginUrl = new URL("/auth/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
+      return finish(NextResponse.redirect(loginUrl));
     }
-    return nextWithPathname(req);
+    return finish(nextWithPathname(req));
   }
 
   // ── 5. Everything else is public ─────────────────────────────────────────────
-  return nextWithPathname(req);
+  return finish(nextWithPathname(req));
 }
 
 // ─── Matcher ──────────────────────────────────────────────────────────────────

@@ -1,5 +1,3 @@
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { getDriverDeliveryById } from "@/lib/services/drivers";
@@ -17,7 +15,7 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-async function handleGET(_req: NextRequest, { params }: RouteParams) {
+export async function GET(_req: NextRequest, { params }: RouteParams) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -34,9 +32,7 @@ async function handleGET(_req: NextRequest, { params }: RouteParams) {
     const logs = await getDeliveryStatusLogs(deliveryId);
     return successResponse("Delivery fetched.", { delivery, logs });
   } catch (error) {
-    logServerError("[GET /api/driver/deliveries/[id]]", error);
+    console.error("[GET /api/driver/deliveries/[id]]", error);
     return serverErrorResponse();
   }
 }
-
-export const GET = withApiRoute("/api/driver/deliveries/[id]", handleGET);

@@ -26,7 +26,7 @@ export default function NewDelivery() {
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
   const [uncertain, setUncertain] = useState(false);
-  function input() { return { ...form, pickup_address: pickup ? { ...pickup, meeting_option: "meet_at_curb" } : undefined, dropoff_address: dropoff, payment_method: "paystack" }; }
+  function input() { return { ...form, pickup_address: pickup ? { ...pickup, meeting_option: "meet_at_curb" } : undefined, dropoff_address: dropoff, payment_method: "yoco" }; }
   function validate(current: number): CreateDeliveryRequest | undefined {
     const result = createDeliveryRequestSchema.safeParse(input());
     const relevant = result.success ? [] : result.error.issues.filter(i => current === 3 || (current === 1 ? ["pickup_address", "dropoff_address", "pickup_contact_name", "pickup_contact_phone", "recipient_name", "recipient_phone"].includes(String(i.path[0])) : !["pickup_address", "dropoff_address", "pickup_contact_name", "pickup_contact_phone", "recipient_name", "recipient_phone"].includes(String(i.path[0]))));

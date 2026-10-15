@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
+import { PricingProvider } from "@/components/PublishedPrice";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 
-const inter = Inter({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-body",
   display: "swap",
 });
 
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
     template: "%s | EzyGo",
   },
   description:
-    "EzyGo is a fast, reliable, and affordable courier and parcel delivery service across Cape Town.",
+    "Book reliable parcel delivery across Cape Town with EzyGo Couriers. Arrange a pickup, pay securely, and track your delivery online.",
   keywords: ["courier", "delivery", "parcel", "Cape Town", "logistics"],
   authors: [{ name: "EzyGo" }],
   icons: {
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "EzyGo",
-    description: "Send parcels across Cape Town with ease.",
+    description: "Book reliable parcel delivery across Cape Town with EzyGo Couriers. Arrange a pickup, pay securely, and track your delivery online.",
     type: "website",
   },
 };
@@ -62,12 +63,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: 'document.documentElement.classList.toggle("dark", window.matchMedia("(prefers-color-scheme: dark)").matches);' }} />
+      </head>
       <body
-        className={`${inter.variable} font-sans antialiased transition-colors duration-300`}
+        className={`${dmSans.variable} font-sans antialiased transition-colors duration-300`}
         style={{ backgroundColor: "var(--color-bg)", color: "var(--color-text-primary)" }}
       >
         <ThemeProvider>
-          {children}
+          <PricingProvider>{children}</PricingProvider>
         </ThemeProvider>
         <ServiceWorkerRegistration />
       </body>

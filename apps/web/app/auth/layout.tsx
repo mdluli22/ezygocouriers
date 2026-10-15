@@ -1,4 +1,6 @@
+import PublishedPrice from "@/components/PublishedPrice";
 import type { Metadata } from "next";
+import AuthLayoutSwitch from "@/components/auth/AuthLayoutSwitch";
 import BrandLogo from "@/components/BrandLogo";
 
 export const metadata: Metadata = {
@@ -11,6 +13,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
+    <AuthLayoutSwitch content={children}>
     <div className="min-h-screen flex">
       {/* ── Left Brand Panel ── */}
       <div
@@ -59,7 +62,7 @@ export default function AuthLayout({
               <span style={{ color: "var(--color-accent)" }}>confidence.</span>
             </h2>
             <p className="mt-4 text-lg opacity-75 text-white leading-relaxed max-w-sm">
-              Fast, reliable courier delivery across South Africa. Flat R99 for
+              Fast, reliable courier delivery across South Africa. Flat <PublishedPrice /> for
               every delivery, no surprises.
             </p>
           </div>
@@ -67,7 +70,7 @@ export default function AuthLayout({
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4">
             {[
-              { value: "R99", label: "Flat delivery fee" },
+              { value: <PublishedPrice />, label: "Flat delivery fee" },
               { value: "Real-time", label: "Live tracking" },
               // { value: "3 roles", label: "Customer · Driver · Admin" },
               // { value: "Secure", label: "Better Auth + Google" },
@@ -113,5 +116,6 @@ export default function AuthLayout({
         </div>
       </div>
     </div>
+    </AuthLayoutSwitch>
   );
 }

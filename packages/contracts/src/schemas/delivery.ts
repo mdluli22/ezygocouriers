@@ -77,7 +77,7 @@ export const createDeliverySchema = z
 
 export const createDeliveryRequestSchema = z.intersection(
   createDeliverySchema,
-  z.object({ payment_method: z.literal("paystack") })
+  z.object({ payment_method: z.literal("yoco") })
 );
 
 export const deliveryIdParamSchema = z.coerce.number().int().positive();

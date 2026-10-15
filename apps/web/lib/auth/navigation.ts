@@ -1,7 +1,5 @@
 "use client";
 
-import { apiClient } from "@/lib/api/client";
-
 /**
  * Authentication changes affect server layouts and proxy decisions. A document
  * navigation guarantees the next request is made with the new cookie state and
@@ -12,18 +10,21 @@ export function replaceAfterAuth(destination: string) {
 }
 
 export function safeInternalRedirect(candidate: string | null, fallback: string) {
-  return candidate?.startsWith("/") && !candidate.startsWith("//")
+  return candidate?.startsWith("/") && !candidate.startsWith("//") && !/[\\\x00-\x20]/.test(candidate)
     ? candidate
     : fallback;
 }
 
 export async function signOutSession() {
-  await apiClient.request<null>("/api/auth/logout", {
+  const response = await fetch("/api/auth/logout", {
     method: "POST",
     cache: "no-store",
     credentials: "same-origin",
   });
 
+  if (!response.ok) {
+    throw new Error("Unable to sign out");
+  }
 }
 
 export async function signOutAndRedirect(destination: string) {

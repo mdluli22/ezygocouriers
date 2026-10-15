@@ -1,5 +1,3 @@
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import {
@@ -11,14 +9,15 @@ import { toNextJsHandler } from "better-auth/next-js";
 
 const handlers = toNextJsHandler(auth);
 
-const handleGET = handlers.GET;
+export const GET = handlers.GET;
 
-async function handlePOST(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const sendsVerificationOtp = request.nextUrl.pathname.endsWith(
     "/email-otp/send-verification-otp"
   );
 
-  if (sendsVerificationOtp) {
+  const sendsPasswordReset = request.nextUrl.pathname.endsWith("/request-password-reset");
+  if (sendsVerificationOtp || sendsPasswordReset) {
     if (!isSmtpConfigured()) {
       return NextResponse.json(
         {
@@ -32,7 +31,7 @@ async function handlePOST(request: NextRequest) {
     try {
       await verifySmtpConnection();
     } catch (emailError) {
-      logServerError("[Verification OTP SMTP preflight]", emailError);
+      console.error("[Verification OTP SMTP preflight]", emailError);
       return NextResponse.json(
         {
           code: "SMTP_UNAVAILABLE",
@@ -44,6 +43,7 @@ async function handlePOST(request: NextRequest) {
     }
     const delivery = await captureSmtpDelivery(() => handlers.POST(request));
     if (delivery.failure) {
+      if (sendsPasswordReset) return NextResponse.json({ message: "Email delivery failed. Please try again later." }, { status: 503 });
       const recipientRejected =
         delivery.failure.code === "EENVELOPE" ||
         delivery.failure.responseCode === 550;
@@ -65,6 +65,3 @@ async function handlePOST(request: NextRequest) {
 
   return handlers.POST(request);
 }
-
-export const POST = withApiRoute("/api/auth/[...all]", handlePOST);
-export const GET = withApiRoute("/api/auth/[...all]", handleGET);

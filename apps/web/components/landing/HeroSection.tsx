@@ -1,5 +1,8 @@
 "use client";
 
+import { createQuoteDraft, BOOKING_DRAFT_KEY } from "@/lib/booking/quote-draft";
+import PublishedPrice from "@/components/PublishedPrice";
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { APIProvider } from "@vis.gl/react-google-maps";
@@ -12,7 +15,6 @@ import {
   Navigation,
   PackageCheck,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import AddressAutocomplete, { PlaceResult } from "@/components/ui/AddressAutocomplete";
 
@@ -23,20 +25,22 @@ export default function HeroSection() {
   const [pickupPlace, setPickupPlace] = useState<PlaceResult | null>(null);
   const [dropoffPlace, setDropoffPlace] = useState<PlaceResult | null>(null);
 
+  const [error, setError] = useState("");
+
   function handleQuote(e: React.FormEvent) {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (pickup) params.set("pickup", pickup);
-    if (dropoff) params.set("dropoff", dropoff);
-    if (pickupPlace) {
-      params.set("pickupLat", String(pickupPlace.lat));
-      params.set("pickupLng", String(pickupPlace.lng));
+    setError("");
+    if (!pickupPlace || !dropoffPlace) {
+      setError("Choose both addresses from the suggestions before continuing.");
+      return;
     }
-    if (dropoffPlace) {
-      params.set("dropoffLat", String(dropoffPlace.lat));
-      params.set("dropoffLng", String(dropoffPlace.lng));
+    try {
+      sessionStorage.setItem(BOOKING_DRAFT_KEY, JSON.stringify(createQuoteDraft(pickupPlace, dropoffPlace)));
+    } catch {
+      setError("Your browser could not save these addresses. Allow site storage and try again.");
+      return;
     }
-    router.push(`/auth/signup?${params.toString()}`);
+    router.push("/dashboard/deliveries/new");
   }
 
   function swapAddresses() {
@@ -53,26 +57,16 @@ export default function HeroSection() {
       version="weekly"
     >
       <section className="landing-hero">
-        <div className="hero-noise" aria-hidden="true" />
         <div className="hero-orb hero-orb-one" aria-hidden="true" />
         <div className="hero-orb hero-orb-two" aria-hidden="true" />
 
         <div className="landing-shell hero-layout">
           <div className="hero-copy">
-            {/* <div className="eyebrow-pill">
-              <Sparkles size={15} strokeWidth={2.4} />
-              Cape Town&apos;s simple courier service
-            </div> */}
 
             <h1>
               From your door
               <span>to theirs. Fast.</span>
             </h1>
-
-            <p className="hero-lede">
-              Reliable same-city delivery without the complicated quotes. Book in minutes,
-              pay one flat fee, and follow your parcel all the way.
-            </p>
 
             <div className="hero-actions">
               <a href="#quick-quote" className="hero-primary-action">
@@ -83,6 +77,8 @@ export default function HeroSection() {
               </a>
             </div>
 
+            <Image className="hero-life-photo" src="/images/courier-handover.webp" alt="A courier handing a parcel to a customer at her shop doorway" width={1672} height={941} sizes="(max-width: 900px) 100vw, 50vw" />
+
             <div className="hero-assurances" aria-label="Service benefits">
               <span><ShieldCheck size={17} /> Secure payment</span>
               <span><Clock3 size={17} /> Real-time updates</span>
@@ -92,7 +88,6 @@ export default function HeroSection() {
 
           <div className="hero-visual">
             <div className="route-backdrop" aria-hidden="true">
-              <div className="route-grid" />
               <div className="route-line route-line-one" />
               <div className="route-line route-line-two" />
               <span className="route-pin route-pin-start"><MapPin size={17} /></span>
@@ -116,7 +111,7 @@ export default function HeroSection() {
                 </div>
                 <div className="flat-fee-badge">
                   <small>Flat fee</small>
-                  <strong>R99</strong>
+                  <strong><PublishedPrice /></strong>
                 </div>
               </div>
 
@@ -132,7 +127,7 @@ export default function HeroSection() {
                     <span>Pick-up address</span>
                     <AddressAutocomplete
                       value={pickup}
-                      onChange={setPickup}
+                      onChange={(value) => { setPickup(value); setPickupPlace(null); setError(""); }}
                       onPlaceSelect={(place) => {
                         setPickupPlace(place);
                         setPickup(place.address);
@@ -155,7 +150,7 @@ export default function HeroSection() {
                     <span>Drop-off address</span>
                     <AddressAutocomplete
                       value={dropoff}
-                      onChange={setDropoff}
+                      onChange={(value) => { setDropoff(value); setDropoffPlace(null); setError(""); }}
                       onPlaceSelect={(place) => {
                         setDropoffPlace(place);
                         setDropoff(place.address);
@@ -166,12 +161,14 @@ export default function HeroSection() {
                   </label>
                 </div>
 
+                {error && <p role="alert" className="quote-error">{error}</p>}
+
                 <button type="submit" className="quote-submit">
-                  Get started for R99 <ArrowRight size={19} />
+                  Get started for <PublishedPrice /> <ArrowRight size={19} />
                 </button>
 
                 <p className="quote-footnote">
-                  <Check size={15} /> No hidden charges. Pay securely with Paystack.
+                  <Check size={15} /> No hidden charges. Pay securely with Yoco.
                 </p>
               </form>
             </div>

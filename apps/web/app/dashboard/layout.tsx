@@ -1,3 +1,4 @@
+import UserPresence from "@/components/analytics/UserPresence";
 import type { Metadata } from "next";
 import BrandLogo from "@/components/BrandLogo";
 import DashboardNav from "@/components/dashboard/DashboardNav";
@@ -18,7 +19,6 @@ export default function DashboardLayout({
           <BrandLogo
             href="/dashboard"
             size="md"
-            wordmarkClassName="hidden min-[420px]:flex"
             ariaLabel="EzyGo dashboard"
             priority
           />
@@ -27,6 +27,7 @@ export default function DashboardLayout({
         </div>
       </header>
 
+      <UserPresence />
       <NetworkStatus />
 
       <main className="portal-main">{children}</main>

@@ -2,12 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ChevronDown, Moon, Sun, UserRound } from "lucide-react";
-import { useTheme } from "@/components/ThemeProvider";
+import BrandLogo from "@/components/BrandLogo";
+import { ChevronDown, UserRound } from "lucide-react";
 
 export default function Navbar({ scrolled }: { scrolled: boolean }) {
-  const { theme, toggle } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -29,10 +27,7 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
   return (
     <nav className={`landing-nav ${scrolled ? "is-scrolled" : ""}`} aria-label="Main navigation">
       <div className="landing-shell nav-inner">
-        <Link href="/" className="brand-lockup" aria-label="EzyGo home">
-          <Image className="navbar-logo" src="/navbar-logo.png" alt="" width={1036} height={364} priority />
-          <span className="brand-name">EzyGo</span>
-        </Link>
+        <BrandLogo priority />
 
         <div className="nav-links">
           <Link href="#how-it-works">How it works</Link>
@@ -41,15 +36,12 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
         </div>
 
         <div className="nav-actions">
-          <button className="theme-toggle" onClick={toggle} aria-label="Toggle colour theme">
-            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-
           <div className="signin-menu" ref={dropdownRef}>
             <button
               type="button"
               className="signin-trigger"
               onClick={() => setDropdownOpen((open) => !open)}
+              aria-label="Sign in options"
               aria-haspopup="menu"
               aria-expanded={dropdownOpen}
             >
@@ -63,11 +55,9 @@ export default function Navbar({ scrolled }: { scrolled: boolean }) {
                 <span className="signin-label">Continue as</span>
                 <Link href="/auth/login" onClick={() => setDropdownOpen(false)} role="menuitem">
                   <strong>Customer</strong>
-                  <small>Book and track deliveries</small>
                 </Link>
                 <Link href="/driver/login" onClick={() => setDropdownOpen(false)} role="menuitem">
                   <strong>Driver</strong>
-                  <small>View and manage trips</small>
                 </Link>
               </div>
             )}

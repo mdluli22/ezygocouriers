@@ -1,5 +1,3 @@
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { signupSchema } from "@ezygo/contracts";
 import { applyAuthCookies } from "@/lib/auth/response";
@@ -14,7 +12,7 @@ import {
   registerEmailUser,
 } from "@/lib/auth/email-registration";
 
-async function handlePOST(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const parsed = await parseJsonRequest(req, signupSchema);
     if (!parsed.success) return parsed.response;
@@ -41,9 +39,7 @@ async function handlePOST(req: NextRequest) {
         registrationError.status
       );
     }
-    logServerError("[POST /api/auth/signup]", error);
+    console.error("[POST /api/auth/signup]", error);
     return serverErrorResponse("Something went wrong. Please try again.");
   }
 }
-
-export const POST = withApiRoute("/api/auth/signup", handlePOST);

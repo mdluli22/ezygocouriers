@@ -1,8 +1,6 @@
-import { ApiProblem } from "@/lib/api/errors";
-import { logServerError } from "@/lib/api/context";
 import type { PoolClient } from "pg";
 import { getClient } from "@/lib/db/server";
-import { CAPE_TOWN_SERVICE_BOUNDS, distanceMetres } from "@ezygo/contracts";
+import { CAPE_TOWN_SERVICE_BOUNDS } from "@ezygo/contracts";
 import { notifyAssignedDriver } from "./push-notifications";
 
 const DEFAULT_ASSIGNMENT_RADIUS_KM = 25;
@@ -74,7 +72,7 @@ function locationMaxAgeMinutes(): number {
   );
 }
 
-export async function lockAssignments(client: PoolClient): Promise<void> {
+async function lockAssignments(client: PoolClient): Promise<void> {
   // Allocation is deliberately serialized. This prevents two simultaneous
   // payments/location heartbeats from selecting the same available driver.
   await client.query("SELECT pg_advisory_xact_lock($1)", [
@@ -94,20 +92,6 @@ function assignmentLogNote(distanceKm: number | null): string {
     : `Automatically assigned to the nearest available driver (${distanceKm.toFixed(1)} km from pickup)`;
 }
 
-async function notifyAssignment(assignment: AutomaticAssignment | null) {
-  if (!assignment) return;
-  try {
-    await notifyAssignedDriver(assignment);
-  } catch (error) {
-    // Assignment is authoritative; notification delivery is best effort.
-    logServerError("[Assignment push] Delivery failed", {
-      deliveryId: assignment.deliveryId,
-      driverId: assignment.driverId,
-      error,
-    });
-  }
-}
-
 /** Run delivery assignment in its own transaction (safe after payment commit). */
 export async function autoAssignDelivery(
   deliveryId: number
@@ -124,7 +108,6 @@ export async function autoAssignDelivery(
   } finally {
     client.release();
   }
-  await notifyAssignment(assignment);
   return assignment;
 }
 
@@ -163,9 +146,10 @@ export async function assignDriverToDelivery(
      JOIN users driver_user ON driver_user.id = dr.user_id
      WHERE delivery.id = $1
        AND delivery.status = 'paid'
+       AND EXISTS (SELECT 1 FROM payments p WHERE p.delivery_id=delivery.id AND p.status='complete')
        AND delivery.assigned_driver_id IS NULL
-       AND dr.status = 'active' AND dr.on_duty = TRUE
-       AND driver_user.is_active = TRUE
+       AND dr.status = 'active'
+       AND driver_user.is_active = TRUE AND driver_user.email_verified = TRUE
        AND NOT EXISTS (
          SELECT 1
          FROM deliveries busy_delivery
@@ -217,6 +201,7 @@ export async function assignDriverToDelivery(
     ]
   );
 
+  await notifyAssignedDriver({deliveryId,driverId:selected.driver_id},client);
   return { deliveryId, driverId: selected.driver_id, distanceKm };
 }
 
@@ -232,8 +217,8 @@ export async function assignNextPaidDeliveryToDriver(
      FROM drivers dr
      JOIN users driver_user ON driver_user.id = dr.user_id
      WHERE dr.id = $1
-       AND dr.status = 'active' AND dr.on_duty = TRUE
-       AND driver_user.is_active = TRUE
+       AND dr.status = 'active'
+       AND driver_user.is_active = TRUE AND driver_user.email_verified = TRUE
        AND NOT EXISTS (
          SELECT 1
          FROM deliveries busy_delivery
@@ -257,6 +242,7 @@ export async function assignNextPaidDeliveryToDriver(
      JOIN addresses pa ON pa.id = delivery.pickup_address_id
      JOIN drivers dr ON dr.id = $1
      WHERE delivery.status = 'paid'
+       AND EXISTS (SELECT 1 FROM payments p WHERE p.delivery_id=delivery.id AND p.status='complete')
        AND delivery.assigned_driver_id IS NULL
        AND pa.latitude IS NOT NULL
        AND pa.longitude IS NOT NULL
@@ -289,6 +275,7 @@ export async function assignNextPaidDeliveryToDriver(
     ]
   );
 
+  await notifyAssignedDriver({deliveryId:selected.delivery_id,driverId},client);
   return {
     deliveryId: selected.delivery_id,
     driverId,
@@ -312,17 +299,12 @@ export async function autoAssignNextPaidDeliveryToDriver(
   } finally {
     client.release();
   }
-  await notifyAssignment(assignment);
   return assignment;
 }
 
 /** Persist a driver's live location and immediately check the waiting queue. */
 export async function updateDriverLocation(params: {
   driverUserId: number;
-  sessionId?: string;
-  delivery_id?: number;
-  recorded_at?: string;
-  accuracy?: number;
   latitude: number;
   longitude: number;
 }): Promise<AutomaticAssignment | null> {
@@ -331,36 +313,18 @@ export async function updateDriverLocation(params: {
   try {
     await client.query("BEGIN");
 
-    if (params.delivery_id) {
-      const trip = await client.query<{ status: string }>(`SELECT d.status FROM deliveries d JOIN drivers dr ON dr.id=d.assigned_driver_id WHERE d.id=$1 AND dr.user_id=$2 FOR UPDATE OF d`, [params.delivery_id, params.driverUserId]);
-      if (!trip.rows[0] || !["assigned", "picked_up", "in_transit"].includes(trip.rows[0].status)) throw new ApiProblem("CONFLICT", "This trip is no longer active or assigned to you.", 409);
-    }
-    const recordedAt = params.recorded_at ? new Date(params.recorded_at) : new Date();
-    const age = Date.now() - recordedAt.getTime();
-    if (!Number.isFinite(age) || age > 60000 || age < -10000) throw new ApiProblem("BAD_REQUEST", "Location is stale or its capture time is invalid.");
-    if (params.latitude < CAPE_TOWN_SERVICE_BOUNDS.south || params.latitude > CAPE_TOWN_SERVICE_BOUNDS.north || params.longitude < CAPE_TOWN_SERVICE_BOUNDS.west || params.longitude > CAPE_TOWN_SERVICE_BOUNDS.east) throw new ApiProblem("BAD_REQUEST", "Location is outside the operating area.");
-    const eligible = await client.query<{ id: number; current_latitude: string | null; current_longitude: string | null; location_updated_at: Date | null; location_stopped_at: Date | null }>("SELECT id,current_latitude,current_longitude,location_updated_at,location_stopped_at FROM drivers WHERE user_id=$1 AND status='active' AND on_duty=TRUE FOR UPDATE", [params.driverUserId]);
-    if (!eligible.rows[0]) throw new ApiProblem("FORBIDDEN", "An active driver profile is required.", 403);
-    const previous = eligible.rows[0];
-    if (previous.location_stopped_at && recordedAt.getTime() <= previous.location_stopped_at.getTime()) throw new ApiProblem("CONFLICT", "Location was captured before sharing stopped.", 409);
-    const seconds = previous.location_updated_at ? (recordedAt.getTime()-previous.location_updated_at.getTime())/1000 : 0;
-    if (seconds > 0 && seconds < 300 && previous.current_latitude !== null && previous.current_longitude !== null && distanceMetres({latitude:Number(previous.current_latitude),longitude:Number(previous.current_longitude)},params) > 200 + seconds * 55) throw new ApiProblem("BAD_REQUEST", "Location change is implausible. Wait for a fresh GPS reading.");
     const result = await client.query<{ id: number }>(
       `UPDATE drivers
        SET current_latitude = $1,
            current_longitude = $2,
-           location_updated_at = $4,
-           location_accuracy = $5,
-           location_delivery_id = $6,
-           location_session_id = $7,
-           location_received_at = NOW(),
+           location_updated_at = NOW(),
            updated_at = NOW()
-       WHERE user_id = $3 AND status = 'active' AND (location_updated_at IS NULL OR location_updated_at < $4)
+       WHERE user_id = $3 AND status='active'
        RETURNING id`,
-      [params.latitude, params.longitude, params.driverUserId, recordedAt, params.accuracy ?? null, params.delivery_id ?? null, params.sessionId ?? null]
+      [params.latitude, params.longitude, params.driverUserId]
     );
     const driver = result.rows[0];
-    if (!driver) { await client.query("COMMIT"); return null; }
+    if (!driver) throw new Error("Driver profile not found.");
     driverId = driver.id;
 
     await client.query("COMMIT");
@@ -371,12 +335,11 @@ export async function updateDriverLocation(params: {
     client.release();
   }
 
-  if (params.delivery_id) return null;
   try {
     return await autoAssignNextPaidDeliveryToDriver(driverId);
   } catch (error) {
     // The location heartbeat succeeded. A later heartbeat will retry dispatch.
-    logServerError("[Automatic delivery queue assignment]", { driverId, error });
+    console.error("[Automatic delivery queue assignment]", { driverId, error });
     return null;
   }
 }

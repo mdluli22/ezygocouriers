@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { mobileGoogleStartSchema } from "@ezygo/contracts";
-import { withApiRoute } from "@/lib/api/route";
+import { mobileGoogleStartSchema } from "@/lib/auth/mobile-oauth-route";
+import { withMobileOAuthRoute } from "@/lib/auth/mobile-oauth-route";
 import { parseJsonRequest } from "@/lib/api/validation";
 import { successResponse } from "@/lib/api/response";
 import { beginMobileGoogle } from "@/lib/auth/mobile-oauth";
@@ -9,4 +9,4 @@ async function handlePOST(request: NextRequest) {
   if (!parsed.success) return parsed.response;
   return successResponse("Google sign-in started.", await beginMobileGoogle(parsed.data));
 }
-export const POST = withApiRoute("/api/mobile/v1/auth/google", handlePOST);
+export const POST = withMobileOAuthRoute(handlePOST);

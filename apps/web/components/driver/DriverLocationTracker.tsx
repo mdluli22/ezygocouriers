@@ -54,8 +54,8 @@ export default function DriverLocationTracker() {
         setState(queued ? "queued" : "error");
         setMessage(
           queued
-            ? "Offline — your latest location will retry when you reconnect."
-            : "Offline — this browser cannot retain a location update for retry."
+            ? "Offline, your latest location will retry when you reconnect."
+            : "Offline, this browser cannot retain a location update for retry."
         );
         return false;
       }
@@ -83,7 +83,7 @@ export default function DriverLocationTracker() {
         setState(queued ? "queued" : "error");
         setMessage(
           queued
-            ? "Location sync paused — the latest update is queued for retry."
+            ? "Location sync paused, the latest update is queued for retry."
             : "Location sync failed and offline storage is unavailable. Try again when connected."
         );
         return false;

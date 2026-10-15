@@ -1,5 +1,4 @@
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
+import { pageSchema, paginatedResponse } from "@/lib/api/pagination";
 import { getSession } from "@/lib/auth/session";
 import { getAdminUsers, toggleUserStatus } from "@/lib/services/admin";
 import {
@@ -16,7 +15,7 @@ import {
 } from "@ezygo/contracts";
 import { parseJsonRequest, parseQuery } from "@/lib/api/validation";
 
-async function handleGET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -25,15 +24,17 @@ async function handleGET(req: NextRequest) {
     const parsed = parseQuery(req.nextUrl.searchParams, adminUserQuerySchema);
     if (!parsed.success) return parsed.response;
 
-    const users = await getAdminUsers(parsed.data.role);
-    return successResponse("Users fetched.", users);
+    const page = parseQuery(req.nextUrl.searchParams, pageSchema);
+    if (!page.success) return page.response;
+    const users = await getAdminUsers(parsed.data.role, page.data);
+    return paginatedResponse("Users fetched.", users);
   } catch (error) {
-    logServerError("[GET /api/admin/users]", error);
+    console.error("[GET /api/admin/users]", error);
     return serverErrorResponse();
   }
 }
 
-async function handlePATCH(req: NextRequest) {
+export async function PATCH(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -45,13 +46,10 @@ async function handlePATCH(req: NextRequest) {
     await toggleUserStatus(parsed.data.user_id, session.userId);
     return successResponse("User status toggled.");
   } catch (error: unknown) {
-    logServerError("[PATCH /api/admin/users]", error);
+    console.error("[PATCH /api/admin/users]", error);
     if (error instanceof Error && error.message.includes("deactivate your own")) {
       return errorResponse(error.message, undefined, 403);
     }
     return serverErrorResponse();
   }
 }
-
-export const GET = withApiRoute("/api/admin/users", handleGET);
-export const PATCH = withApiRoute("/api/admin/users", handlePATCH);

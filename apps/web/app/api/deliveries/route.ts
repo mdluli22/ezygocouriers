@@ -1,11 +1,13 @@
-import { problemResponse } from "@/lib/api/response";
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
+import { parseQuery } from "@/lib/api/validation";
+import { pageSchema, paginatedResponse } from "@/lib/api/pagination";
+import { z } from "zod";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { applicationErrorResponse } from "@/lib/api/errors";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { createDelivery, confirmDelivery } from "@/lib/services/deliveries";
 import { initialisePaymentCheckout } from "@/lib/services/payment-checkout";
-import { getPaystackConfig } from "@/lib/paystack";
+import { getYocoConfig } from "@/lib/yoco";
 import { query } from "@/lib/db/server";
 import { createDeliveryRequestSchema } from "@ezygo/contracts";
 import { parseJsonRequest } from "@/lib/api/validation";
@@ -16,11 +18,12 @@ import {
   serverErrorResponse,
 } from "@/lib/api/response";
 
-async function handlePOST(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     // 1. Auth check
     const session = await getSession();
     if (!session) return unauthorizedResponse();
+    await consumeRateLimit(`booking:${session.userId}`,20,60);
     if (session.role !== "customer") {
       return errorResponse("Only customers can create deliveries.", undefined, 403);
     }
@@ -31,13 +34,22 @@ async function handlePOST(req: NextRequest) {
     const { payment_method: paymentMethod, ...deliveryInput } = parsed.data;
 
     try {
-      getPaystackConfig();
-    } catch {
-      return errorResponse("Paystack test checkout is not configured yet.", undefined, 503);
+      getYocoConfig();
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : "Yoco checkout is not configured yet.",
+        undefined,
+        503
+      );
     }
+    const key = z.uuid().safeParse(req.headers.get("Idempotency-Key"));
+    if (!key.success) return errorResponse("A UUID Idempotency-Key header is required to safely retry a booking.",undefined,428);
     // 3. Create delivery (quoted status)
-    const delivery = await createDelivery(session.userId, deliveryInput);
+    const delivery = await createDelivery(session.userId, deliveryInput, key.data);
 
+    if (["paid","assigned","picked_up","in_transit","delivered"].includes(delivery.status)) {
+      return successResponse("This booking is already paid.",{id:delivery.id,trackingNumber:delivery.trackingNumber,redirect_url:`/dashboard/tracking/${delivery.id}`});
+    }
     // 4. Auto-confirm delivery (customer accepted at form submit)
     await confirmDelivery(delivery.id, session.userId);
 
@@ -49,7 +61,6 @@ async function handlePOST(req: NextRequest) {
     const user = userResult.rows[0];
 
     const payment = await initialisePaymentCheckout({
-      mobileReturn: req.headers.has("authorization"),
       provider: paymentMethod,
       delivery: {
         id: delivery.id,
@@ -76,14 +87,14 @@ async function handlePOST(req: NextRequest) {
       201
     );
   } catch (error) {
-    const problem = problemResponse(error);
-    if (problem) return problem;
-    logServerError("[POST /api/deliveries]", error);
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
+    console.error("[POST /api/deliveries]", error);
     return serverErrorResponse("Failed to create delivery. Please try again.");
   }
 }
 
-async function handleGET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -92,16 +103,15 @@ async function handleGET() {
     }
 
     const { getCustomerDeliveries } = await import("@/lib/services/deliveries");
-    const deliveries = await getCustomerDeliveries(session.userId);
+    const page = parseQuery(req.nextUrl.searchParams, pageSchema);
+    if (!page.success) return page.response;
+    const deliveries = await getCustomerDeliveries(session.userId, page.data);
 
-    return successResponse("Deliveries fetched.", deliveries);
+    return paginatedResponse("Deliveries fetched.", deliveries);
   } catch (error) {
-    const problem = problemResponse(error);
-    if (problem) return problem;
-    logServerError("[GET /api/deliveries]", error);
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
+    console.error("[GET /api/deliveries]", error);
     return serverErrorResponse();
   }
 }
-
-export const POST = withApiRoute("/api/deliveries", handlePOST);
-export const GET = withApiRoute("/api/deliveries", handleGET);

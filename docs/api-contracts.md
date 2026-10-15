@@ -294,7 +294,7 @@ Request:
   fragile?: boolean;
   require_pin?: boolean;
   scheduled_time?: string | null;
-  payment_method: "paystack";
+  payment_method: "yoco";
 }
 ```
 
@@ -448,7 +448,7 @@ authenticated user.
 
 Access: Customer who owns the delivery
 
-Request: `{ delivery_id: number; payment_method: "paystack" }`
+Request: `{ delivery_id: number; payment_method: "yoco" }`
 
 The delivery must currently be `confirmed`.
 
@@ -456,7 +456,7 @@ Success data:
 
 ```ts
 interface PaymentCheckout {
-  provider: "paystack";
+  provider: "yoco";
   redirect_url: string;
   checkout_id: string;
   demo_mode: boolean;
@@ -476,7 +476,7 @@ reconciliation; checkout reuse is not a distributed exactly-once guarantee.
 
 ### POST `/api/payments/sandbox-confirm`
 
-Access: Customer. PayFast sandbox only; retained for compatibility while PayFast checkout is disabled.
+Disabled while testing Yoco; returns HTTP 503. Original PayFast handler is commented out.
 
 Request: `{ delivery_id: number; payment_id: number }`
 
@@ -531,9 +531,9 @@ These endpoints are not called as ordinary PWA data APIs:
 | Method and path | Consumer | Response contract |
 | --- | --- | --- |
 | `GET/POST /api/auth/[...all]` | Better Auth clients and OAuth providers | Managed by Better Auth; some SMTP preflight failures return `{ code, message }`. |
-| `GET /api/payments/paystack/callback` | Paystack hosted checkout | Redirects to `/dashboard` with payment query parameters. |
-| `POST /api/payments/paystack/webhook` | Paystack | Plain text acknowledgement or error. |
-| `POST /api/payments/callback` | PayFast ITN | Plain text acknowledgement or error. |
+| `GET /api/payments/paystack/callback` | Paystack hosted checkout | Disabled; returns HTTP 503. |
+| `POST /api/payments/paystack/webhook` | Paystack | Disabled; returns HTTP 503. |
+| `POST /api/payments/callback` | PayFast ITN | Disabled; returns HTTP 503. |
 | `POST /api/payments/yoco/webhook` | Yoco | Plain text acknowledgement or error. |
 
 Provider webhook bodies and signatures must be processed exactly as received. Do not pass them through the standard JSON body parser.
@@ -547,3 +547,11 @@ Provider webhook bodies and signatures must be processed exactly as received. Do
 - Do not mark a payment complete because the hosted browser returned. Reload the delivery or payment state from the server.
 - Retry GET requests after transient failures. Retry mutations only when the endpoint is documented as idempotent or after reloading server state.
 - Never send payment-provider secret keys, SMTP credentials or database credentials from a client.
+
+## Security and payment integrity update (11 October 2026)
+
+Booking now requires a UUID `Idempotency-Key` header and supports safe replay. Web/mobile authentication returns 429 with `Retry-After` when limits are exceeded. See [the API changes and release guide](security-payment-integrity.md#clientapi-changes) before updating native clients.
+
+### Bounded list responses
+
+Delivery and admin list endpoints now return an additive `pagination` object alongside the existing `data` array. Follow `pagination.nextCursor` until null; requests accept `cursor`, `limit` (1–100, default 25), and `q`. Delivery lists accept `view=active|history|all`. See [the complete list contract](customer-completion.md). The API version header remains present.

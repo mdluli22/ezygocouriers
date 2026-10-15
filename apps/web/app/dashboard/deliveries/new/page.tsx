@@ -1,9 +1,14 @@
 "use client";
 
+import { BOOKING_DRAFT_KEY } from "@/lib/booking/quote-draft";
+
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import { useState, useEffect } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { useRouter } from "next/navigation";
 import AddressAutocomplete, { PlaceResult } from "@/components/ui/AddressAutocomplete";
+import { usePublishedPrice } from "@/components/PublishedPrice";
 import { signOutAndRedirect } from "@/lib/auth/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -16,8 +21,7 @@ interface User {
 
 type Step = 1 | 2 | 3;
 type MeetingDropoff = "curb" | "meet" | "leave";
-type AuthTab = "login" | "signup";
-type PaymentProvider = "paystack";
+type PaymentProvider = "yoco";
 const SA_PHONE_PATTERN = /^(\+27|0)[6-8][0-9]{8}$/;
 
 interface AddressGeo {
@@ -30,114 +34,6 @@ interface AddressGeo {
   latitude: number;
   longitude: number;
 }
-
-// ─── Auth Bottom Sheet Modal ──────────────────────────────────────────────────
-
-function AuthModal({ onSuccess, onClose }: { onSuccess: (user: User) => void; onClose: () => void }) {
-  const router = useRouter();
-  const [tab, setTab] = useState<AuthTab>("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true); setError("");
-    try {
-      const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
-      const data = await res.json();
-      if (!res.ok) { setError(data.message || "Login failed."); return; }
-      const me = await (await fetch("/api/auth/me", { cache: "no-store" })).json();
-      if (me.success) onSuccess({ id: me.data.id, full_name: me.data.full_name, email: me.data.email });
-    } catch { setError("Something went wrong."); }
-    finally { setLoading(false); }
-  }
-
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true); setError("");
-    try {
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          full_name: fullName,
-          email,
-          password,
-          confirm_password: password,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.message || "Signup failed."); return; }
-      router.push(
-        `/auth/verify-email?email=${encodeURIComponent(data.data?.email || email)}`
-      );
-    } catch { setError("Something went wrong."); }
-    finally { setLoading(false); }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.6)" }} onClick={onClose}>
-      <div
-        className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6"
-        style={{ backgroundColor: "var(--color-bg)", border: "1px solid var(--color-border)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Handle bar (mobile) */}
-        <div className="w-10 h-1 rounded-full mx-auto mb-5 sm:hidden" style={{ backgroundColor: "var(--color-border)" }} />
-
-        <h2 className="text-lg font-black mb-1" style={{ color: "var(--color-primary)" }}>
-          {tab === "login" ? "Welcome back" : "Create account"}
-        </h2>
-        <p className="text-sm mb-5" style={{ color: "var(--color-text-muted)" }}>
-          {tab === "login" ? "Sign in to confirm your delivery." : "Quick signup — takes 30 seconds."}
-        </p>
-
-        {/* Tab toggle */}
-        <div className="flex gap-2 mb-4">
-          {(["login", "signup"] as AuthTab[]).map((t) => (
-            <button key={t} type="button" onClick={() => { setTab(t); setError(""); }}
-              className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
-              style={tab === t
-                ? { backgroundColor: "var(--color-primary)", color: "#fff" }
-                : { backgroundColor: "var(--color-surface)", color: "var(--color-text-secondary)", border: "1px solid var(--color-border)" }
-              }
-            >
-              {t === "login" ? "Sign in" : "Sign up"}
-            </button>
-          ))}
-        </div>
-
-        {error && (
-          <div className="p-3 rounded-xl text-sm mb-3" style={{ backgroundColor: "rgb(239 68 68 / 0.1)", color: "var(--color-error)" }}>{error}</div>
-        )}
-
-        <form onSubmit={tab === "login" ? handleLogin : handleSignup} className="space-y-3">
-          {tab === "signup" && (
-            <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="input" required autoComplete="name" />
-          )}
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" className="input" required autoComplete="email" />
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="input" required autoComplete={tab === "login" ? "current-password" : "new-password"} />
-          <button type="submit" disabled={loading} className="btn-primary w-full py-3 mt-2 text-base">
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
-                {tab === "login" ? "Signing in…" : "Creating account…"}
-              </span>
-            ) : tab === "login" ? "Sign in" : "Create account"}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// ─── Step dots ────────────────────────────────────────────────────────────────
 
 function StepDots({ current, total }: { current: number; total: number }) {
   return (
@@ -157,12 +53,12 @@ function StepDots({ current, total }: { current: number; total: number }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function NewDeliveryPage() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [user, setUser] = useState<User | null>(null);
-  const [showAuth, setShowAuth] = useState(false);
+  const price = usePublishedPrice();
 
   // Addresses
   const [pickupText, setPickupText] = useState("");
@@ -186,9 +82,9 @@ export default function NewDeliveryPage() {
 
   // Submission
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useTimedMessage("", "");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const paymentMethod: PaymentProvider = "paystack";
+  const paymentMethod: PaymentProvider = "yoco";
   const isProcessing = loading;
 
   useEffect(() => {
@@ -201,6 +97,40 @@ export default function NewDeliveryPage() {
     }).catch(() => {});
   }, []);
 
+  function resumeSignIn() {
+    try { sessionStorage.setItem(BOOKING_DRAFT_KEY, JSON.stringify({ savedAt: Date.now(), step, pickupText, dropoffText, pickupGeo, dropoffGeo, pickupContactName, pickupPhone, pickupNote, recipientName, recipientPhone, recipientEmail, dropoffNote, parcelDescription, packageType, fragile, requirePin, dropoffMeeting })); }
+    catch { setError("Your browser could not save the draft. Allow site storage and try again."); return; }
+    router.push("/auth/login?redirect=%2Fdashboard%2Fdeliveries%2Fnew");
+  }
+  useEffect(() => {
+    // Restore after a full auth navigation, never store credentials or auth tokens.
+    Promise.resolve().then(() => {
+      try {
+        const saved = sessionStorage.getItem(BOOKING_DRAFT_KEY);
+        if (!saved) return;
+        sessionStorage.removeItem(BOOKING_DRAFT_KEY);
+        const draft = JSON.parse(saved);
+        if (Date.now() - draft.savedAt > 30 * 60 * 1000) return;
+        if (draft.step !== undefined) setStep(draft.step);
+        if (draft.pickupText !== undefined) setPickupText(draft.pickupText);
+        if (draft.dropoffText !== undefined) setDropoffText(draft.dropoffText);
+        if (draft.pickupGeo !== undefined) setPickupGeo(draft.pickupGeo);
+        if (draft.dropoffGeo !== undefined) setDropoffGeo(draft.dropoffGeo);
+        if (draft.pickupContactName !== undefined) setPickupContactName(draft.pickupContactName);
+        if (draft.pickupPhone !== undefined) setPickupPhone(draft.pickupPhone);
+        if (draft.pickupNote !== undefined) setPickupNote(draft.pickupNote);
+        if (draft.recipientName !== undefined) setRecipientName(draft.recipientName);
+        if (draft.recipientPhone !== undefined) setRecipientPhone(draft.recipientPhone);
+        if (draft.recipientEmail !== undefined) setRecipientEmail(draft.recipientEmail);
+        if (draft.dropoffNote !== undefined) setDropoffNote(draft.dropoffNote);
+        if (draft.parcelDescription !== undefined) setParcelDescription(draft.parcelDescription);
+        if (draft.packageType !== undefined) setPackageType(draft.packageType);
+        if (draft.fragile !== undefined) setFragile(draft.fragile);
+        if (draft.requirePin !== undefined) setRequirePin(draft.requirePin);
+        if (draft.dropoffMeeting !== undefined) setDropoffMeeting(draft.dropoffMeeting);
+      } catch { /* A malformed or expired draft is discarded. */ }
+    });
+  }, []);
   function handlePickupSelect(place: PlaceResult) {
     setPickupText(place.address);
     setPickupGeo({ formatted_address: place.address, street_address: place.address, city: "", province: "", postal_code: "", country: "South Africa", latitude: place.lat, longitude: place.lng });
@@ -245,13 +175,13 @@ export default function NewDeliveryPage() {
       errs["recipient_email"] = "Enter the recipient email that should receive the PIN";
     if (Object.keys(errs).length) { setFieldErrors(errs); return; }
     setFieldErrors({});
-    if (!user) { setShowAuth(true); return; }
+    if (!user) { resumeSignIn(); return; }
     setStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function doSubmit() {
-    if (!user) { setShowAuth(true); return; }
+    if (!user) { resumeSignIn(); return; }
     if (!navigator.onLine) {
       setError("You’re offline. Reconnect before creating and paying for this delivery.");
       return;
@@ -274,8 +204,16 @@ export default function NewDeliveryPage() {
     };
 
     try {
-      const res = await fetch("/api/deliveries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const payload = JSON.stringify(body);
+      const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(payload)))).map(b=>b.toString(16).padStart(2,"0")).join("");
+      const storageKey = `ezygo-booking-${user.id}`;
+      let prior: {hash:string;key:string} | null = null;
+      try { prior = JSON.parse(sessionStorage.getItem(storageKey) || "null"); } catch { /* Ignore an invalid stored key. */ }
+      const requestKey = prior?.hash === digest ? prior.key : crypto.randomUUID();
+      sessionStorage.setItem(storageKey,JSON.stringify({hash:digest,key:requestKey}));
+      const res = await fetch("/api/deliveries", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key":requestKey }, body: payload });
       const data = await res.json();
+      if (res.status === 401) { setUser(null); resumeSignIn(); return; }
       if (!res.ok) {
         if (data.errors && Object.keys(data.errors).length > 0) {
           setFieldErrors(data.errors);
@@ -288,8 +226,8 @@ export default function NewDeliveryPage() {
         }
         return;
       }
-      const payment = data.data.payment;
-      window.location.assign(payment.redirect_url);
+      sessionStorage.removeItem(storageKey);
+      window.location.assign(data.data.redirect_url || data.data.payment.redirect_url);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -297,25 +235,20 @@ export default function NewDeliveryPage() {
     }
   }
 
-  function handleAuthSuccess(loggedInUser: User) {
-    setUser(loggedInUser);
-    setPickupContactName((current) => current || loggedInUser.full_name);
-    setShowAuth(false);
-    setStep(3);
-  }
+
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!} libraries={["places"]} version="weekly">
 
       {/* Auth bottom-sheet modal */}
-      {showAuth && <AuthModal onSuccess={handleAuthSuccess} onClose={() => setShowAuth(false)} />}
+
 
       <div className="max-w-lg mx-auto px-0 sm:px-4 pb-32">
 
         {/* Page header */}
         <div className="mb-4">
-          <h1 className="text-2xl font-black" style={{ color: "var(--color-primary)" }}>
+          <h1 className="text-2xl font-black" style={{ color: "var(--color-link)" }}>
             {step === 1 ? "Where to?" : step === 2 ? "Parcel details" : "Confirm & pay"}
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "var(--color-text-muted)" }}>
@@ -338,7 +271,7 @@ export default function NewDeliveryPage() {
                 </label>
                 <AddressAutocomplete
                   value={pickupText}
-                  onChange={setPickupText}
+                  onChange={(value) => { setPickupText(value); setPickupGeo(null); }}
                   onPlaceSelect={handlePickupSelect}
                   placeholder="Search Cape Town pickup address…"
                   className="w-full"
@@ -363,7 +296,7 @@ export default function NewDeliveryPage() {
                 </label>
                 <AddressAutocomplete
                   value={dropoffText}
-                  onChange={setDropoffText}
+                  onChange={(value) => { setDropoffText(value); setDropoffGeo(null); }}
                   onPlaceSelect={handleDropoffSelect}
                   placeholder="Search Cape Town drop-off address…"
                   className="w-full"
@@ -386,7 +319,7 @@ export default function NewDeliveryPage() {
               <div>
                 <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.65)" }}>Flat delivery fee · No hidden costs</p>
               </div>
-              <span className="text-2xl font-black text-white">R99</span>
+              <span className="text-2xl font-black text-white">{price}</span>
             </div>
 
             <button type="button" onClick={goToStep2} className="btn-primary w-full py-4 text-base font-bold rounded-2xl">
@@ -410,14 +343,14 @@ export default function NewDeliveryPage() {
                   <span className="truncate font-medium" style={{ color: "var(--color-text-primary)" }}>{dropoffText}</span>
                 </div>
               </div>
-              <button type="button" onClick={() => setStep(1)} className="text-xs font-bold shrink-0 px-3 py-1.5 rounded-lg" style={{ backgroundColor: "var(--color-bg)", color: "var(--color-primary)", border: "1px solid var(--color-border)" }}>
+              <button type="button" onClick={() => setStep(1)} className="text-xs font-bold shrink-0 px-3 py-1.5 rounded-lg" style={{ backgroundColor: "var(--color-bg)", color: "var(--color-link)", border: "1px solid var(--color-border)" }}>
                 Edit
               </button>
             </div>
 
             {/* What are you sending */}
             <div className="rounded-2xl p-4 space-y-4" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>What are you sending?</h3>
+              <h3 className="font-black text-sm" style={{ color: "var(--color-link)" }}>What are you sending?</h3>
               <select
                 value={parcelDescription}
                 onChange={(e) => {
@@ -496,7 +429,7 @@ export default function NewDeliveryPage() {
 
             {/* Sender */}
             <div className="rounded-2xl p-4 space-y-3" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>Your contact (sender)</h3>
+              <h3 className="font-black text-sm" style={{ color: "var(--color-link)" }}>Your contact (sender)</h3>
               <input type="text" placeholder="Your name" value={pickupContactName} onChange={(e) => setPickupContactName(e.target.value)} className={`input ${fieldErrors.pickup_contact_name ? "input-error" : ""}`} />
               {fieldErrors.pickup_contact_name && <p className="error-text">{fieldErrors.pickup_contact_name}</p>}
               <input type="tel" placeholder="Your phone number" value={pickupPhone} onChange={(e) => setPickupPhone(e.target.value)} className={`input ${fieldErrors.pickup_contact_phone ? "input-error" : ""}`} />
@@ -506,7 +439,7 @@ export default function NewDeliveryPage() {
 
             {/* Recipient */}
             <div className="rounded-2xl p-4 space-y-3" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <h3 className="font-black text-sm" style={{ color: "var(--color-primary)" }}>Recipient details</h3>
+              <h3 className="font-black text-sm" style={{ color: "var(--color-link)" }}>Recipient details</h3>
               <input type="text" placeholder="Recipient name" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} className={`input ${fieldErrors.recipient_name ? "input-error" : ""}`} />
               {fieldErrors.recipient_name && <p className="error-text">{fieldErrors.recipient_name}</p>}
               <input type="tel" placeholder="Recipient phone number" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} className={`input ${fieldErrors.recipient_phone ? "input-error" : ""}`} />
@@ -577,7 +510,7 @@ export default function NewDeliveryPage() {
                 </div>
               </div>
               <div className="px-4 py-2.5 flex justify-end" style={{ borderTop: "1px solid var(--color-border)", backgroundColor: "var(--color-bg)" }}>
-                <button type="button" onClick={() => setStep(1)} className="text-xs font-bold" style={{ color: "var(--color-primary)" }}>Edit addresses</button>
+                <button type="button" onClick={() => setStep(1)} className="text-xs font-bold" style={{ color: "var(--color-link)" }}>Edit addresses</button>
               </div>
             </div>
 
@@ -598,7 +531,7 @@ export default function NewDeliveryPage() {
                 </div>
               </div>
               <div className="px-4 py-2.5 flex justify-end" style={{ borderTop: "1px solid var(--color-border)", backgroundColor: "var(--color-bg)" }}>
-                <button type="button" onClick={() => setStep(2)} className="text-xs font-bold" style={{ color: "var(--color-primary)" }}>Edit details</button>
+                <button type="button" onClick={() => setStep(2)} className="text-xs font-bold" style={{ color: "var(--color-link)" }}>Edit details</button>
               </div>
             </div>
 
@@ -607,13 +540,13 @@ export default function NewDeliveryPage() {
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-text-muted)" }}>SENDER</span>
                 <span className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-                  {pickupContactName || user?.full_name || "—"}{pickupPhone ? ` · ${pickupPhone}` : ""}
+                  {pickupContactName || user?.full_name || "Not available"}{pickupPhone ? ` · ${pickupPhone}` : ""}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold tracking-widest" style={{ color: "var(--color-text-muted)" }}>RECIPIENT</span>
                 <span className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-                  {recipientName || "—"}{recipientPhone ? ` · ${recipientPhone}` : ""}
+                  {recipientName || "Not available"}{recipientPhone ? ` · ${recipientPhone}` : ""}
                 </span>
               </div>
             </div>
@@ -630,7 +563,7 @@ export default function NewDeliveryPage() {
                   }}
                 >
                   <span className="flex items-center justify-between gap-2">
-                    <strong className="text-sm" style={{ color: "var(--color-text-primary)" }}>Paystack</strong>
+                    <strong className="text-sm" style={{ color: "var(--color-text-primary)" }}>Yoco</strong>
                     <span className="w-4 h-4 rounded-full flex items-center justify-center" style={{ border: "2px solid var(--color-primary)" }}>
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--color-primary)" }} />
                     </span>
@@ -663,9 +596,9 @@ export default function NewDeliveryPage() {
                 </svg>
               </div>
             ) : (
-              <button type="button" onClick={() => setShowAuth(true)}
+              <button type="button" onClick={() => resumeSignIn()}
                 className="w-full p-4 rounded-2xl text-sm font-bold flex items-center justify-between"
-                style={{ backgroundColor: "var(--color-surface)", border: "1.5px dashed var(--color-primary)", color: "var(--color-primary)" }}
+                style={{ backgroundColor: "var(--color-surface)", border: "1.5px dashed var(--color-primary)", color: "var(--color-link)" }}
               >
                 <span>Sign in to complete your order</span>
                 <span>→</span>
@@ -686,7 +619,7 @@ export default function NewDeliveryPage() {
           <div className="max-w-lg mx-auto">
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>Flat fee · No hidden costs</span>
-              <span className="text-2xl font-black" style={{ color: "var(--color-primary)" }}>R99.00</span>
+              <span className="text-2xl font-black" style={{ color: "var(--color-link)" }}>{price}</span>
             </div>
             <button
               type="button"
@@ -700,9 +633,9 @@ export default function NewDeliveryPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                   </svg>
-                  Opening Paystack…
+                  Opening Yoco…
                 </span>
-              ) : user ? "Pay R99 with Paystack →" : "Sign in to pay →"}
+              ) : user ? "Continue to Yoco →" : "Sign in to pay →"}
             </button>
           </div>
         </div>

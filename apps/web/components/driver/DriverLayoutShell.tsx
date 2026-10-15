@@ -1,5 +1,7 @@
 "use client";
 
+import UserPresence from "@/components/analytics/UserPresence";
+
 import { usePathname } from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
 import DriverNav from "@/components/driver/DriverNav";
@@ -20,13 +22,13 @@ export default function DriverLayoutShell({ children }: { children: React.ReactN
           <BrandLogo
             href="/driver"
             size="md"
-            subtitle="Driver Portal"
             ariaLabel="EzyGo driver portal"
             priority
           />
           <DriverNav />
         </div>
       </header>
+      <UserPresence />
       <NetworkStatus />
       <DriverLocationTracker />
       <main className="portal-main">{children}</main>

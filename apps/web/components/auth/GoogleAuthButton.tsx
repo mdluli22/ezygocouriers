@@ -1,6 +1,9 @@
 "use client";
 
+import { useTimedMessage } from "@/components/ui/useTimedMessage";
+
 import { useState } from "react";
+import { safeInternalRedirect } from "@/lib/auth/navigation";
 import { authClient } from "@/lib/auth/client";
 
 interface GoogleAuthButtonProps {
@@ -11,7 +14,7 @@ export default function GoogleAuthButton({
   label = "Continue with Google",
 }: GoogleAuthButtonProps) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useTimedMessage("", "");
 
   async function handleClick() {
     setLoading(true);
@@ -20,7 +23,7 @@ export default function GoogleAuthButton({
     try {
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
+        callbackURL: safeInternalRedirect(new URLSearchParams(window.location.search).get("redirect"), "/dashboard"),
         errorCallbackURL: "/auth/login?error=google_failed",
       });
 

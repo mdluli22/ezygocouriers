@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useMapsLibrary } from "@vis.gl/react-google-maps";
 import { CAPE_TOWN_SERVICE_BOUNDS } from "@ezygo/contracts";
 
 export interface PlaceResult {
@@ -33,6 +34,11 @@ export default function AddressAutocomplete({
   style,
   inputStyle,
 }: AddressAutocompleteProps) {
+  const places = useMapsLibrary("places");
+  const selectPlace = useEffectEvent((place: PlaceResult) => {
+    onChange(place.address);
+    onPlaceSelect(place);
+  });
   const inputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -56,11 +62,11 @@ export default function AddressAutocomplete({
     : (inputStyle?.boxShadow as string | undefined) ?? "none";
 
   useEffect(() => {
-    if (!window.google?.maps?.places || !inputRef.current || autocompleteRef.current) {
+    if (!places || !inputRef.current || autocompleteRef.current) {
       return;
     }
 
-    const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
+    const ac = new places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: "za" },
       bounds: CAPE_TOWN_SERVICE_BOUNDS,
       strictBounds: true,
@@ -80,8 +86,7 @@ export default function AddressAutocomplete({
         inputRef.current?.value ??
         "";
 
-      onChange(address);
-      onPlaceSelect({
+      selectPlace({
         address,
         lat: place.geometry.location.lat(),
         lng: place.geometry.location.lng(),
@@ -95,7 +100,7 @@ export default function AddressAutocomplete({
       autocompleteRef.current = null;
       setReady(false);
     };
-  }, [onChange, onPlaceSelect]);
+  }, [places]);
 
   useEffect(() => {
     if (inputRef.current && inputRef.current.value !== value) {
@@ -112,6 +117,10 @@ export default function AddressAutocomplete({
         placeholder={placeholder}
         autoComplete="off"
         aria-autocomplete="list"
+        onKeyDown={(event) => {
+          // Enter selects a Google suggestion; its place details arrive asynchronously.
+          if (event.key === "Enter") event.preventDefault();
+        }}
         onInput={(e) => onChange((e.target as HTMLInputElement).value)}
         onFocus={() => {
           setIsFocused(true);

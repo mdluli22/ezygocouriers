@@ -1,5 +1,3 @@
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
 import { NextRequest } from "next/server";
 import { APIError } from "better-auth/api";
 import { auth } from "@/lib/auth/auth";
@@ -18,7 +16,7 @@ import {
 } from "@/lib/auth/mobile-session";
 import { query } from "@/lib/db/server";
 
-async function handlePOST(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const parsed = await parseJsonRequest(request, mobileVerifyEmailSchema);
     if (!parsed.success) return secureMobileResponse(parsed.response);
@@ -63,17 +61,14 @@ async function handlePOST(request: NextRequest) {
         errorResponse(
           "The verification code is invalid or has expired.",
           { otp: "Request a new code and try again." },
-          error.statusCode === 429 ? 429 : 400,
-          error.statusCode === 429 ? "RATE_LIMITED" : "OTP_INVALID"
+          400
         )
       );
     }
 
-    logServerError("[POST /api/mobile/v1/auth/verify-email]", error);
+    console.error("[POST /api/mobile/v1/auth/verify-email]", error);
     return secureMobileResponse(
       serverErrorResponse("Unable to verify the email address.")
     );
   }
 }
-
-export const POST = withApiRoute("/api/mobile/v1/auth/verify-email", handlePOST);

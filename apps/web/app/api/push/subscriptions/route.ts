@@ -1,5 +1,5 @@
-import { logServerError } from "@/lib/api/context";
-import { withApiRoute } from "@/lib/api/route";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { applicationErrorResponse } from "@/lib/api/errors";
 import { NextRequest } from "next/server";
 import {
   deletePushSubscriptionSchema,
@@ -17,10 +17,11 @@ import {
   unauthorizedResponse,
 } from "@/lib/api/response";
 
-async function handlePOST(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
+    await consumeRateLimit(`push-subscription:${session.userId}`,20,60);
     const parsed = await parseJsonRequest(
       request,
       pushSubscriptionSchema,
@@ -30,12 +31,14 @@ async function handlePOST(request: NextRequest) {
     await savePushSubscription(session.userId, parsed.data);
     return successResponse("Notifications enabled.");
   } catch (error) {
-    logServerError("[POST /api/push/subscriptions]", error);
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
+    console.error("[POST /api/push/subscriptions]", error);
     return serverErrorResponse("Could not save notification preferences.");
   }
 }
 
-async function handleDELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return unauthorizedResponse();
@@ -48,10 +51,9 @@ async function handleDELETE(request: NextRequest) {
     await removePushSubscription(session.userId, parsed.data.endpoint);
     return successResponse("Notifications disabled.");
   } catch (error) {
-    logServerError("[DELETE /api/push/subscriptions]", error);
+    const expected = applicationErrorResponse(error);
+    if (expected) return expected;
+    console.error("[DELETE /api/push/subscriptions]", error);
     return serverErrorResponse("Could not update notification preferences.");
   }
 }
-
-export const POST = withApiRoute("/api/push/subscriptions", handlePOST);
-export const DELETE = withApiRoute("/api/push/subscriptions", handleDELETE);

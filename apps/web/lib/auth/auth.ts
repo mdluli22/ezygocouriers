@@ -1,8 +1,9 @@
+import { productionAccountAllowed } from "@/lib/security/seed-account-protection";
 import { betterAuth } from "better-auth";
 import { bearer, emailOTP } from "better-auth/plugins";
 import pool, { query } from "@/lib/db/server";
 import { comparePassword, hashPassword } from "@/lib/auth/password";
-import { sendAuthOtp } from "@/lib/email/smtp";
+import { sendAuthOtp, sendPasswordReset } from "@/lib/email/smtp";
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -55,6 +56,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    resetPasswordTokenExpiresIn: 30 * 60,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => sendPasswordReset(user.email, url),
     password: {
       // Keep bcrypt so users migrated from the existing auth system can
       // continue signing in with their current passwords.
@@ -125,6 +129,7 @@ export const auth = betterAuth({
     modelName: "auth_sessions",
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
+    cookieCache: { enabled: false },
     fields: {
       userId: "user_id",
       expiresAt: "expires_at",
@@ -170,6 +175,12 @@ export const auth = betterAuth({
   },
   advanced: {
     cookiePrefix: "ezygo",
+    useSecureCookies: process.env.NODE_ENV === "production",
+    defaultCookieAttributes: {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+    },
     // Set BETTER_AUTH_COOKIE_DOMAIN=ezygocouriers.co.za when sessions should
     // follow users between the main site and trusted subdomains.
     crossSubDomainCookies: process.env.BETTER_AUTH_COOKIE_DOMAIN
@@ -191,11 +202,11 @@ export const auth = betterAuth({
     session: {
       create: {
         before: async (session) => {
-          const result = await query<{ is_active: boolean; email_verified: boolean }>(
-            "SELECT is_active, email_verified FROM users WHERE id = $1 LIMIT 1",
+          const result = await query<{ is_active: boolean }>(
+            "SELECT u.is_active FROM users u WHERE u.id=$1 AND (u.role <> 'driver' OR EXISTS (SELECT 1 FROM drivers dr WHERE dr.user_id=u.id AND dr.status='active')) LIMIT 1",
             [session.userId]
           );
-          return result.rows[0]?.is_active === true && result.rows[0]?.email_verified === true;
+          return result.rows[0]?.is_active === true && await productionAccountAllowed(Number(session.userId));
         },
       },
     },
