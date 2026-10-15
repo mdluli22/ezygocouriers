@@ -54,6 +54,15 @@ termination is supported by Expo Router; signing in and opening the delivery
 also recovers payment status. A checkout originally created on the website keeps
 its web callback; closing its browser returns to the app's verification screen.
 
+Failed or cancelled payment attempts offer an explicit checkout retry only when
+the latest delivery response still permits payment (`confirmed`). Checkout
+creation remains server-validated and never starts automatically.
+
+Delivery detail refreshes every 15 seconds while focused and foregrounded, and
+when the app returns to the foreground. This updates assignment, progress and
+completion without requiring a manual refresh, including enabling the map when
+an awaiting-assignment delivery becomes assigned.
+
 Set `BETTER_AUTH_SECRET` and the existing Paystack server configuration before
 using checkout. The deployed callback origin must be reachable by Paystack.
 

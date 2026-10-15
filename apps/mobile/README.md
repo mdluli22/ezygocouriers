@@ -11,7 +11,8 @@ Customer booking, payment verification, dashboard, history, cancellation and pro
 screens are implemented. See [Phase 4 setup and release verification](../../docs/mobile-customer-application.md).
 Driver assignments, trip actions, consent-based foreground/background location and
 encrypted offline queues are implemented in [Phase 5](../../docs/mobile-driver-application.md).
-Customer live-map display and push work remain separate phases.
+Customer live-map display, native notification controls and driver duty controls
+are implemented; native builds and physical-device acceptance remain required.
 
 Run `npm ci` at the repository root, then `npm run dev:mobile`.
 Use the Expo terminal controls to open iOS or Android. Native simulator/device
@@ -70,6 +71,20 @@ Install full Xcode from the Mac App Store, launch it, and install its iOS platfo
 components. Select Xcode in Settings → Locations → Command Line Tools. Add your
 Apple Account in Xcode Settings → Accounts, connect and trust your iPhone, and
 enable Developer Mode on the phone when prompted.
+
+Xcode 27/iOS 27 requires scene-based startup. The `expo-build-properties`
+plugin enables `ios.enableSceneSupport` for our Expo SDK 57 app, generating
+Expo's scene delegate and scene manifest during prebuild. Keep this enabled
+when regenerating native sources; otherwise the app builds but exits at launch
+on iOS 27. See [Expo's scene lifecycle guide](https://github.com/expo/fyi/blob/main/ios-scene-lifecycle.md).
+
+Xcode 27 calls the simulator app **Device Hub** (Xcode → Open Developer Tool).
+If Expo reports a System Events/osascript error after `Build Succeeded` and
+installation, open EzyGo in Device Hub manually. Start Metro with
+`npm run start:personal --workspace @ezygo/mobile -- --lan --max-workers 1`
+from the repository root. In the simulator's development launcher, use
+`http://127.0.0.1:8081` under Enter URL manually. LAN mode lets the simulator
+reach IPv4 loopback; on this Mac, `--localhost` bound Metro only to IPv6.
 
 From the repository root:
 

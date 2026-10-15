@@ -13,7 +13,7 @@ export default function Detail() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = deliveryId(params.id);
   const fetcher = useCallback(() => { if (!id) return Promise.reject(new Error("Invalid delivery link.")); return customerApi.detail(id); }, [id]);
-  const { data, error, loading, refresh } = useResource(fetcher);
+  const { data, error, loading, refresh } = useResource(fetcher, 15000);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState("");
   async function cancel() { if (!id || busy) return; setBusy(true); setActionError(""); try { await customerApi.cancel(id); await refresh(); } catch (e) { setActionError(errorMessage(e)); } finally { setBusy(false); } }

@@ -11,6 +11,7 @@ export default function Payment() {
   const [id, setId] = useState<number | null>(deliveryId(params.id));
   const [status, setStatus] = useState("checking");
   const [price, setPrice] = useState("");
+  const [canPay, setCanPay] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [polling, setPolling] = useState(true);
@@ -21,6 +22,7 @@ export default function Payment() {
     if (phase !== "authenticated") return;
     setStatus("checking");
     setPrice("");
+    setCanPay(false);
     setError("");
     setId(deliveryId(params.id));
     let active = true;
@@ -39,6 +41,7 @@ export default function Payment() {
         const detail = await customerApi.detail(verified.delivery_id);
         if (!active || current !== generation.current) return;
         setPrice(`${detail.delivery.quote_currency ?? "ZAR"} ${Number(detail.delivery.quote_amount ?? 0).toFixed(2)}`);
+        setCanPay(detail.delivery.status === "confirmed");
         if (verified.status === "pending" && ++checks < 12) timer = setTimeout(() => void check(), 5000);
         else setPolling(false);
       } catch (e) { if (active && current === generation.current) { setError(errorMessage(e)); setPolling(false); } }
@@ -56,6 +59,10 @@ export default function Payment() {
         const token = parsePaymentLink(result.url);
         // Return content is untrusted until the authenticated backend verifies it.
         router.replace({ pathname: "/payment", params: { id, token } });
+      } else {
+        // A retry may create a new reference; an earlier return token no longer
+        // identifies that attempt. Reconcile the current attempt by delivery ID.
+        router.replace({ pathname: "/payment", params: { id } });
       }
       setRetry(value => value + 1);
     } catch (e) { setError(errorMessage(e)); }
@@ -68,6 +75,6 @@ export default function Payment() {
     {polling ? <Notice message="Verifying payment status…" /> : null}
     <Notice message={error} error />
     {!paid ? <Action label="Check payment again" secondary disabled={busy} onPress={() => setRetry(value => value + 1)} /> : null}
-    {["pending", "not_started"].includes(status) && id ? <Action label="Open secure Paystack checkout" busy={busy} onPress={() => void open()} /> : null}
+    {canPay && !paid && id ? <Action label={["failed", "cancelled"].includes(status) ? "Try secure Paystack checkout again" : "Open secure Paystack checkout"} busy={busy} onPress={() => void open()} /> : null}
   </Card>{id ? <Action label="View delivery" secondary onPress={() => router.replace({ pathname: "/deliveries/[id]", params: { id } })} /> : null}<Action label="Back to dashboard" secondary onPress={() => router.replace("/dashboard")} /></Page>;
 }
