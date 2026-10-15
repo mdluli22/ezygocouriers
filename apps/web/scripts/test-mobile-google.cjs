@@ -70,6 +70,16 @@ test('Google browser handoff encrypts credentials and exchanges a PKCE-bound cod
  assert.equal((await f.exchangeMobileGoogle(input,new Headers())).access_token,'signed-session');
  await assert.rejects(f.exchangeMobileGoogle(input,new Headers()),/invalid/);
 });
+test('Google redirect preserves provider state cookies alongside mobile browser binding',async()=>{
+ const f=setup();
+ const started=await f.beginMobileGoogle({state:'b'.repeat(64),code_challenge:sha('a'.repeat(64))});
+ const url=new URL(started.authorization_url);
+ const response=await f.startMobileGoogle(request(url.pathname+url.search),url.searchParams.get('request'));
+ const cookies=response.headers.getSetCookie();
+ assert.ok(cookies.some(cookie=>cookie.startsWith('provider=nonce;')), 'provider OAuth state cookie must reach the browser');
+ assert.ok(cookies.some(cookie=>cookie.startsWith('ezygo.mobile_oauth=')), 'native browser binding must also reach the browser');
+ assert.equal(response.status,307);
+});
 test('Browser binding is required and browser start cannot be reused',async()=>{
  const f=setup(),a=await authorize(f);
  await assert.rejects(f.finishMobileGoogle(request('/api/mobile/v1/auth/google/callback'),a.id),/invalid/);

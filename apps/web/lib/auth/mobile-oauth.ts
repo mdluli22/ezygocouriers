@@ -64,9 +64,11 @@ export async function startMobileGoogle(request: NextRequest, id: string) {
     headers: request.headers, returnHeaders: true,
   });
   if (!result.response.url) throw invalid();
-  const response = applyAuthCookies(NextResponse.redirect(result.response.url), result.headers);
+  const response = NextResponse.redirect(result.response.url);
   response.cookies.set(browserCookie, browser, { httpOnly: true, sameSite: "lax", secure: origin.startsWith("https:"), path: "/api/mobile/v1/auth/google", maxAge: 600 });
-  return response;
+  // Set mobile cookies first: ResponseCookies.set rebuilds Set-Cookie and
+  // would otherwise discard the provider state cookies appended below.
+  return applyAuthCookies(response, result.headers);
 }
 
 export async function finishMobileGoogle(request: NextRequest, id: string) {
