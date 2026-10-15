@@ -149,6 +149,7 @@ export default function DriverDeliveryDetailPage() {
 
       <div className="trip-detail-grid">
         <div className="trip-detail-main">
+          {delivery.status !== "delivered" && <>
           <section className="trip-detail-panel" aria-labelledby="trip-route-title">
             <div className="trip-section-heading"><h2 id="trip-route-title">Your route</h2><Navigation size={20} aria-hidden="true" /></div>
             <ol className="trip-route-stops">
@@ -176,6 +177,8 @@ export default function DriverDeliveryDetailPage() {
             <dl className="trip-info"><div><dt>Description</dt><dd>{delivery.parcel_description || "Not provided"}</dd></div>{delivery.special_instructions && <div><dt>Instructions</dt><dd>{delivery.special_instructions}</dd></div>}{delivery.fragile && <div><dt>Handling</dt><dd>Fragile · handle with care</dd></div>}{delivery.require_pin && <div><dt>Handover</dt><dd>{delivery.pin_verified_at ? "Recipient PIN verified" : "Recipient PIN required"}</dd></div>}</dl>
           </section>
           <section className="trip-detail-panel"><div className="trip-section-heading"><h2>Customer</h2></div><div className="trip-customer"><strong>{delivery.customer_name}</strong>{delivery.customer_phone && <a href={`tel:${delivery.customer_phone}`}><Phone size={15} aria-hidden="true" />{delivery.customer_phone}</a>}</div></section>
+          </>}
+          {delivery.status === "delivered" && <section className="trip-detail-panel"><p>Customer contact and route details are no longer available after delivery.</p></section>}
         </div>
 
         <aside className="trip-action-panel" aria-label="Delivery status and actions">

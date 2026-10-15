@@ -1,3 +1,4 @@
+import { driverDeliveryPrivacy } from "./delivery-privacy";
 import { defaultPage, pageWhere, pageResult, type PageQuery } from "@/lib/api/pagination";
 import { BusinessError } from "@/lib/api/errors";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
@@ -20,7 +21,7 @@ import { sendPushToUser } from "@/lib/services/push-notifications";
  */
 export async function getDriverDeliveries(driverUserId: number, page: PageQuery = defaultPage) {
   const params: unknown[] = [driverUserId];
-  const extra = pageWhere(page, params, "d.id", "concat_ws(' ',d.tracking_number,d.recipient_name,pa.street_address,pa.city,da.street_address,da.city)", "d.status");
+  const extra = pageWhere(page, params, "d.id", "CASE WHEN d.status = 'delivered' THEN d.tracking_number ELSE concat_ws(' ',d.tracking_number,d.recipient_name,pa.street_address,pa.city,da.street_address,da.city) END", "d.status");
   params.push(page.limit + 1);
   const result = await query<{ id: number; [key: string]: unknown }>(
     `SELECT
@@ -63,7 +64,7 @@ export async function getDriverDeliveries(driverUserId: number, page: PageQuery 
      ORDER BY d.id DESC LIMIT $${params.length}`,
     params
   );
-  return pageResult(result.rows.map(row => ({...row, estimated_earning_cents: deliveryPayCents(row.distance_meters as number | null)})), page);
+  return pageResult(result.rows.map(row => driverDeliveryPrivacy({...row, estimated_earning_cents: deliveryPayCents(row.distance_meters as number | null)})), page);
 }
 
 /**
@@ -74,7 +75,7 @@ export async function getDriverDeliveryById(
   deliveryId: number,
   driverUserId: number
 ) {
-  const result = await query(
+  const result = await query<{ id: number; status: string; distance_meters: number | null; [key: string]: unknown }>(
     `SELECT
        d.id,d.customer_id,d.assigned_driver_id,d.pickup_address_id,d.dropoff_address_id,d.quote_id,
        d.pickup_contact_name,d.pickup_contact_phone,d.recipient_name,d.recipient_phone,d.recipient_email,
@@ -111,7 +112,7 @@ export async function getDriverDeliveryById(
     [deliveryId, driverUserId]
   );
   const row=result.rows[0];
-  return row ? {...row,estimated_earning_cents:deliveryPayCents(row.distance_meters)} : null;
+  return row ? driverDeliveryPrivacy({...row,estimated_earning_cents:deliveryPayCents(row.distance_meters)}) : null;
 }
 
 /**

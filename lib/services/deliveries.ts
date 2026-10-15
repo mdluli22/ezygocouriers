@@ -1,3 +1,4 @@
+import { customerDeliveryPrivacy } from "./delivery-privacy";
 import { defaultPage, pageWhere, pageResult, type PageQuery } from "@/lib/api/pagination";
 import { createHash } from "node:crypto";
 import { verifyRouteDistance } from "@/lib/earnings/route-distance";
@@ -391,7 +392,7 @@ export async function getDeliveryById(deliveryId: number, customerId: number) {
      LIMIT 1`,
     [deliveryId, customerId]
   );
-  return result.rows[0] ?? null;
+  return result.rows[0] ? customerDeliveryPrivacy(result.rows[0]) : null;
 }
 
 /**

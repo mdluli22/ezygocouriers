@@ -31,6 +31,7 @@ const FILTERS = ["active", "history", "all"] as const;
 type Filter = typeof FILTERS[number];
 
 function RouteStops({ delivery }: { delivery: Delivery }) {
+  if (delivery.status === "delivered") return null;
   return <ol className="dispatch-stops">
     <li><span aria-hidden="true" /><div><small>Pickup</small><strong>{delivery.pickup_street}</strong><p>{delivery.pickup_city}</p></div></li>
     <li><span aria-hidden="true" /><div><small>Drop-off</small><strong>{delivery.dropoff_street}</strong><p>{delivery.dropoff_city}</p></div></li>
@@ -38,7 +39,7 @@ function RouteStops({ delivery }: { delivery: Delivery }) {
 }
 
 function Handling({ delivery }: { delivery: Delivery }) {
-  if (!delivery.fragile && !delivery.require_pin) return null;
+  if (delivery.status === "delivered" || (!delivery.fragile && !delivery.require_pin)) return null;
   return <div className="dispatch-handling">{delivery.fragile && <span><Package size={13} aria-hidden="true" />Fragile</span>}{delivery.require_pin && <span><ShieldCheck size={13} aria-hidden="true" />PIN required</span>}</div>;
 }
 
@@ -108,7 +109,7 @@ export default function DriverDashboardPage() {
               <RouteStops delivery={delivery} />
               <Handling delivery={delivery} />
               <DeliveryEarnings delivery={delivery} />
-              <div className="dispatch-job-footer"><span>{delivery.recipient_name}</span><strong>View delivery <ArrowRight size={15} aria-hidden="true" /></strong></div>
+              <div className="dispatch-job-footer">{delivery.status !== "delivered" && <span>{delivery.recipient_name}</span>}<strong>View delivery <ArrowRight size={15} aria-hidden="true" /></strong></div>
             </Link>
           </li>)}</ul> : <div className="dispatch-empty"><Package size={28} aria-hidden="true" /><h3>{query ? "No matching deliveries" : filter === "active" ? "No active deliveries" : "No deliveries here yet"}</h3><p>{query ? "Try another address, recipient or tracking number." : "Your deliveries will appear here as they are assigned and updated."}</p>{query && <button onClick={() => setQuery("")}>Clear search</button>}</div>}
           <ListControls {...list} />

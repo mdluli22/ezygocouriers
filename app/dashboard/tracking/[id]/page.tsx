@@ -376,14 +376,14 @@ function TrackingContent() {
           <section className="tracking-panel">
             <div className="tracking-section-title"><h2>Your driver</h2><Truck size={20} aria-hidden="true" /></div>
             <div className="tracking-driver">
-              {delivery.driver_name ? <DriverPhoto name={delivery.driver_name} url={delivery.driver_avatar_url} /> : <div className="tracking-avatar"><UserRound size={25} aria-hidden="true" /></div>}
+              {delivery.status !== "delivered" && (delivery.driver_name ? <DriverPhoto name={delivery.driver_name} url={delivery.driver_avatar_url} /> : <div className="tracking-avatar"><UserRound size={25} aria-hidden="true" /></div>)}
               <div><h3>{delivery.driver_name || (terminal ? "No driver assigned" : "Awaiting assignment")}</h3><p>{delivery.driver_name ? "Your delivery partner" : terminal ? "This delivery has ended." : "Driver details will appear here."}</p></div>
             </div>
-            {delivery.driver_name && <dl className="tracking-driver-vehicle">
+            {delivery.status !== "delivered" && delivery.driver_name && <dl className="tracking-driver-vehicle">
               <InfoRow label="Vehicle" value={delivery.driver_vehicle_type || "Not provided yet"} />
               <div className="tracking-detail-row"><dt>Number plate</dt><dd>{delivery.driver_vehicle_reg ? <span className="tracking-number-plate">{delivery.driver_vehicle_reg}</span> : "Not provided yet"}</dd></div>
             </dl>}
-            {delivery.driver_phone && delivery.driver_name && <a className="tracking-secondary-button" href={`tel:${delivery.driver_phone}`}><Phone size={16} />Call driver</a>}
+            {delivery.status !== "delivered" && delivery.driver_phone && delivery.driver_name && <a className="tracking-secondary-button" href={`tel:${delivery.driver_phone}`}><Phone size={16} />Call driver</a>}
           </section>
           <section className="tracking-panel tracking-payment">
             <div className="tracking-section-title"><h2>Delivery summary</h2></div>

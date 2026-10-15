@@ -29,7 +29,10 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     const delivery = await getDriverDeliveryById(deliveryId, session.userId);
     if (!delivery) return notFoundResponse("Delivery not found.");
 
-    const logs = await getDeliveryStatusLogs(deliveryId);
+    const history = await getDeliveryStatusLogs(deliveryId);
+    const logs = delivery.status === "delivered"
+      ? history.map(log => ({ ...log, note: null, updated_by_name: null }))
+      : history;
     return successResponse("Delivery fetched.", { delivery, logs });
   } catch (error) {
     console.error("[GET /api/driver/deliveries/[id]]", error);

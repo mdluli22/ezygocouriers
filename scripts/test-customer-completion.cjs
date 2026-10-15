@@ -140,3 +140,54 @@ test('Session denial is distinguished from wrong credentials without bypassing a
  const unverified=normalizeSignInError(new APIError('FORBIDDEN',{code:'EMAIL_NOT_VERIFIED',message:'Email not verified'}));
  assert.equal(unverified.errors.email,'Email verification is required');
 });
+
+
+test('Completed delivery responses remove contacts and locations while retaining history and driver name',async()=>{
+ let status='delivered';
+ const row=()=>({id:9,status,tracking_number:'EZ9',distance_meters:1000,earning_cents:2500,
+   customer_id:1,customer_name:'Customer private',customer_phone:'+27820000001',
+   recipient_name:'Recipient private',recipient_phone:'+27820000002',recipient_email:'private@example.invalid',
+   pickup_contact_name:'Sender private',pickup_contact_phone:'+27820000003',pickup_address_id:2,
+   pickup_street:'Private pickup',dropoff_street:'Private dropoff',pickup_notes:'Private gate code',
+   parcel_description:'Personal description',special_instructions:'Private instructions',
+   assigned_driver_id:3,driver_name:'Driver Name',driver_phone:'+27820000004',driver_vehicle_type:'Bike',
+   driver_vehicle_reg:'PRIVATE',driver_avatar_url:'https://example.invalid/avatar',future_customer_field:'Private future field'});
+ const calls=[];
+ const load=loader({
+  '@/lib/db/server':{query:async(sql,params)=>{calls.push({sql,params});return{rows:[row()]};}},'@ezygo/contracts':{},
+  '@/lib/api/errors':{BusinessError:class extends Error{}},'@/lib/earnings/route-distance':{},'@/lib/earnings/service':{},
+  '@/lib/security/rate-limit':{},'@/lib/delivery-pin':{},'@/lib/services/push-notifications':{},
+  './driver-assignment':{},'./quotes':{},'./notification-outbox':{},'./payment-reviews':{},
+ });
+ const customer=load('lib/services/deliveries.ts'),driver=load('lib/services/drivers.ts');
+ const detail=await customer.getDeliveryById(9,1);
+ assert.equal(detail.driver_name,'Driver Name');
+ for(const key of ['driver_phone','driver_vehicle_type','driver_vehicle_reg','driver_avatar_url','assigned_driver_id'])assert.equal(detail[key],null,key);
+ assert.equal(detail.recipient_name,'Recipient private','customers retain their own delivery details');
+ const driverDetail=await driver.getDriverDeliveryById(9,3);
+ const page=await driver.getDriverDeliveries(3,{limit:25,q:'private',view:'history'});
+ assert.match(calls.at(-1).sql,/CASE WHEN d.status = 'delivered' THEN d.tracking_number/);
+ for(const record of [driverDetail,page.data[0]]){
+  assert.equal(record.tracking_number,'EZ9');assert.equal(record.earning_cents,2500);
+  for(const key of ['customer_id','customer_name','customer_phone','recipient_name','recipient_phone','recipient_email',
+   'pickup_contact_name','pickup_contact_phone','pickup_address_id','pickup_street','dropoff_street','pickup_notes',
+   'parcel_description','special_instructions','future_customer_field'])assert.equal(record[key],null,key);
+ }
+ status='in_transit';
+ assert.equal((await customer.getDeliveryById(9,1)).driver_phone,'+27820000004');
+ assert.equal((await driver.getDriverDeliveryById(9,3)).customer_phone,'+27820000001');
+ assert.equal((await driver.getDriverDeliveries(3)).data[0].pickup_street,'Private pickup');
+});
+
+test('Driver completed-delivery timeline cannot expose customer names or free-text notes',async()=>{
+ const load=loader({
+  '@ezygo/contracts':{deliveryIdParamSchema:require('zod').z.coerce.number().int().positive(),API_CONTRACT_VERSION:'1',API_CONTRACT_VERSION_HEADER:'x-ezygo-api-version'},
+  '@/lib/auth/session':{getSession:async()=>({role:'driver',userId:3})},
+  '@/lib/services/drivers':{getDriverDeliveryById:async()=>({id:9,status:'delivered'})},
+  '@/lib/services/deliveries':{getDeliveryStatusLogs:async()=>[{status:'delivered',created_at:'2026-10-15',note:'Private contact note',updated_by_name:'Customer private'}]},
+ });
+ const route=load('app/api/driver/deliveries/[id]/route.ts');
+ const response=await route.GET({}, {params:Promise.resolve({id:'9'})});
+ const body=await response.json();assert.equal(response.status,200);
+ assert.deepEqual(body.data.logs,[{status:'delivered',created_at:'2026-10-15',note:null,updated_by_name:null}]);
+});
