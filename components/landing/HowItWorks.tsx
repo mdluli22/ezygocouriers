@@ -1,15 +1,15 @@
 "use client";
 
-import PublishedPrice from "@/components/PublishedPrice";
+import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  CreditCard,
-  MapPin,
-  MapPinned,
-  Navigation,
-  PackagePlus,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
+
+const steps = [
+  { title: "Add your addresses.", description: "Tell us where to collect your parcel and where it needs to go." },
+  { title: "Tell us about your parcel.", description: "Add the parcel details and any special handling instructions." },
+  { title: "Confirm and pay securely.", description: "Review your delivery price before paying through Yoco." },
+  { title: "Follow every step.", description: "Track your delivery from booking through to the final handover." },
+];
 
 export default function HowItWorks() {
   return (
@@ -22,77 +22,33 @@ export default function HowItWorks() {
           </div>
         </div>
 
-        <div className="how-bento">
-          <article className="how-card how-card-route">
-            <div className="how-card-top">
-              <span className="how-step-number">01</span>
-              <span className="how-card-icon"><MapPinned size={23} /></span>
-            </div>
-            <span className="how-card-label">Choose the route</span>
-            <h3>Add your addresses.</h3>
+        <div className="how-editorial-layout">
+          <div className="how-editorial-copy">
+            <ol className="how-editorial-steps">
+              {steps.map((step, index) => (
+                <li key={step.title}>
+                  <span className="how-editorial-number" aria-hidden="true">0{index + 1}</span>
+                  <div>
+                    <h3>{step.title}</h3>
+                    <p>{step.description}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <Link href="/auth/signup" className="how-editorial-cta">
+              Start a delivery <ArrowRight size={18} />
+            </Link>
+          </div>
 
-            <div className="address-preview" aria-hidden="true">
-              <div className="address-rail"><i /><span /><i /></div>
-              <div>
-                <small>Pick up</small>
-                <strong>Sea Point, Cape Town</strong>
-              </div>
-              <div>
-                <small>Drop off</small>
-                <strong>Woodstock, Cape Town</strong>
-              </div>
-              <MapPin className="address-pin" size={22} />
-            </div>
-          </article>
-
-          <article className="how-card how-card-parcel">
-            <div className="how-card-top">
-              <span className="how-step-number">02</span>
-              <span className="how-card-icon"><PackagePlus size={22} /></span>
-            </div>
-            <span className="how-card-label">Parcel details</span>
-            <h3>Tell us about it.</h3>
-            <div className="parcel-preview" aria-hidden="true">
-              <span>Small parcel</span><span>Handle with care</span>
-            </div>
-          </article>
-
-          <article className="how-card how-card-payment">
-            <div className="how-card-top">
-              <span className="how-step-number">03</span>
-              <span className="how-card-icon"><CreditCard size={22} /></span>
-            </div>
-            <span className="how-card-label">Secure checkout</span>
-            <h3>Confirm your price.</h3>
-            <div className="payment-preview" aria-hidden="true">
-              <span>Flat delivery fee</span><strong><PublishedPrice /></strong>
-            </div>
-          </article>
-
-          <article className="how-card how-card-track">
-            <div className="how-track-copy">
-              <div className="how-card-top">
-                <span className="how-step-number">04</span>
-                <span className="how-card-icon"><Navigation size={22} /></span>
-              </div>
-              <span className="how-card-label">Live progress</span>
-              <h3>Follow every step.</h3>
-            </div>
-
-            <div className="delivery-preview" aria-hidden="true">
-              <div className="delivery-preview-head">
-                <span>Delivery status</span><strong><i /> In transit</strong>
-              </div>
-              <div className="delivery-progress"><i /><i /><i /><i /></div>
-              <div className="delivery-labels">
-                <span>Booked</span><span>Assigned</span><span>Collected</span><span>Delivered</span>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <div className="how-footer">
-          <Link href="/auth/signup">Start a delivery <ArrowRight size={17} /></Link>
+          <figure className="how-editorial-photo">
+            <Image
+              src="/images/courier-handover.webp"
+              alt="Courier handing a parcel to a customer at her shop in Cape Town"
+              fill
+              sizes="(max-width: 760px) 100vw, 55vw"
+            />
+            <figcaption>You book it.<br />We take it from here.</figcaption>
+          </figure>
         </div>
       </div>
     </section>

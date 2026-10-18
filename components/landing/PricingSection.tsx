@@ -1,21 +1,13 @@
 "use client";
 
 import PublishedPrice from "@/components/PublishedPrice";
+import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Check,
-  CreditCard,
-  MapPin,
-  MapPinned,
-  PackageCheck,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 
 export default function PricingSection() {
   return (
-    <section id="pricing" className="pricing-section pricing-redesign pricing-bento-section">
-      <div className="pricing-orb" aria-hidden="true" />
+    <section id="pricing" className="pricing-section pricing-redesign">
       <div className="landing-shell">
         <div className="pricing-redesign-head">
           <div>
@@ -24,57 +16,36 @@ export default function PricingSection() {
           </div>
         </div>
 
-        <div className="price-bento">
-          <article className="price-bento-card price-bento-main">
-            <div className="price-bento-topline">
-              <span>Flat delivery fee</span>
-              <PackageCheck size={23} />
-            </div>
-            <div className="price-bento-amount">
-              <strong><PublishedPrice /></strong>
-            </div>
-            <p>Per eligible delivery across our Cape Town coverage area.</p>
-            <div className="price-bento-stamp"><Check size={13} /> No monthly fee</div>
-          </article>
+        <div className="pricing-photo-layout">
+          <figure className="pricing-photo">
+            <Image
+              src="/images/parcel-exchange.jpg"
+              alt="Two people holding parcels ready for delivery"
+              fill
+              sizes="(max-width: 760px) 100vw, 55vw"
+            />
+            <figcaption>From your hands.<br />To their doorstep.</figcaption>
+          </figure>
 
-          <article className="price-bento-card price-bento-included">
-            <div className="price-bento-card-head">
-              <span><ShieldCheck size={20} /></span>
-              <small>Included as standard</small>
-            </div>
-            <h3>Everything needed<br />for a smooth delivery.</h3>
+          <div className="pricing-photo-copy">
+            <span className="pricing-photo-label">Flat delivery fee</span>
+            <div className="pricing-photo-amount"><PublishedPrice /></div>
+            <p>Per eligible delivery across our Cape Town coverage area. No distance calculations. No monthly fee.</p>
+
+            <h3>Everything needed for a smooth delivery.</h3>
             <ul>
-              <li><Check size={15} /> Collection and delivery</li>
-              <li><Check size={15} /> Live status tracking</li>
-              <li><Check size={15} /> Secure Yoco checkout</li>
-              <li><Check size={15} /> Clear delivery updates</li>
+              <li><Check size={17} /> Collection and delivery</li>
+              <li><Check size={17} /> Live status tracking</li>
+              <li><Check size={17} /> Secure Yoco checkout</li>
+              <li><Check size={17} /> Clear delivery updates</li>
             </ul>
-          </article>
 
-          <article className="price-bento-card price-bento-coverage">
-            <div>
-              <span className="price-bento-icon"><MapPinned size={20} /></span>
-              <small>Cape Town-wide simplicity</small>
-              <h3>No distance calculations.</h3>
-            </div>
-            <div className="coverage-route" aria-hidden="true">
-              <MapPin size={15} /><i /><span><PackageCheck size={16} /></span><i /><MapPin size={15} />
-            </div>
-          </article>
-
-          <article className="price-bento-card price-bento-action">
-            <span className="price-bento-icon"><CreditCard size={21} /></span>
-            <small>Ready when you are</small>
-            <h3>Send it for <PublishedPrice />.</h3>
-            <Link href="/auth/signup">
+            <Link href="/auth/signup" className="pricing-photo-cta">
               Get started <ArrowRight size={18} />
             </Link>
-          </article>
+            <p className="pricing-photo-note">The confirmed amount is shown before secure checkout.</p>
+          </div>
         </div>
-
-        <p className="pricing-fineprint">
-          Clear from the start: the confirmed amount is shown before secure checkout.
-        </p>
       </div>
     </section>
   );
