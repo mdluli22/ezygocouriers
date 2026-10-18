@@ -72,7 +72,7 @@ export function WhyEzyGo() {
             <span className="value-icon"><BellRing size={21} /></span>
             <span className="value-label">Useful updates</span>
             <h3>No wondering.<br />No chasing.</h3>
-            <Image className="value-updates-photo" src="/images/courier-handover.webp" alt="A customer receiving her parcel from a courier" width={1672} height={941} sizes="(max-width: 600px) 100vw, 50vw" />
+            <Image className="value-updates-photo" src="/images/delivery-updates.webp" alt="A customer checking her phone beside a delivery parcel" width={1200} height={675} sizes="(max-width: 600px) 100vw, 50vw" />
           </article>
         </div>
 

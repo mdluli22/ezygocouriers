@@ -19,12 +19,12 @@ export default function PricingSection() {
         <div className="pricing-photo-layout">
           <figure className="pricing-photo">
             <Image
-              src="/images/parcel-exchange.jpg"
-              alt="Two people holding parcels ready for delivery"
+              src="/images/pricing-parcel.webp"
+              alt="A wrapped parcel ready for delivery on a sunlit studio counter"
               fill
               sizes="(max-width: 760px) 100vw, 55vw"
             />
-            <figcaption>From your hands.<br />To their doorstep.</figcaption>
+            <figcaption>Ready to go.<br />One clear price.</figcaption>
           </figure>
 
           <div className="pricing-photo-copy">

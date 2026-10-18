@@ -42,8 +42,8 @@ export default function HowItWorks() {
 
           <figure className="how-editorial-photo">
             <Image
-              src="/images/courier-handover.webp"
-              alt="Courier handing a parcel to a customer at her shop in Cape Town"
+              src="/images/flower-delivery.webp"
+              alt="Courier delivering a bouquet of fresh flowers to a customer at her Cape Town home"
               fill
               sizes="(max-width: 760px) 100vw, 55vw"
             />

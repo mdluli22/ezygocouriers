@@ -31,20 +31,27 @@ export default function AboutPage() {
       </header>
       <main className="landing-shell">
         <section className="about-hero" aria-labelledby="about-title">
-          <div>
+          <div className="about-hero-title">
             <span className="section-kicker">About EzyGo</span>
-            <h1 id="about-title">Local delivery.<br /><em>Made simple.</em></h1>
+            <h1 id="about-title">Your city.<br />Your people.<br /><em>Your delivery.</em></h1>
+          </div>
+          <div className="about-hero-intro">
+            <p>For the parcels that keep your business growing and your everyday life moving.</p>
             <span className="about-location"><MapPin size={16} aria-hidden="true" />Cape Town, South Africa</span>
             <Link className="about-primary" href="/dashboard/deliveries/new">Send a parcel<ArrowRight size={18} aria-hidden="true" /></Link>
           </div>
-          <Image className="about-life-photo" src="/images/courier-handover.webp" alt="A friendly courier delivering a parcel to a local shop owner" width={1672} height={941} sizes="(max-width: 760px) 100vw, 50vw" />
+
         </section>
+        <figure className="about-team-photo">
+          <Image src="/images/about-courier-team.webp" alt="Two courier colleagues preparing a parcel beside a delivery van on a Cape Town street" fill sizes="(max-width: 1200px) 100vw, 1200px" />
+          <figcaption><span>Rooted in Cape Town.</span><span>Built around your day.</span></figcaption>
+        </figure>
         <section className="about-story" aria-labelledby="about-purpose">
           <div><span className="section-kicker">Our purpose</span><h2 id="about-purpose">Keep your day moving.</h2></div>
           <p>EzyGo connects people and businesses with parcel delivery across Cape Town. We bring booking, payment, and delivery updates into one place, with a dedicated workspace for drivers.</p>
         </section>
         <section className="about-commitments" aria-label="What you can expect">
-          {commitments.map(({title,icon:Icon}) => <div key={title} className="about-commitment"><span><Icon size={22} aria-hidden="true" /></span><h2>{title}</h2></div>)}
+          {commitments.map(({title,icon:Icon}, index) => <div key={title} className="about-commitment"><span className="about-commitment-number">0{index + 1}</span><Icon size={22} aria-hidden="true" /><h2>{title}</h2></div>)}
         </section>
         <section className="about-audiences" aria-label="EzyGo for customers and drivers">
           {audiences.map(({label,title,icon:Icon,items,href,action}) => <article key={label} className="about-audience">
@@ -55,7 +62,7 @@ export default function AboutPage() {
           </article>)}
         </section>
         <section className="about-contact" aria-labelledby="about-contact-title">
-          <h2 id="about-contact-title">Move forward with us.</h2>
+          <div className="about-contact-copy"><span className="section-kicker">Let’s get moving</span><h2 id="about-contact-title">Good things<br /><em>are on the way.</em></h2></div>
           <div><a href="mailto:support@ezygocouriers.co.za" className="about-primary">Contact us<ArrowRight size={17} aria-hidden="true" /></a><a href="mailto:support@ezygocouriers.co.za?subject=Driver%20application" className="about-secondary">Become a driver</a></div>
         </section>
       </main>
